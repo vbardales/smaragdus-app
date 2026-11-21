@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Système Smaragdus</title>
+<style>
+:root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Georgia,serif}
+h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);padding:12px}
+#map{position:relative;aspect-ratio:3/2;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
+.spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:11px Georgia}
+.spot:hover,.spot.sel{background:transparent;border-color:var(--gold);box-shadow:0 0 14px var(--gold)}
+.spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
+.bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
+.bar i{display:block;height:100%;background:var(--gold)}
+.pal{padding:6px 0;border-top:1px solid #2a2330}
+.pal.won b{color:var(--green)}
+.dim{color:var(--dim);font-size:13px}
+button,input,select,textarea{background:#0e0c11;color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
+button{cursor:pointer;color:var(--gold)}button:hover{background:#221c28}
+input[type=number]{width:80px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px solid #2a2330;padding:4px;text-align:left}
+#log{max-height:220px;overflow:auto;font-size:13px}
+#err{color:var(--red);min-height:1.2em}
+textarea{width:100%;height:340px;font:12px monospace}
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Système Smaragdus</h1>
+  <div id="who" class="row"></div>
+</header>
+
+<div id="login" class="panel" style="max-width:420px;margin:40px auto">
+  <h2>Identification</h2>
+  <p class="dim">Entre ton code joueur (ou le mot de passe admin).</p>
+  <div class="row"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="go">Entrer</button></div>
+  <p id="lerr" style="color:var(--red)"></p>
+</div>
+
+<main id="app" class="hide">
+  <section>
+    <div id="map"></div>
+    <div class="gauges" id="gauges"></div>
+    <div class="panel" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
+  </section>
+  <aside>
+    <div class="panel" id="side"><p class="dim">Clique sur une planète.</p></div>
+    <div class="panel hide" id="admin" style="margin-top:12px"></div>
+  </aside>
+</main>
+<p id="err" style="padding:0 16px"></p>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k.startsWith('on') ? (e[k] = v) : k === 'class' ? (e.className = v) : e.setAttribute(k, v);
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+};
+let token = localStorage.getItem('smg-token') || new URLSearchParams(location.search).get('code') || '';
+let state = null, selected = null, adminOpen = false;
+
+async function api(method, p, body) {
+  const r = await fetch(p, { method, headers: { 'X-Token': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json();
+  if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { status: r.status });
+  return j;
+}
+const act = async (m, p, b) => { try { $('#err').textContent = ''; await api(m, p, b); await refresh(); } catch (e) { $('#err').textContent = e.message; } };
+
+async function refresh() {
+  try { state = await api('GET', '/api/state'); } catch (e) {
+    if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#lerr').textContent = token ? 'Code invalide' : ''; }
+    return;
+  }
+  localStorage.setItem('smg-token', token);
+  $('#login').classList.add('hide'); $('#app').classList.remove('hide');
+  render();
+}
+
+function nextPalier(t) { return t.paliers.filter((p) => !p.winnerId).sort((a, b) => a.threshold - b.threshold)[0]; }
+
+function render() {
+  const s = state, isAdmin = s.role === 'admin';
+  const who = $('#who'); who.replaceChildren();
+  if (s.me) who.append(h('span', {}, `${s.me.name} · ${s.factions.find((f) => f.id === s.me.factionId)?.name || ''} · `), h('b', {}, `${s.me.points} pts`), s.me.gauges.length ? h('b', {}, ` · ${s.me.bonus} bonus faction`) : '');
+  if (isAdmin) who.append(h('b', {}, 'ADMIN'));
+  who.append(h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter'));
+
+  const map = $('#map'); map.replaceChildren();
+  for (const t of s.targets.filter((t) => t.kind === 'planet')) {
+    const np = nextPalier(t);
+    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
+      h('span', {}, `${t.name} · ${t.total}${np ? '/' + np.threshold : ''}`)));
+  }
+  const g = $('#gauges'); g.replaceChildren();
+  for (const t of s.targets.filter((t) => t.kind === 'gauge')) {
+    const np = nextPalier(t), max = np ? np.threshold : t.total || 1;
+    g.append(h('div', { class: 'panel' }, h('b', {}, `${t.name} : ${t.total}${np ? ' / ' + np.threshold : ''}`),
+      h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / max * 100)}%` })),
+      h('button', { onclick: () => { selected = t.id; render(); } }, 'Détails')));
+  }
+  const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
+  renderSide(); renderAdmin();
+}
+
+function renderSide() {
+  const side = $('#side'), s = state, t = s.targets.find((x) => x.id === selected);
+  if (!t) return;
+  const isAdmin = s.role === 'admin';
+  const pool = t.kind === 'gauge' ? 'bonus' : 'points';
+  side.replaceChildren(h('h2', {}, t.name));
+  if (t.specialty) side.append(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
+  side.append(h('p', {}, `Total investi : ${t.total}`, s.me ? ` · dont toi : ${t.mine}` : ''));
+  for (const p of t.paliers.slice().sort((a, b) => a.threshold - b.threshold)) {
+    const won = !!p.winnerId;
+    side.append(h('div', { class: 'pal' + (won ? ' won' : '') },
+      h('b', {}, `${p.threshold} — ${p.label}`), h('span', { class: 'dim' }, p.mode === 'draw' ? ' (tirage pondéré)' : ' (1er à franchir)'),
+      h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / p.threshold * 100)}%` })),
+      won ? h('div', {}, `Remporté par ${p.winnerName}`) : null,
+      p.reward ? h('div', { class: 'dim' }, `Lot : ${p.reward}`) : null));
+  }
+  const allowed = isAdmin || t.kind === 'planet' || s.me?.gauges.includes(t.id);
+  if (!allowed) { side.append(h('p', { class: 'dim' }, 'Cette jauge n\'est pas accessible à ta faction.')); return; }
+  const avail = s.me ? (pool === 'bonus' ? s.me.bonus : s.me.points) : 0;
+  const amt = h('input', { type: 'number', min: 1, value: 1 });
+  const sel = isAdmin ? h('select', {}, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
+  side.append(h('div', { class: 'row', style: 'margin-top:10px' }, sel, amt,
+    h('button', { onclick: () => act('POST', '/api/allocate', { targetId: t.id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
+    s.me ? h('p', { class: 'dim' }, `Disponible : ${avail} ${pool === 'bonus' ? 'points bonus' : 'points'}`) : null);
+}
+
+function renderAdmin() {
+  const box = $('#admin');
+  if (state.role !== 'admin') return box.classList.add('hide');
+  box.classList.remove('hide');
+  if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // ne pas écraser la saisie
+  const s = state;
+  const fsel = () => h('select', {}, s.factions.map((f) => h('option', { value: f.id }, f.name)));
+  const nm = h('input', { placeholder: 'Nom du joueur' }), fs = fsel();
+  const cfg = h('textarea', {}); cfg.value = JSON.stringify(s.config, null, 1);
+  box.replaceChildren(h('h2', {}, 'Admin'),
+    h('div', { class: 'row' }, nm, fs, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, factionId: fs.value }) }, 'Créer joueur')),
+    h('table', {}, h('tr', {}, ['Joueur', 'Pts', 'Bonus', ''].map((x) => h('th', {}, x))),
+      s.players.map((p) => {
+        const a = h('input', { type: 'number', value: 5 });
+        const link = `${location.origin}/?code=${p.code}`;
+        return h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'dim' }, s.factions.find((f) => f.id === p.factionId)?.name), h('div', { class: 'dim' }, p.code, ' ', h('button', { onclick: () => navigator.clipboard?.writeText(link) }, 'lien'))),
+          h('td', {}, `${p.left}/${p.points}`), h('td', {}, `${p.bonusLeft}/${p.bonus}`),
+          h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'),
+            h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'bonus' }) }, '+bonus'),
+            h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
+      })),
+    h('h3', { style: 'margin-top:12px' }, 'Configuration (JSON)'),
+    h('p', { class: 'dim' }, 'Planètes, jauges, paliers (mode: crosser | draw), lots, factions (gauge: loyaliste | renegat | choix | null). Les gagnants existants sont conservés par id de palier.'),
+    cfg, h('button', { onclick: () => { try { act('PUT', '/api/admin/config', JSON.parse(cfg.value)); } catch (e) { $('#err').textContent = e.message; } } }, 'Enregistrer la config'),
+    h('h3', { style: 'margin-top:16px;color:var(--red)' }, 'Zone dangereuse'),
+    h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers et le journal. Les joueurs, leurs points et la config sont conservés.'),
+    h('div', { class: 'row' },
+      h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
+      h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs')));
+}
+
+$('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };
+$('#code').onkeydown = (e) => e.key === 'Enter' && $('#go').click();
+if (token) refresh();
+const es = new EventSource('/api/events'); es.onmessage = () => token && refresh();
+</script>
+</body>
+</html>

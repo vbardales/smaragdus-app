@@ -210,7 +210,7 @@ http.createServer(async (req, res) => {
       } else if (route === 'POST /api/admin/player') {
         const name = String(b.name || '').trim().slice(0, 40);
         if (!name) throw new Error('Nom requis');
-        const code = String(b.code || '').trim() || newCode(); // admin may choose the code
+        const code = String(b.code || '').trim().toLowerCase() || newCode(); // admin may choose the code; always stored lowercase
         if (!/^[A-Za-z0-9_-]{4,32}$/.test(code)) throw new Error('Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)');
         // unique whatever the case, since login ignores case; also never equal to the admin password
         if (code.toLowerCase() === ADMIN_PASSWORD.toLowerCase() || Object.values(S.players).some((q) => q.code.toLowerCase() === code.toLowerCase())) throw new Error('Code déjà utilisé');

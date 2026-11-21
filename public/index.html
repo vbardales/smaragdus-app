@@ -198,7 +198,8 @@ function renderAdmin() {
   // live check while typing; the server enforces it anyway (unique whatever the case, 4-32 chars of letters, digits, - or _)
   const hint = h('span', { style: 'color:var(--red);font-size:13px' });
   cd.oninput = () => {
-    const v = cd.value.trim().toLowerCase();
+    cd.value = cd.value.toLowerCase(); // codes are always lowercase
+    const v = cd.value.trim();
     hint.textContent = !v ? '' : !/^[a-z0-9_-]{4,32}$/.test(v) ? 'Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)'
       : s.players.some((p) => p.code.toLowerCase() === v) ? 'Code déjà utilisé' : '';
   };

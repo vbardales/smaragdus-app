@@ -176,6 +176,7 @@ $('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };
 $('#code').onkeydown = (e) => e.key === 'Enter' && $('#go').click();
 if (token) refresh();
 const es = new EventSource('/api/events'); es.onmessage = () => token && refresh();
+es.onopen = () => token && refresh(); // resync après coupure de connexion (proxy)
 </script>
 </body>
 </html>

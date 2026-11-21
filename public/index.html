@@ -35,7 +35,10 @@ textarea{width:100%;height:340px;font:12px monospace}
 .hide{display:none}
 .ly{color:#e0c040}.rn{color:#e0605f}
 .gauge.loy .bar i{background:#e0c040}.gauge.ren .bar i{background:#e0605f}
-.gl{font-size:12px}
+.gl{font-size:12px;display:flex;align-items:center;gap:4px;justify-content:center}
+.sb{display:inline-block;width:44px;height:6px;background:#e0605f;border-radius:3px;overflow:hidden}
+.sb u{display:block;height:100%;background:#e0c040}
+.sb.zero{background:#666}
 /* map-only window (projector view): ?view=map */
 body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
 body.mapview main{display:block;padding:0}
@@ -100,7 +103,11 @@ async function refresh() {
 
 const gaugeOf = (planet, side) => state.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
 
-function nextTier(t) { return t.tiers.filter((p) => !p.winnerId).sort((a, b) => a.threshold - b.threshold)[0]; }
+// the gauges have no known maximum: show the loyalist share against the renegade one
+function splitBar(l, r) {
+  const tot = l + r;
+  return h('i', { class: 'sb' + (tot ? '' : ' zero') }, h('u', { style: `width:${tot ? l / tot * 100 : 0}%` }));
+}
 
 function render() {
   const s = state, isAdmin = s.role === 'admin';
@@ -111,10 +118,10 @@ function render() {
 
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
-    const np = nextTier(t), gl = gaugeOf(t, 'loyalist'), gr = gaugeOf(t, 'renegade');
+    const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
-      h('span', {}, `${t.name} · ${t.total}${np ? '/' + np.threshold : ''}`),
-      h('span', { class: 'gl' }, h('b', { class: 'ly' }, gl?.total ?? 0), ' · ', h('b', { class: 'rn' }, gr?.total ?? 0))));
+      h('span', {}, t.name),
+      h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
   renderSide(); renderAdmin();
@@ -122,14 +129,16 @@ function render() {
 
 // tier list of a target (planet or gauge)
 function tierBlocks(t) {
-  return t.tiers.slice().sort((a, b) => a.threshold - b.threshold).map((p) => {
+  const shown = t.tiers.filter((p) => !p.hidden).sort((a, b) => a.threshold - b.threshold);
+  const hiddenCount = t.tiers.length - shown.length;
+  return [...shown.map((p) => {
     const won = !!p.winnerId;
     return h('div', { class: 'tier' + (won ? ' won' : '') },
       h('b', {}, `${p.threshold} — ${p.label}`), h('span', { class: 'dim' }, p.mode === 'draw' ? ' (tirage pondéré)' : ' (1er à franchir)'),
       h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / p.threshold * 100)}%` })),
       won ? h('div', {}, `Remporté par ${p.winnerName}`) : null,
       p.reward ? h('div', { class: 'dim' }, `Lot : ${p.reward}`) : null);
-  });
+  }), hiddenCount ? h('div', { class: 'tier dim' }, `Paliers cachés : ${hiddenCount}`) : null];
 }
 
 // amount input + invest button for a target; the admin picks the player

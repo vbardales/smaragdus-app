@@ -117,10 +117,11 @@ function view(role, me) {
   const targets = S.targets.map((t) => ({
     id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
     total: effTotal(t), mine: me ? me.alloc[t.id] || 0 : 0,
-    tiers: t.tiers.map((pa) => ({
+    // players never learn thresholds, labels or modes of tiers nobody has won yet
+    tiers: t.tiers.map((pa) => (isAdmin || pa.winnerId ? {
       id: pa.id, threshold: pa.threshold, label: pa.label, mode: pa.mode, winnerId: pa.winnerId, winnerName: pa.winnerName,
       reward: isAdmin || (me && pa.winnerId === me.id) ? pa.reward : null,
-    })),
+    } : { id: pa.id, hidden: true })),
   }));
   const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id)).slice(0, 40).map(({ t, text }) => ({ t, text }));
   const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };

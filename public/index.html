@@ -174,7 +174,8 @@ function renderAdmin() {
 }
 
 $('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };
-$('#code').onkeydown = (e) => e.key === 'Enter' && $('#go').click();
+// braces matter: an arrow returning false from onkeydown cancels the keystroke
+$('#code').onkeydown = (e) => { if (e.key === 'Enter') $('#go').click(); };
 if (token) refresh();
 const es = new EventSource('/api/events'); es.onmessage = () => token && refresh();
 es.onopen = () => token && refresh(); // resync after a dropped connection (proxy)

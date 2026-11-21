@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Système Smaragdus</title>
+<link rel="icon" href="data:,">
 <style>
 :root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
 *{box-sizing:border-box}
@@ -19,8 +20,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12p
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
 .bar i{display:block;height:100%;background:var(--gold)}
-.pal{padding:6px 0;border-top:1px solid #2a2330}
-.pal.won b{color:var(--green)}
+.tier{padding:6px 0;border-top:1px solid #2a2330}
+.tier.won b{color:var(--green)}
 .dim{color:var(--dim);font-size:13px}
 button,input,select,textarea{background:#0e0c11;color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
 button{cursor:pointer;color:var(--gold)}button:hover{background:#221c28}
@@ -89,7 +90,7 @@ async function refresh() {
   render();
 }
 
-function nextPalier(t) { return t.paliers.filter((p) => !p.winnerId).sort((a, b) => a.threshold - b.threshold)[0]; }
+function nextTier(t) { return t.tiers.filter((p) => !p.winnerId).sort((a, b) => a.threshold - b.threshold)[0]; }
 
 function render() {
   const s = state, isAdmin = s.role === 'admin';
@@ -100,13 +101,13 @@ function render() {
 
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
-    const np = nextPalier(t);
+    const np = nextTier(t);
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
       h('span', {}, `${t.name} · ${t.total}${np ? '/' + np.threshold : ''}`)));
   }
   const g = $('#gauges'); g.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'gauge')) {
-    const np = nextPalier(t), max = np ? np.threshold : t.total || 1;
+    const np = nextTier(t), max = np ? np.threshold : t.total || 1;
     g.append(h('div', { class: 'panel' }, h('b', {}, `${t.name} : ${t.total}${np ? ' / ' + np.threshold : ''}`),
       h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / max * 100)}%` })),
       h('button', { onclick: () => { selected = t.id; render(); } }, 'Détails')));
@@ -123,9 +124,9 @@ function renderSide() {
   side.replaceChildren(h('h2', {}, t.name));
   if (t.specialty) side.append(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
   side.append(h('p', {}, `Total investi : ${t.total}`, s.me ? ` · dont toi : ${t.mine}` : ''));
-  for (const p of t.paliers.slice().sort((a, b) => a.threshold - b.threshold)) {
+  for (const p of t.tiers.slice().sort((a, b) => a.threshold - b.threshold)) {
     const won = !!p.winnerId;
-    side.append(h('div', { class: 'pal' + (won ? ' won' : '') },
+    side.append(h('div', { class: 'tier' + (won ? ' won' : '') },
       h('b', {}, `${p.threshold} — ${p.label}`), h('span', { class: 'dim' }, p.mode === 'draw' ? ' (tirage pondéré)' : ' (1er à franchir)'),
       h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / p.threshold * 100)}%` })),
       won ? h('div', {}, `Remporté par ${p.winnerName}`) : null,
@@ -145,7 +146,7 @@ function renderAdmin() {
   const box = $('#admin');
   if (state.role !== 'admin') return box.classList.add('hide');
   box.classList.remove('hide');
-  if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // ne pas écraser la saisie
+  if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // do not overwrite user input
   const s = state;
   const fsel = () => h('select', {}, s.factions.map((f) => h('option', { value: f.id }, f.name)));
   const nm = h('input', { placeholder: 'Nom du joueur' }), fs = fsel();
@@ -163,7 +164,7 @@ function renderAdmin() {
             h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
       })),
     h('h3', { style: 'margin-top:12px' }, 'Configuration (JSON)'),
-    h('p', { class: 'dim' }, 'Planètes, jauges, paliers (mode: crosser | draw), lots, factions (gauge: loyaliste | renegat | choix | null). Les gagnants existants sont conservés par id de palier.'),
+    h('p', { class: 'dim' }, 'Planètes, jauges, tiers (mode: crosser | draw), lots, factions (gauge: loyalist | renegade | choice | null). Les gagnants existants sont conservés par id de palier.'),
     cfg, h('button', { onclick: () => { try { act('PUT', '/api/admin/config', JSON.parse(cfg.value)); } catch (e) { $('#err').textContent = e.message; } } }, 'Enregistrer la config'),
     h('h3', { style: 'margin-top:16px;color:var(--red)' }, 'Zone dangereuse'),
     h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers et le journal. Les joueurs, leurs points et la config sont conservés.'),
@@ -176,7 +177,7 @@ $('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };
 $('#code').onkeydown = (e) => e.key === 'Enter' && $('#go').click();
 if (token) refresh();
 const es = new EventSource('/api/events'); es.onmessage = () => token && refresh();
-es.onopen = () => token && refresh(); // resync après coupure de connexion (proxy)
+es.onopen = () => token && refresh(); // resync after a dropped connection (proxy)
 </script>
 </body>
 </html>

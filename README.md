@@ -1,27 +1,34 @@
 # Smaragdus
 
-Webapp temps réel (Node ≥ 18, zéro dépendance). Données dans `data.json`.
+Real-time exploration points webapp (Node >= 18, zero dependencies). State is stored in `data.json`.
 
-## Lancer
+## Run
 
     ADMIN_PASSWORD=... PORT=3000 node server.js
 
-`ADMIN_PASSWORD` est obligatoire : le serveur refuse de démarrer sans.
-Admin : saisir ce mot de passe sur la page. Joueurs : l'admin les crée et leur envoie le lien `?code=...`.
+`ADMIN_PASSWORD` is required: the server refuses to start without it.
+Admin: enter that password on the login page. Players: the admin creates them and sends the `?code=...` link.
 
-## Déploiement (smaragdus.antredudragon.fr)
+## Environment
 
-1. DNS : enregistrement A/AAAA de `smaragdus` vers le serveur.
-2. Lancer `node server.js` en service (systemd/pm2) avec `ADMIN_PASSWORD` défini.
-3. Reverse proxy HTTPS vers le port (Caddy : `smaragdus.antredudragon.fr { reverse_proxy localhost:3000 }`).
-   Désactiver le buffering pour `/api/events` (SSE) si nginx : `proxy_buffering off;`.
-4. Sauvegarder `data.json` (DATA_FILE pour changer le chemin).
+| Variable | Default | Purpose |
+|---|---|---|
+| `ADMIN_PASSWORD` | none (required) | admin login |
+| `PORT` | `3000` | HTTP port |
+| `DATA_FILE` | `./data.json` | persisted state (keep it on a persistent disk) |
 
-## Règles implémentées
+Single instance only: state lives in memory and is written to `DATA_FILE`.
 
-- Points : l'admin en donne à chaque joueur ; le joueur les place sur les planètes (définitif).
-- Paliers par planète/jauge : mode `crosser` (le joueur qui franchit gagne) ou `draw` (tirage pondéré par points investis parmi tous les contributeurs).
-- Lot d'un palier visible seulement de l'admin et du gagnant ; label et gagnant visibles de tous.
-- Planète : `specialty` (texte) + `multiplier` (points comptés ×N pour les paliers).
-- Factions : points bonus séparés, utilisables seulement sur les jauges. `gauge` = `loyaliste`, `renegat`, `choix` (Alpha Légion : choisit à chaque investissement) ou `null`.
-- Admin peut investir à la place d'un joueur et éditer toute la config (JSON) en direct.
+## Rules implemented
+
+- The admin grants points to each player; players spend them on planets (final).
+- Each planet/gauge has tiers with a `mode`: `crosser` (the player who crosses the threshold wins) or `draw` (weighted random draw among all contributors, by points invested).
+- A tier reward is visible only to the admin and the winner; label and winner are public.
+- Planet: free-text `specialty` plus a `multiplier` applied to points counted toward tiers.
+- Factions: bonus points are separate and can only be spent on gauges. `gauge` is `loyalist`, `renegade`, `choice` (player picks at each investment) or `null`.
+- The admin can invest on behalf of a player and edit the whole config (JSON) live. Existing winners are kept by tier id.
+
+## Deployment
+
+Any Node host with HTTPS in front works. Current setup: Azure App Service (Linux, Node 22, B1) with `DATA_FILE=/home/data.json`
+and a CNAME + `asuid` TXT record for the custom domain.

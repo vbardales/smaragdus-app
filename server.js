@@ -1,5 +1,5 @@
-// Smaragdus — webapp points d'exploration. Zéro dépendance (Node >= 18).
-// Env: PORT (3000), ADMIN_PASSWORD (obligatoire), DATA_FILE (data.json)
+// Smaragdus: exploration points webapp. Zero dependencies (Node >= 18).
+// Env: PORT (3000), ADMIN_PASSWORD (required), DATA_FILE (data.json)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,16 +10,16 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE = process.env.DATA_FILE || path.join(DIR, 'data.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-if (!ADMIN_PASSWORD) { console.error('ADMIN_PASSWORD manquant : définir la variable d\'environnement.'); process.exit(1); }
+if (!ADMIN_PASSWORD) { console.error('ADMIN_PASSWORD is missing: set the environment variable.'); process.exit(1); }
 
-// ---------- état ----------
-const pal = (id, threshold, label, reward, mode = 'crosser') => ({ id, threshold, label, reward, mode, winnerId: null, winnerName: null });
+// ---------- state ----------
+const tier = (id, threshold, label, reward, mode = 'crosser') => ({ id, threshold, label, reward, mode, winnerId: null, winnerName: null });
 const seed = () => ({
   factions: [
-    { id: 'alpha', name: 'Alpha Légion', gauge: 'choix' },
-    { id: 'loyal', name: 'Loyaliste', gauge: 'loyaliste' },
-    { id: 'renegat', name: 'Renégat', gauge: 'renegat' },
-    { id: 'neutre', name: 'Sans faction', gauge: null },
+    { id: 'alpha', name: 'Alpha Légion', gauge: 'choice' },
+    { id: 'loyalist', name: 'Loyaliste', gauge: 'loyalist' },
+    { id: 'renegade', name: 'Renégat', gauge: 'renegade' },
+    { id: 'neutral', name: 'Sans faction', gauge: null },
   ],
   targets: [
     { id: 'grus', kind: 'planet', name: 'Grus', specialty: 'À définir', multiplier: 1, x: 32.7, y: 24.9 },
@@ -29,17 +29,18 @@ const seed = () => ({
     { id: 'unicornis', kind: 'planet', name: 'Unicornis', specialty: 'À définir', multiplier: 1, x: 44.9, y: 67.9 },
     { id: 'draco', kind: 'planet', name: 'Draco', specialty: 'À définir', multiplier: 1, x: 15, y: 59.6 },
     { id: 'leo', kind: 'planet', name: 'Leo I', specialty: 'À définir', multiplier: 1, x: 36.8, y: 38.6 },
-    { id: 'loyaliste', kind: 'gauge', name: 'Jauge Loyaliste', specialty: '', multiplier: 1 },
-    { id: 'renegat', kind: 'gauge', name: 'Jauge Renégat', specialty: '', multiplier: 1 },
-  ].map((t) => ({ ...t, paliers: t.kind === 'planet'
-    ? [pal(`${t.id}-1`, 10, 'Palier 1', 'Lot à définir'), pal(`${t.id}-2`, 25, 'Palier 2', 'Lot à définir', 'draw'), pal(`${t.id}-3`, 50, 'Palier 3 — la supercherie', 'Révélation à définir')]
-    : [pal(`${t.id}-1`, 20, 'Palier 1', 'Lot à définir'), pal(`${t.id}-2`, 50, 'Palier 2', 'Lot à définir')] })),
+    { id: 'loyalist', kind: 'gauge', name: 'Jauge Loyaliste', specialty: '', multiplier: 1 },
+    { id: 'renegade', kind: 'gauge', name: 'Jauge Renégat', specialty: '', multiplier: 1 },
+  ].map((t) => ({ ...t, tiers: t.kind === 'planet'
+    ? [tier(`${t.id}-1`, 10, 'Palier 1', 'Lot à définir'), tier(`${t.id}-2`, 25, 'Palier 2', 'Lot à définir', 'draw'), tier(`${t.id}-3`, 50, 'Palier 3 — la supercherie', 'Révélation à définir')]
+    : [tier(`${t.id}-1`, 20, 'Palier 1', 'Lot à définir'), tier(`${t.id}-2`, 50, 'Palier 2', 'Lot à définir')] })),
   players: {}, // id -> {id,name,factionId,code,points,bonus,alloc:{targetId:n}}
   log: [],
 });
 
 let S;
 try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { S = seed(); }
+if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers))) S = seed(); // data saved by an older schema: start fresh
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
@@ -50,7 +51,7 @@ function save() {
 }
 const logEvt = (text) => { S.log.unshift({ t: Date.now(), text }); S.log.length = Math.min(S.log.length, 200); };
 
-// ---------- logique ----------
+// ---------- logic ----------
 const poolOf = (t) => (t.kind === 'gauge' ? 'bonus' : 'points');
 const spent = (p, pool) => S.targets.filter((t) => poolOf(t) === pool).reduce((n, t) => n + (p.alloc[t.id] || 0), 0);
 const rawTotal = (t) => Object.values(S.players).reduce((n, p) => n + (p.alloc[t.id] || 0), 0);
@@ -58,7 +59,7 @@ const effTotal = (t) => rawTotal(t) * (t.multiplier || 1);
 const faction = (p) => S.factions.find((f) => f.id === p.factionId);
 const allowedGauges = (p) => {
   const g = faction(p)?.gauge;
-  return g === 'choix' ? ['loyaliste', 'renegat'] : g ? [g] : [];
+  return g === 'choice' ? ['loyalist', 'renegade'] : g ? [g] : [];
 };
 
 function allocate(p, target, amount) {
@@ -71,10 +72,10 @@ function allocate(p, target, amount) {
   p.alloc[target.id] = (p.alloc[target.id] || 0) + amount;
   const after = effTotal(target);
   logEvt(`${p.name} → ${target.name} : +${amount}`);
-  for (const pa of target.paliers) {
+  for (const pa of target.tiers) {
     if (pa.winnerId || pa.threshold <= before || pa.threshold > after) continue;
     let winner = p;
-    if (pa.mode === 'draw') { // tirage pondéré par points investis
+    if (pa.mode === 'draw') { // weighted draw by invested points
       const entries = Object.values(S.players).filter((q) => q.alloc[target.id] > 0);
       let r = crypto.randomInt(entries.reduce((n, q) => n + q.alloc[target.id], 0));
       winner = entries.find((q) => (r -= q.alloc[target.id]) < 0);
@@ -84,13 +85,13 @@ function allocate(p, target, amount) {
   }
 }
 
-// ---------- vues ----------
+// ---------- views ----------
 function view(role, me) {
   const isAdmin = role === 'admin';
   const targets = S.targets.map((t) => ({
     id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, multiplier: t.multiplier, x: t.x, y: t.y,
     total: effTotal(t), mine: me ? me.alloc[t.id] || 0 : 0,
-    paliers: t.paliers.map((pa) => ({
+    tiers: t.tiers.map((pa) => ({
       id: pa.id, threshold: pa.threshold, label: pa.label, mode: pa.mode, winnerId: pa.winnerId, winnerName: pa.winnerName,
       reward: isAdmin || (me && pa.winnerId === me.id) ? pa.reward : null,
     })),
@@ -99,7 +100,7 @@ function view(role, me) {
   if (me) out.me = { id: me.id, name: me.name, factionId: me.factionId, points: me.points - spent(me, 'points'), bonus: me.bonus - spent(me, 'bonus'), gauges: allowedGauges(me) };
   if (isAdmin) {
     out.players = Object.values(S.players).map((p) => ({ ...p, left: p.points - spent(p, 'points'), bonusLeft: p.bonus - spent(p, 'bonus') }));
-    out.config = { factions: S.factions, targets: S.targets.map(({ id, kind, name, specialty, multiplier, x, y, paliers }) => ({ id, kind, name, specialty, multiplier, x, y, paliers: paliers.map(({ id, threshold, label, reward, mode }) => ({ id, threshold, label, reward, mode })) })) };
+    out.config = { factions: S.factions, targets: S.targets.map(({ id, kind, name, specialty, multiplier, x, y, tiers }) => ({ id, kind, name, specialty, multiplier, x, y, tiers: tiers.map(({ id, threshold, label, reward, mode }) => ({ id, threshold, label, reward, mode })) })) };
   }
   return out;
 }
@@ -127,13 +128,13 @@ function validateConfig(c) {
     if (!t.id || ids.has(t.id)) throw new Error(`id cible manquant ou dupliqué: ${t.id}`);
     ids.add(t.id);
     if (!['planet', 'gauge'].includes(t.kind)) throw new Error(`kind invalide: ${t.id}`);
-    if (!Array.isArray(t.paliers)) throw new Error(`paliers[] requis: ${t.id}`);
-    for (const pa of t.paliers) {
+    if (!Array.isArray(t.tiers)) throw new Error(`tiers[] requis: ${t.id}`);
+    for (const pa of t.tiers) {
       if (!pa.id || !(pa.threshold > 0)) throw new Error(`palier invalide dans ${t.id}`);
       if (!['crosser', 'draw'].includes(pa.mode)) throw new Error(`mode invalide (crosser|draw): ${pa.id}`);
     }
   }
-  for (const f of c.factions) if (!f.id || ![null, 'loyaliste', 'renegat', 'choix'].includes(f.gauge)) throw new Error(`faction invalide: ${f.id}`);
+  for (const f of c.factions) if (!f.id || ![null, 'loyalist', 'renegade', 'choice'].includes(f.gauge)) throw new Error(`faction invalide: ${f.id}`);
 }
 
 async function body(req) {
@@ -170,7 +171,7 @@ http.createServer(async (req, res) => {
         const name = String(b.name || '').trim().slice(0, 40);
         if (!name) throw new Error('Nom requis');
         const id = crypto.randomUUID();
-        S.players[id] = { id, name, factionId: b.factionId || 'neutre', code: newCode(), points: 0, bonus: 0, alloc: {} };
+        S.players[id] = { id, name, factionId: b.factionId || 'neutral', code: newCode(), points: 0, bonus: 0, alloc: {} };
         logEvt(`Joueur créé : ${name}`);
       } else if (route === 'POST /api/admin/grant') {
         const p = S.players[b.playerId];
@@ -184,8 +185,8 @@ http.createServer(async (req, res) => {
         if (!p || !S.factions.some((f) => f.id === b.factionId)) throw new Error('Joueur ou faction inconnu');
         p.factionId = b.factionId;
       } else if (route === 'POST /api/admin/reset') {
-        // Remet la partie à zéro : investissements, gagnants, journal. Config conservée.
-        for (const t of S.targets) for (const pa of t.paliers) pa.winnerId = pa.winnerName = null;
+        // Reset game: investments, winners, log. Config is kept.
+        for (const t of S.targets) for (const pa of t.tiers) pa.winnerId = pa.winnerName = null;
         if (b.deletePlayers) S.players = {};
         else for (const p of Object.values(S.players)) p.alloc = {};
         S.log = [];
@@ -194,15 +195,15 @@ http.createServer(async (req, res) => {
         delete S.players[b.playerId];
       } else if (route === 'PUT /api/admin/config') {
         validateConfig(b);
-        const old = new Map(S.targets.flatMap((t) => t.paliers.map((pa) => [pa.id, pa])));
+        const old = new Map(S.targets.flatMap((t) => t.tiers.map((pa) => [pa.id, pa])));
         S.factions = b.factions;
-        S.targets = b.targets.map((t) => ({ ...t, paliers: t.paliers.map((pa) => ({ ...pa, winnerId: old.get(pa.id)?.winnerId ?? null, winnerName: old.get(pa.id)?.winnerName ?? null })) }));
+        S.targets = b.targets.map((t) => ({ ...t, tiers: t.tiers.map((pa) => ({ ...pa, winnerId: old.get(pa.id)?.winnerId ?? null, winnerName: old.get(pa.id)?.winnerName ?? null })) }));
         logEvt('Configuration mise à jour');
       } else return send(res, 404, { error: 'Route inconnue' });
       save(); broadcast();
       return send(res, 200, { ok: true });
     }
-    // statique
+    // static files
     const file = url.pathname === '/' ? 'index.html' : path.normalize(url.pathname).replace(/^([/\\])+/, '');
     const full = path.join(DIR, 'public', file);
     if (!full.startsWith(path.join(DIR, 'public')) || !fs.existsSync(full)) { res.writeHead(404); return res.end('404'); }
@@ -211,4 +212,4 @@ http.createServer(async (req, res) => {
   } catch (e) {
     send(res, 400, { error: e.message });
   }
-}).listen(PORT, () => console.log(`Smaragdus sur http://localhost:${PORT}`));
+}).listen(PORT, () => console.log(`Smaragdus listening on http://localhost:${PORT}`));

@@ -42,7 +42,10 @@ const seed = () => ({
 
 let S;
 let loadedFromFile = false;
-try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); loadedFromFile = true; } catch { S = seed(); }
+try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); loadedFromFile = true; } catch (e) {
+  console.log(`Could not load ${DATA_FILE}: ${e.code || e.message}`); // ENOENT = no file yet
+  S = seed();
+}
 // data saved by an older schema (no tiers, or global gauges without planetId): start fresh
 if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) { S = seed(); loadedFromFile = false; }
 // Planet positions are tied to the map image, so the code owns them: refresh saved data from the seed on every start.
@@ -56,6 +59,7 @@ function save() {
     try {
       fs.writeFileSync(DATA_FILE + '.tmp', JSON.stringify(S));
       fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
+      console.log(`State saved to ${DATA_FILE} (${Object.keys(S.players).length} players)`);
     } catch (e) {
       // a failed write must never take the game down; the in-memory state stays authoritative
       console.error(`Could not save state to ${DATA_FILE}: ${e.message}`);

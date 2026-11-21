@@ -173,6 +173,17 @@ function renderSide() {
   }
 }
 
+// copy a player link; confirm on the button, or show the link to copy by hand when the clipboard is unavailable
+async function copyLink(link, btn) {
+  try {
+    await navigator.clipboard.writeText(link);
+    btn.textContent = 'copié ✓';
+    setTimeout(() => { btn.textContent = 'lien'; }, 1500);
+  } catch {
+    prompt('Copie le lien (Ctrl+C) :', link);
+  }
+}
+
 function renderAdmin() {
   const box = $('#admin');
   if (state.role !== 'admin') return box.classList.add('hide');
@@ -189,7 +200,7 @@ function renderAdmin() {
       s.players.map((p) => {
         const a = h('input', { type: 'number', value: 5 });
         const link = `${location.origin}/?code=${p.code}`;
-        return h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'dim' }, s.factions.find((f) => f.id === p.factionId)?.name), h('div', { class: 'dim' }, p.code, ' ', h('button', { onclick: () => navigator.clipboard?.writeText(link) }, 'lien'))),
+        return h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'dim' }, s.factions.find((f) => f.id === p.factionId)?.name), h('div', { class: 'dim' }, p.code, ' ', h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'))),
           h('td', {}, `${p.left}/${p.points}`), h('td', {}, `${p.bonusLeft}/${p.bonus}`),
           h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'),
             h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'bonus' }) }, '+bonus'),

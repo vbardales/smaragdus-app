@@ -53,8 +53,13 @@ let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    fs.writeFileSync(DATA_FILE + '.tmp', JSON.stringify(S));
-    fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
+    try {
+      fs.writeFileSync(DATA_FILE + '.tmp', JSON.stringify(S));
+      fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
+    } catch (e) {
+      // a failed write must never take the game down; the in-memory state stays authoritative
+      console.error(`Could not save state to ${DATA_FILE}: ${e.message}`);
+    }
   }, 100);
 }
 // scope: 'public' = every player, a player id = that player (and admin), undefined = admin only

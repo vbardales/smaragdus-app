@@ -27,8 +27,8 @@ const seed = () => ({
     { id: 'phoenix', kind: 'planet', name: 'Phoenix', specialty: 'À définir', multiplier: 1, x: 59.7, y: 27.8 },
     { id: 'scorpius', kind: 'planet', name: 'Scorpius IV', specialty: 'À définir', multiplier: 1, x: 76.5, y: 38.6 },
     { id: 'cancer', kind: 'planet', name: 'Cancer', specialty: 'À définir', multiplier: 1, x: 73.2, y: 65 },
-    { id: 'unicornis', kind: 'planet', name: 'Unicornis', specialty: 'À définir', multiplier: 1, x: 44.9, y: 67.9 },
-    { id: 'draco', kind: 'planet', name: 'Draco', specialty: 'À définir', multiplier: 1, x: 15, y: 59.6 },
+    { id: 'unicornis', kind: 'planet', name: 'Unicornis', specialty: 'À définir', multiplier: 1, x: 46.9, y: 67.8 },
+    { id: 'draco', kind: 'planet', name: 'Draco', specialty: 'À définir', multiplier: 1, x: 15.8, y: 60.3 },
     { id: 'leo', kind: 'planet', name: 'Leo I', specialty: 'À définir', multiplier: 1, x: 36.8, y: 38.6 },
   ].flatMap((p) => [p, ...['loyalist', 'renegade'].map((side) => ({ // every planet owns one loyalist and one renegade gauge
     id: `${p.id}-${side}`, kind: 'gauge', planetId: p.id, side,
@@ -44,6 +44,9 @@ let S;
 try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { S = seed(); }
 // data saved by an older schema (no tiers, or global gauges without planetId): start fresh
 if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) S = seed();
+// Planet positions are tied to the map image, so the code owns them: refresh saved data from the seed on every start.
+const seedPos = Object.fromEntries(seed().targets.filter((t) => t.kind === 'planet').map((t) => [t.id, { x: t.x, y: t.y }]));
+for (const t of S.targets) if (seedPos[t.id]) Object.assign(t, seedPos[t.id]);
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);

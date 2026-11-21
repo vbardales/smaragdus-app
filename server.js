@@ -41,12 +41,14 @@ const seed = () => ({
 });
 
 let S;
-try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { S = seed(); }
+let loadedFromFile = false;
+try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); loadedFromFile = true; } catch { S = seed(); }
 // data saved by an older schema (no tiers, or global gauges without planetId): start fresh
-if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) S = seed();
+if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) { S = seed(); loadedFromFile = false; }
 // Planet positions are tied to the map image, so the code owns them: refresh saved data from the seed on every start.
 const seedPos = Object.fromEntries(seed().targets.filter((t) => t.kind === 'planet').map((t) => [t.id, { x: t.x, y: t.y }]));
 for (const t of S.targets) if (seedPos[t.id]) Object.assign(t, seedPos[t.id]);
+console.log(`State: ${loadedFromFile ? 'loaded from' : 'fresh seed, nothing usable in'} ${DATA_FILE} (${Object.keys(S.players).length} players)`);
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
@@ -137,7 +139,7 @@ function auth(req) {
   const tok = String(req.headers['x-token'] || '');
   const a = Buffer.from(tok), b = Buffer.from(ADMIN_PASSWORD);
   if (a.length === b.length && crypto.timingSafeEqual(a, b)) return { role: 'admin' };
-  const p = Object.values(S.players).find((q) => q.code === tok);
+  const p = Object.values(S.players).find((q) => q.code.toLowerCase() === tok.toLowerCase()); // codes are case-insensitive
   return p ? { role: 'player', me: p } : null;
 }
 
@@ -210,7 +212,8 @@ http.createServer(async (req, res) => {
         if (!name) throw new Error('Nom requis');
         const code = String(b.code || '').trim() || newCode(); // admin may choose the code
         if (!/^[A-Za-z0-9_-]{4,32}$/.test(code)) throw new Error('Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)');
-        if (code === ADMIN_PASSWORD || Object.values(S.players).some((q) => q.code === code)) throw new Error('Code déjà utilisé');
+        // unique whatever the case, since login ignores case; also never equal to the admin password
+        if (code.toLowerCase() === ADMIN_PASSWORD.toLowerCase() || Object.values(S.players).some((q) => q.code.toLowerCase() === code.toLowerCase())) throw new Error('Code déjà utilisé');
         const id = crypto.randomUUID();
         S.players[id] = { id, name, factionId: b.factionId || 'neutral', code, points: 0, bonus: 0, alloc: {}, abilityUsed: false };
         logEvt(`Joueur créé : ${name}`);

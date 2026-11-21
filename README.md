@@ -6,6 +6,10 @@ Real-time exploration points webapp (Node >= 18, zero dependencies). State is st
 
     ADMIN_PASSWORD=... PORT=3000 node server.js
 
+Dev mode (auto-restart on `server.js` changes; static files in `public/` are read per request, so a browser refresh is enough):
+
+    ADMIN_PASSWORD=... npm run dev
+
 `ADMIN_PASSWORD` is required: the server refuses to start without it.
 Admin: enter that password on the login page. Players: the admin creates them and sends the `?code=...` link.
 

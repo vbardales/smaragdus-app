@@ -33,6 +33,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px so
 textarea{width:100%;height:340px;font:12px monospace}
 .gauges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .hide{display:none}
+/* map-only window (projector view): ?view=map */
+body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
+body.mapview main{display:block;padding:0}
+body.mapview #map{border:0;width:min(100vw,calc(100vh * 1.5));margin:0 auto}
+body.mapview .spot{pointer-events:none}
 </style>
 </head>
 <body>
@@ -69,6 +74,7 @@ const h = (tag, attrs = {}, ...kids) => {
   for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
   return e;
 };
+if (new URLSearchParams(location.search).get('view') === 'map') document.body.classList.add('mapview');
 let token = localStorage.getItem('smg-token') || new URLSearchParams(location.search).get('code') || '';
 let state = null, selected = null, adminOpen = false;
 
@@ -152,6 +158,7 @@ function renderAdmin() {
   const nm = h('input', { placeholder: 'Nom du joueur' }), fs = fsel();
   const cfg = h('textarea', {}); cfg.value = JSON.stringify(s.config, null, 1);
   box.replaceChildren(h('h2', {}, 'Admin'),
+    h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)'),
     h('div', { class: 'row' }, nm, fs, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, factionId: fs.value }) }, 'Créer joueur')),
     h('table', {}, h('tr', {}, ['Joueur', 'Pts', 'Bonus', ''].map((x) => h('th', {}, x))),
       s.players.map((p) => {

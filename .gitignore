@@ -3,3 +3,4 @@ data.json.tmp
 node_modules/
 .env
 .claude/
+local-data.json*

@@ -155,11 +155,11 @@ function renderAdmin() {
   if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // do not overwrite user input
   const s = state;
   const fsel = () => h('select', {}, s.factions.map((f) => h('option', { value: f.id }, f.name)));
-  const nm = h('input', { placeholder: 'Nom du joueur' }), fs = fsel();
+  const nm = h('input', { placeholder: 'Nom du joueur' }), cd = h('input', { placeholder: 'Code (optionnel)', style: 'width:140px' }), fs = fsel();
   const cfg = h('textarea', {}); cfg.value = JSON.stringify(s.config, null, 1);
   box.replaceChildren(h('h2', {}, 'Admin'),
     h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)'),
-    h('div', { class: 'row' }, nm, fs, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, factionId: fs.value }) }, 'Créer joueur')),
+    h('div', { class: 'row' }, nm, cd, fs, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, code: cd.value, factionId: fs.value }) }, 'Créer joueur')),
     h('table', {}, h('tr', {}, ['Joueur', 'Pts', 'Bonus', ''].map((x) => h('th', {}, x))),
       s.players.map((p) => {
         const a = h('input', { type: 'number', value: 5 });

@@ -49,7 +49,8 @@ function save() {
     fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
   }, 100);
 }
-const logEvt = (text) => { S.log.unshift({ t: Date.now(), text }); S.log.length = Math.min(S.log.length, 200); };
+// scope: 'public' = every player, a player id = that player (and admin), undefined = admin only
+const logEvt = (text, scope) => { S.log.unshift({ t: Date.now(), text, scope }); S.log.length = Math.min(S.log.length, 200); };
 
 // ---------- logic ----------
 const poolOf = (t) => (t.kind === 'gauge' ? 'bonus' : 'points');
@@ -71,7 +72,7 @@ function allocate(p, target, amount) {
   const before = effTotal(target);
   p.alloc[target.id] = (p.alloc[target.id] || 0) + amount;
   const after = effTotal(target);
-  logEvt(`${p.name} → ${target.name} : +${amount}`);
+  logEvt(`${p.name} → ${target.name} : +${amount}`, p.id);
   for (const pa of target.tiers) {
     if (pa.winnerId || pa.threshold <= before || pa.threshold > after) continue;
     let winner = p;
@@ -81,7 +82,7 @@ function allocate(p, target, amount) {
       winner = entries.find((q) => (r -= q.alloc[target.id]) < 0);
     }
     pa.winnerId = winner.id; pa.winnerName = winner.name;
-    logEvt(`PALIER ${target.name} « ${pa.label} » (${pa.threshold}) → ${winner.name} (${pa.mode === 'draw' ? 'tirage' : 'franchissement'})`);
+    logEvt(`PALIER ${target.name} « ${pa.label} » (${pa.threshold}) → ${winner.name} (${pa.mode === 'draw' ? 'tirage' : 'franchissement'})`, 'public');
   }
 }
 
@@ -96,7 +97,8 @@ function view(role, me) {
       reward: isAdmin || (me && pa.winnerId === me.id) ? pa.reward : null,
     })),
   }));
-  const out = { role, targets, log: S.log.slice(0, 40), factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
+  const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id)).slice(0, 40).map(({ t, text }) => ({ t, text }));
+  const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
   if (me) out.me = { id: me.id, name: me.name, factionId: me.factionId, points: me.points - spent(me, 'points'), bonus: me.bonus - spent(me, 'bonus'), gauges: allowedGauges(me) };
   if (isAdmin) {
     out.players = Object.values(S.players).map((p) => ({ ...p, left: p.points - spent(p, 'points'), bonusLeft: p.bonus - spent(p, 'bonus') }));
@@ -170,8 +172,11 @@ http.createServer(async (req, res) => {
       } else if (route === 'POST /api/admin/player') {
         const name = String(b.name || '').trim().slice(0, 40);
         if (!name) throw new Error('Nom requis');
+        const code = String(b.code || '').trim() || newCode(); // admin may choose the code
+        if (!/^[A-Za-z0-9_-]{4,32}$/.test(code)) throw new Error('Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)');
+        if (code === ADMIN_PASSWORD || Object.values(S.players).some((q) => q.code === code)) throw new Error('Code déjà utilisé');
         const id = crypto.randomUUID();
-        S.players[id] = { id, name, factionId: b.factionId || 'neutral', code: newCode(), points: 0, bonus: 0, alloc: {} };
+        S.players[id] = { id, name, factionId: b.factionId || 'neutral', code, points: 0, bonus: 0, alloc: {} };
         logEvt(`Joueur créé : ${name}`);
       } else if (route === 'POST /api/admin/grant') {
         const p = S.players[b.playerId];
@@ -179,7 +184,7 @@ http.createServer(async (req, res) => {
         const n = int(b.amount), pool = b.pool === 'bonus' ? 'bonus' : 'points';
         if (p[pool] + n < spent(p, pool)) throw new Error('Retrait supérieur aux points disponibles');
         p[pool] += n;
-        logEvt(`${n >= 0 ? '+' : ''}${n} ${pool === 'bonus' ? 'points bonus' : 'points'} pour ${p.name}`);
+        logEvt(`${n >= 0 ? '+' : ''}${n} ${pool === 'bonus' ? 'points bonus' : 'points'} pour ${p.name}`, p.id);
       } else if (route === 'POST /api/admin/faction') {
         const p = S.players[b.playerId];
         if (!p || !S.factions.some((f) => f.id === b.factionId)) throw new Error('Joueur ou faction inconnu');
@@ -190,7 +195,7 @@ http.createServer(async (req, res) => {
         if (b.deletePlayers) S.players = {};
         else for (const p of Object.values(S.players)) p.alloc = {};
         S.log = [];
-        logEvt(b.deletePlayers ? 'RESET complet (joueurs supprimés)' : 'RESET : investissements et gagnants effacés');
+        logEvt(b.deletePlayers ? 'RESET complet (joueurs supprimés)' : 'RESET : investissements et gagnants effacés', 'public');
       } else if (route === 'POST /api/admin/delete-player') {
         delete S.players[b.playerId];
       } else if (route === 'PUT /api/admin/config') {
@@ -207,7 +212,7 @@ http.createServer(async (req, res) => {
     const file = url.pathname === '/' ? 'index.html' : path.normalize(url.pathname).replace(/^([/\\])+/, '');
     const full = path.join(DIR, 'public', file);
     if (!full.startsWith(path.join(DIR, 'public')) || !fs.existsSync(full)) { res.writeHead(404); return res.end('404'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(full)] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(full)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     fs.createReadStream(full).pipe(res);
   } catch (e) {
     send(res, 400, { error: e.message });

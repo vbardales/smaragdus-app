@@ -19,6 +19,7 @@ const seed = () => ({
     { id: 'alpha', name: 'Alpha Légion', gauge: 'choice' },
     { id: 'loyalist', name: 'Loyaliste', gauge: 'loyalist' },
     { id: 'renegade', name: 'Renégat', gauge: 'renegade' },
+    { id: 'worldeaters', name: 'World Eaters', gauge: 'renegade', ability: 'wipe' },
     { id: 'neutral', name: 'Sans faction', gauge: null },
   ],
   targets: [
@@ -29,9 +30,10 @@ const seed = () => ({
     { id: 'unicornis', kind: 'planet', name: 'Unicornis', specialty: 'À définir', multiplier: 1, x: 44.9, y: 67.9 },
     { id: 'draco', kind: 'planet', name: 'Draco', specialty: 'À définir', multiplier: 1, x: 15, y: 59.6 },
     { id: 'leo', kind: 'planet', name: 'Leo I', specialty: 'À définir', multiplier: 1, x: 36.8, y: 38.6 },
-    { id: 'loyalist', kind: 'gauge', name: 'Jauge Loyaliste', specialty: '', multiplier: 1 },
-    { id: 'renegade', kind: 'gauge', name: 'Jauge Renégat', specialty: '', multiplier: 1 },
-  ].map((t) => ({ ...t, tiers: t.kind === 'planet'
+  ].flatMap((p) => [p, ...['loyalist', 'renegade'].map((side) => ({ // every planet owns one loyalist and one renegade gauge
+    id: `${p.id}-${side}`, kind: 'gauge', planetId: p.id, side,
+    name: `${p.name} · ${side === 'loyalist' ? 'Loyaliste' : 'Renégat'}`, specialty: '', multiplier: 1,
+  }))]).map((t) => ({ ...t, tiers: t.kind === 'planet'
     ? [tier(`${t.id}-1`, 10, 'Palier 1', 'Lot à définir'), tier(`${t.id}-2`, 25, 'Palier 2', 'Lot à définir', 'draw'), tier(`${t.id}-3`, 50, 'Palier 3 — la supercherie', 'Révélation à définir')]
     : [tier(`${t.id}-1`, 20, 'Palier 1', 'Lot à définir'), tier(`${t.id}-2`, 50, 'Palier 2', 'Lot à définir')] })),
   players: {}, // id -> {id,name,factionId,code,points,bonus,alloc:{targetId:n}}
@@ -40,7 +42,8 @@ const seed = () => ({
 
 let S;
 try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { S = seed(); }
-if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers))) S = seed(); // data saved by an older schema: start fresh
+// data saved by an older schema (no tiers, or global gauges without planetId): start fresh
+if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) S = seed();
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
@@ -68,7 +71,7 @@ function allocate(p, target, amount) {
   const pool = poolOf(target);
   const avail = (pool === 'bonus' ? p.bonus : p.points) - spent(p, pool);
   if (amount > avail) throw new Error(`Points insuffisants (${avail} dispo)`);
-  if (pool === 'bonus' && !allowedGauges(p).includes(target.id)) throw new Error('Jauge non autorisée pour cette faction');
+  if (pool === 'bonus' && !allowedGauges(p).includes(target.side)) throw new Error('Jauge non autorisée pour cette faction');
   const before = effTotal(target);
   p.alloc[target.id] = (p.alloc[target.id] || 0) + amount;
   const after = effTotal(target);
@@ -86,11 +89,30 @@ function allocate(p, target, amount) {
   }
 }
 
+// Faction ability "wipe" (World Eaters), once per player: destroys every other player's points
+// invested on one planet. The points are lost for good: the victims' quota shrinks by the wiped amount.
+// Tiers already won stay won.
+function wipe(p, target) {
+  if (faction(p)?.ability !== 'wipe') throw new Error('Ta faction n\'a pas ce pouvoir');
+  if (p.abilityUsed) throw new Error('Pouvoir déjà utilisé');
+  let total = 0;
+  for (const q of Object.values(S.players)) {
+    const n = q.alloc[target.id] || 0;
+    if (q === p || n === 0) continue;
+    q.points -= n; // alloc is cleared too, so the points still available to q are unchanged
+    delete q.alloc[target.id];
+    total += n;
+    logEvt(`Tes ${n} points sur ${target.name} ont été détruits par ${p.name}`, q.id);
+  }
+  p.abilityUsed = true;
+  logEvt(`${p.name} (World Eaters) brise les points des autres joueurs sur ${target.name} : ${total} points détruits`, 'public');
+}
+
 // ---------- views ----------
 function view(role, me) {
   const isAdmin = role === 'admin';
   const targets = S.targets.map((t) => ({
-    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, multiplier: t.multiplier, x: t.x, y: t.y,
+    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
     total: effTotal(t), mine: me ? me.alloc[t.id] || 0 : 0,
     tiers: t.tiers.map((pa) => ({
       id: pa.id, threshold: pa.threshold, label: pa.label, mode: pa.mode, winnerId: pa.winnerId, winnerName: pa.winnerName,
@@ -99,10 +121,10 @@ function view(role, me) {
   }));
   const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id)).slice(0, 40).map(({ t, text }) => ({ t, text }));
   const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
-  if (me) out.me = { id: me.id, name: me.name, factionId: me.factionId, points: me.points - spent(me, 'points'), bonus: me.bonus - spent(me, 'bonus'), gauges: allowedGauges(me) };
+  if (me) out.me = { id: me.id, name: me.name, factionId: me.factionId, points: me.points - spent(me, 'points'), bonus: me.bonus - spent(me, 'bonus'), gauges: allowedGauges(me), ability: faction(me)?.ability === 'wipe' && !me.abilityUsed ? 'wipe' : null };
   if (isAdmin) {
     out.players = Object.values(S.players).map((p) => ({ ...p, left: p.points - spent(p, 'points'), bonusLeft: p.bonus - spent(p, 'bonus') }));
-    out.config = { factions: S.factions, targets: S.targets.map(({ id, kind, name, specialty, multiplier, x, y, tiers }) => ({ id, kind, name, specialty, multiplier, x, y, tiers: tiers.map(({ id, threshold, label, reward, mode }) => ({ id, threshold, label, reward, mode })) })) };
+    out.config = { factions: S.factions, targets: S.targets.map(({ id, kind, name, specialty, multiplier, x, y, planetId, side, tiers }) => ({ id, kind, name, specialty, multiplier, x, y, planetId, side, tiers: tiers.map(({ id, threshold, label, reward, mode }) => ({ id, threshold, label, reward, mode })) })) };
   }
   return out;
 }
@@ -130,13 +152,17 @@ function validateConfig(c) {
     if (!t.id || ids.has(t.id)) throw new Error(`id cible manquant ou dupliqué: ${t.id}`);
     ids.add(t.id);
     if (!['planet', 'gauge'].includes(t.kind)) throw new Error(`kind invalide: ${t.id}`);
+    if (t.kind === 'gauge' && (!['loyalist', 'renegade'].includes(t.side) || !c.targets.some((x) => x.id === t.planetId && x.kind === 'planet'))) throw new Error(`jauge invalide (side, planetId): ${t.id}`);
     if (!Array.isArray(t.tiers)) throw new Error(`tiers[] requis: ${t.id}`);
     for (const pa of t.tiers) {
       if (!pa.id || !(pa.threshold > 0)) throw new Error(`palier invalide dans ${t.id}`);
       if (!['crosser', 'draw'].includes(pa.mode)) throw new Error(`mode invalide (crosser|draw): ${pa.id}`);
     }
   }
-  for (const f of c.factions) if (!f.id || ![null, 'loyalist', 'renegade', 'choice'].includes(f.gauge)) throw new Error(`faction invalide: ${f.id}`);
+  for (const f of c.factions) {
+    if (!f.id || ![null, 'loyalist', 'renegade', 'choice'].includes(f.gauge)) throw new Error(`faction invalide: ${f.id}`);
+    if (f.ability != null && f.ability !== 'wipe') throw new Error(`pouvoir invalide (wipe): ${f.id}`);
+  }
 }
 
 async function body(req) {
@@ -167,6 +193,12 @@ http.createServer(async (req, res) => {
         const t = S.targets.find((x) => x.id === b.targetId);
         if (!t) throw new Error('Cible inconnue');
         allocate(p, t, int(b.amount));
+      } else if (route === 'POST /api/ability') {
+        const p = a.role === 'admin' ? S.players[b.playerId] : a.me;
+        if (!p) throw new Error('Joueur inconnu');
+        const t = S.targets.find((x) => x.id === b.targetId);
+        if (!t || t.kind !== 'planet') throw new Error('Planète inconnue');
+        wipe(p, t);
       } else if (a.role !== 'admin') {
         return send(res, 403, { error: 'Admin requis' });
       } else if (route === 'POST /api/admin/player') {
@@ -176,7 +208,7 @@ http.createServer(async (req, res) => {
         if (!/^[A-Za-z0-9_-]{4,32}$/.test(code)) throw new Error('Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)');
         if (code === ADMIN_PASSWORD || Object.values(S.players).some((q) => q.code === code)) throw new Error('Code déjà utilisé');
         const id = crypto.randomUUID();
-        S.players[id] = { id, name, factionId: b.factionId || 'neutral', code, points: 0, bonus: 0, alloc: {} };
+        S.players[id] = { id, name, factionId: b.factionId || 'neutral', code, points: 0, bonus: 0, alloc: {}, abilityUsed: false };
         logEvt(`Joueur créé : ${name}`);
       } else if (route === 'POST /api/admin/grant') {
         const p = S.players[b.playerId];
@@ -193,7 +225,7 @@ http.createServer(async (req, res) => {
         // Reset game: investments, winners, log. Config is kept.
         for (const t of S.targets) for (const pa of t.tiers) pa.winnerId = pa.winnerName = null;
         if (b.deletePlayers) S.players = {};
-        else for (const p of Object.values(S.players)) p.alloc = {};
+        else for (const p of Object.values(S.players)) { p.alloc = {}; p.abilityUsed = false; }
         S.log = [];
         logEvt(b.deletePlayers ? 'RESET complet (joueurs supprimés)' : 'RESET : investissements et gagnants effacés', 'public');
       } else if (route === 'POST /api/admin/delete-player') {

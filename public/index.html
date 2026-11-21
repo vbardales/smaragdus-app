@@ -33,6 +33,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px so
 textarea{width:100%;height:340px;font:12px monospace}
 .gauges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .hide{display:none}
+.ly{color:#e0c040}.rn{color:#e0605f}
+.gauge.loy .bar i{background:#e0c040}.gauge.ren .bar i{background:#e0605f}
+.gl{font-size:12px}
 /* map-only window (projector view): ?view=map */
 body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
 body.mapview main{display:block;padding:0}
@@ -56,8 +59,7 @@ body.mapview .spot{pointer-events:none}
 <main id="app" class="hide">
   <section>
     <div id="map"></div>
-    <div class="gauges" id="gauges"></div>
-    <div class="panel" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
+        <div class="panel" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
   </section>
   <aside>
     <div class="panel" id="side"><p class="dim">Clique sur une planète.</p></div>
@@ -96,6 +98,8 @@ async function refresh() {
   render();
 }
 
+const gaugeOf = (planet, side) => state.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
+
 function nextTier(t) { return t.tiers.filter((p) => !p.winnerId).sort((a, b) => a.threshold - b.threshold)[0]; }
 
 function render() {
@@ -107,45 +111,57 @@ function render() {
 
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
-    const np = nextTier(t);
+    const np = nextTier(t), gl = gaugeOf(t, 'loyalist'), gr = gaugeOf(t, 'renegade');
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
-      h('span', {}, `${t.name} · ${t.total}${np ? '/' + np.threshold : ''}`)));
-  }
-  const g = $('#gauges'); g.replaceChildren();
-  for (const t of s.targets.filter((t) => t.kind === 'gauge')) {
-    const np = nextTier(t), max = np ? np.threshold : t.total || 1;
-    g.append(h('div', { class: 'panel' }, h('b', {}, `${t.name} : ${t.total}${np ? ' / ' + np.threshold : ''}`),
-      h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / max * 100)}%` })),
-      h('button', { onclick: () => { selected = t.id; render(); } }, 'Détails')));
+      h('span', {}, `${t.name} · ${t.total}${np ? '/' + np.threshold : ''}`),
+      h('span', { class: 'gl' }, h('b', { class: 'ly' }, gl?.total ?? 0), ' · ', h('b', { class: 'rn' }, gr?.total ?? 0))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
   renderSide(); renderAdmin();
+}
+
+// tier list of a target (planet or gauge)
+function tierBlocks(t) {
+  return t.tiers.slice().sort((a, b) => a.threshold - b.threshold).map((p) => {
+    const won = !!p.winnerId;
+    return h('div', { class: 'tier' + (won ? ' won' : '') },
+      h('b', {}, `${p.threshold} — ${p.label}`), h('span', { class: 'dim' }, p.mode === 'draw' ? ' (tirage pondéré)' : ' (1er à franchir)'),
+      h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / p.threshold * 100)}%` })),
+      won ? h('div', {}, `Remporté par ${p.winnerName}`) : null,
+      p.reward ? h('div', { class: 'dim' }, `Lot : ${p.reward}`) : null);
+  });
+}
+
+// amount input + invest button for a target; the admin picks the player
+function investRow(t, sel) {
+  const bonus = t.kind === 'gauge';
+  const amt = h('input', { type: 'number', min: 1, value: 1 });
+  const avail = state.me ? (bonus ? state.me.bonus : state.me.points) : null;
+  return [h('div', { class: 'row', style: 'margin-top:6px' }, amt,
+    h('button', { onclick: () => act('POST', '/api/allocate', { targetId: t.id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
+    avail != null ? h('p', { class: 'dim' }, `Disponible : ${avail} ${bonus ? 'points bonus' : 'points'}`) : null];
 }
 
 function renderSide() {
   const side = $('#side'), s = state, t = s.targets.find((x) => x.id === selected);
   if (!t) return;
   const isAdmin = s.role === 'admin';
-  const pool = t.kind === 'gauge' ? 'bonus' : 'points';
+  const sel = isAdmin ? h('select', { style: 'margin-bottom:6px' }, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
   side.replaceChildren(h('h2', {}, t.name));
-  if (t.specialty) side.append(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
-  side.append(h('p', {}, `Total investi : ${t.total}`, s.me ? ` · dont toi : ${t.mine}` : ''));
-  for (const p of t.tiers.slice().sort((a, b) => a.threshold - b.threshold)) {
-    const won = !!p.winnerId;
-    side.append(h('div', { class: 'tier' + (won ? ' won' : '') },
-      h('b', {}, `${p.threshold} — ${p.label}`), h('span', { class: 'dim' }, p.mode === 'draw' ? ' (tirage pondéré)' : ' (1er à franchir)'),
-      h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / p.threshold * 100)}%` })),
-      won ? h('div', {}, `Remporté par ${p.winnerName}`) : null,
-      p.reward ? h('div', { class: 'dim' }, `Lot : ${p.reward}`) : null));
+  const add = (...xs) => side.append(...xs.flat().filter(Boolean)); // flatten arrays, skip null
+  if (t.specialty) add(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
+  add(h('p', {}, `Total investi : ${t.total}`, s.me ? ` · dont toi : ${t.mine}` : ''), sel, tierBlocks(t), investRow(t, sel));
+  if (isAdmin || s.me?.ability === 'wipe') {
+    add(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points des autres joueurs sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, 'Briser les points des autres (1 fois)'));
   }
-  const allowed = isAdmin || t.kind === 'planet' || s.me?.gauges.includes(t.id);
-  if (!allowed) { side.append(h('p', { class: 'dim' }, 'Cette jauge n\'est pas accessible à ta faction.')); return; }
-  const avail = s.me ? (pool === 'bonus' ? s.me.bonus : s.me.points) : 0;
-  const amt = h('input', { type: 'number', min: 1, value: 1 });
-  const sel = isAdmin ? h('select', {}, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
-  side.append(h('div', { class: 'row', style: 'margin-top:10px' }, sel, amt,
-    h('button', { onclick: () => act('POST', '/api/allocate', { targetId: t.id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
-    s.me ? h('p', { class: 'dim' }, `Disponible : ${avail} ${pool === 'bonus' ? 'points bonus' : 'points'}`) : null);
+  for (const side_ of ['loyalist', 'renegade']) {
+    const g = gaugeOf(t, side_);
+    if (!g) continue;
+    const allowed = isAdmin || s.me?.gauges.includes(side_);
+    add(h('h3', { class: side_ === 'loyalist' ? 'ly' : 'rn', style: 'margin-top:16px' }, `Jauge ${side_ === 'loyalist' ? 'loyaliste' : 'renégate'} : ${g.total}`),
+      h('div', { class: 'gauge ' + (side_ === 'loyalist' ? 'loy' : 'ren') }, tierBlocks(g)),
+      allowed ? investRow(g, sel) : h('p', { class: 'dim' }, 'Jauge inaccessible à ta faction.'));
+  }
 }
 
 function renderAdmin() {

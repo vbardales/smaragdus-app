@@ -6,7 +6,9 @@
 <title>Système Smaragdus</title>
 <link rel="icon" href="data:,">
 <style>
-:root{--bg:#14110F;--panel:#1b1612;--line:#4a3d2a;--gold:#E09F3E;--cyan:#7AD7F0;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
+:root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--cyan:#7AD7F0;--alert:#c9a96a;--input:#0e0c11;--hover:#221c28;--rule:#2a2330;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
+/* ambiance: once a player has opened a message (and for the admin) */
+body.amb{--bg:#14110F;--panel:#1b1612;--gold:#E09F3E;--alert:#7AD7F0;--input:var(--input);--hover:var(--hover);--rule:var(--rule)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Georgia,serif}
 h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
@@ -19,7 +21,7 @@ body.isadmin #side{margin-top:12px}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
 dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(360px,90vw)}
-.toast{background:var(--panel);border:1px solid var(--cyan);color:var(--text);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
+.toast{background:var(--panel);border:1px solid var(--alert);color:var(--text);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
 #players td:last-child{white-space:nowrap}#players input[type=number]{width:64px}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
 #map{position:relative;aspect-ratio:3/2;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
@@ -28,14 +30,14 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
 .bar i{display:block;height:100%;background:var(--gold)}
-.tier{padding:6px 0;border-top:1px solid #3a2f22}
+.tier{padding:6px 0;border-top:1px solid var(--rule)}
 .tier.won b{color:var(--green)}
 .dim{color:var(--dim);font-size:13px}
-button,input,select,textarea{background:#100d0a;color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
-button{cursor:pointer;color:var(--gold)}button:hover{background:#2a211a}
+button,input,select,textarea{background:var(--input);color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
+button{cursor:pointer;color:var(--gold)}button:hover{background:var(--hover)}
 input[type=number]{width:80px}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px solid #3a2f22;padding:4px;text-align:left}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px solid var(--rule);padding:4px;text-align:left}
 #log{max-height:220px;overflow:auto;font-size:13px}
 #err{color:var(--red);min-height:1.2em}
 textarea{width:100%;height:340px;font:12px monospace}
@@ -49,7 +51,7 @@ textarea{width:100%;height:340px;font:12px monospace}
 .sb.zero{background:#666}
 .bonus{color:var(--gold)}
 /* ambiance: CRT scanlines and grain, interference accents */
-body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.55;
+body.amb::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.55;
   background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0,rgba(0,0,0,.22) 1px,transparent 1px,transparent 3px),
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .75 0 0 0 0 .4 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
 body.mapview::after{display:none}
@@ -63,16 +65,16 @@ body.glitch::before{content:"";position:fixed;inset:0;pointer-events:none;z-inde
 #peek{position:absolute;right:3px;top:50%;transform:translateY(-50%);border:0;background:none;padding:4px;color:var(--dim);display:flex;line-height:0}#peek:hover{background:none;color:var(--gold)}
 input::-ms-reveal,input::-ms-clear{display:none}
 /* inbox: mail list and reader */
-#inbox .list{max-height:70vh;overflow-y:auto;border:1px solid #3a2f22}
-.mail{display:grid;grid-template-columns:10px 1fr auto;gap:1px 8px;padding:8px 10px;border-bottom:1px solid #3a2f22;cursor:pointer;background:var(--panel)}
-.mail:last-child{border-bottom:0}.mail:hover,.mail:focus-visible{background:#2a211a;outline:none}
+#inbox .list{max-height:70vh;overflow-y:auto;border:1px solid var(--rule)}
+.mail{display:grid;grid-template-columns:10px 1fr auto;gap:1px 8px;padding:8px 10px;border-bottom:1px solid var(--rule);cursor:pointer;background:var(--panel)}
+.mail:last-child{border-bottom:0}.mail:hover,.mail:focus-visible{background:var(--hover);outline:none}
 .mail .dot{grid-row:1/4;width:8px;height:8px;border-radius:50%;margin-top:6px}.mail.new .dot{background:var(--green)}
 .mail .from{font-size:12px;color:var(--dim);font-variant:small-caps;letter-spacing:.04em}.mail .date{font-size:12px;color:var(--dim)}
 .mail .subject{grid-column:2/4;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mail.new .subject{color:var(--gold);font-weight:bold}
 .mail .preview{grid-column:2/4;color:var(--dim);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pill{background:var(--green);color:#06210f;padding:0 7px;border-radius:8px;font-size:11px;font-weight:bold}.pill.gold{background:var(--gold)}
 dialog.reader{width:min(720px,94vw);max-height:88vh;overflow:auto}
-.reader .head{border-bottom:1px solid #3a2f22;padding-bottom:8px;margin-bottom:10px}.reader .meta{font-size:13px;color:var(--dim)}.reader h2{margin:6px 0 2px}
+.reader .head{border-bottom:1px solid var(--rule);padding-bottom:8px;margin-bottom:10px}.reader .meta{font-size:13px;color:var(--dim)}.reader h2{margin:6px 0 2px}
 .reader .fluff{white-space:pre-wrap;margin:10px 0;padding-left:10px;border-left:2px solid var(--line);font-size:14.5px;line-height:1.55}
 .reader img{max-width:100%;display:block;margin:8px 0;border:1px solid var(--line)}
 .reader .box{border:1px solid var(--gold);padding:6px 8px;margin:8px 0;font-size:14px}.reader .box b{color:var(--gold)}
@@ -85,9 +87,9 @@ dialog.reader.fx-solar{border-color:#E09F3E99;box-shadow:0 0 40px #E09F3E26,inse
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .75 0 0 0 0 .4 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),var(--panel)}
 dialog.reader.fx-solar.mini{animation:glitchmini .26s steps(1,end)}
 dialog.reader.fx-solar::backdrop{background:radial-gradient(circle at 50% 40%,rgba(58,29,10,.8),rgba(0,0,0,.88));animation:flicker 5s infinite}
-.mail.fx-solar{border-left:2px solid var(--cyan)}
+body.amb .mail.fx-solar{border-left:2px solid var(--cyan)}
 @media(prefers-reduced-motion:reduce){dialog.reader.fx-solar,dialog.reader.fx-solar.mini,dialog.reader.fx-solar::backdrop{animation:none}}
-details.ed{border-top:1px solid #3a2f22;padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
+details.ed{border-top:1px solid var(--rule);padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
 .ed textarea{height:64px;font:13px Georgia,serif;margin-top:4px}.ed input{margin-top:4px}
 .spot .nat{font-size:10px;color:var(--dim);max-width:120px;text-align:center;white-space:normal;line-height:1.15}
 .spot .mine{color:#9fe3a0;font-size:12px}
@@ -208,13 +210,14 @@ function render() {
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
-      h('span', {}, t.name, s.me?.planetBonus?.planetId === t.id ? ' ★' : ''),
+      h('span', {}, t.name),
       t.nature ? h('span', { class: 'nat' }, t.nature) : null,
       s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet
       h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
   document.body.classList.toggle('isadmin', isAdmin);
+  applyAmbiance();
   const sidePanel = $('#side'), center = $('#app section');
   if (isAdmin && sidePanel.parentNode !== center) center.insertBefore(sidePanel, $('#players')); // admin: planet panel in the center
   else if (!isAdmin && sidePanel.parentNode === center) $('#app aside').prepend(sidePanel);
@@ -255,10 +258,9 @@ function renderSide() {
   const sel = isAdmin ? h('select', { style: 'margin-bottom:6px' }, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
   side.replaceChildren(h('h2', {}, t.name));
   const add = (...xs) => side.append(...xs.flat().filter(Boolean)); // flatten arrays, skip null
-  if (s.me?.planetBonus?.planetId === t.id) add(h('p', { class: 'bonus' }, `★ Bonus de légion : tes points investis ici comptent +${s.me.planetBonus.pct} %.`));
   if (t.nature) add(h('p', {}, h('b', {}, 'Nature : '), t.nature));
   if (t.specialty) add(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
-  add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}${s.me.planetBonus?.planetId === t.id && t.mine ? ` (compte pour ${+(t.mine * (1 + s.me.planetBonus.pct / 100)).toFixed(2)} avec ton bonus)` : ''}` : ''),
+  add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
     sel, tierBlocks(t), investRow(t, sel));
   if (isAdmin || s.me?.wipe) {
     add(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Détruire les points des ${SIDE[s.me.wipe]} (1 fois)`));
@@ -286,8 +288,16 @@ function renderMe() {
     h('p', {}, h('b', {}, `${m.points} points`), ' à investir'),
     f ? h('p', {}, h('b', {}, 'Faction : '), f) : null,
     m.army ? h('p', {}, h('b', {}, 'Légion : '), m.army) : null,
-    m.planetBonus ? h('p', { class: 'bonus' }, h('b', {}, '★ Bonus de légion : '), `${m.planetBonus.planetName} +${m.planetBonus.pct} % sur tes points investis`) : (m.army ? h('p', { class: 'dim' }, 'Ta légion n\'a pas de bonus de planète.') : null),
     m.wipe ? h('p', { class: 'dim' }, `Pouvoir disponible : détruire les points des ${SIDE[m.wipe]} sur une planète (1 fois).`) : null].filter(Boolean));
+}
+
+// ---------- ambiance ----------
+// Players get the warm ambiance (palette, scanlines, glitch) once they have opened a message; the admin always has it.
+const ambKey = () => `smg-amb:${state.me?.id}`;
+function applyAmbiance() {
+  let on = state.role === 'admin';
+  try { on ||= localStorage.getItem(ambKey()) === '1'; } catch {}
+  document.body.classList.toggle('amb', on);
 }
 
 // ---------- inbox (player) ----------
@@ -300,6 +310,7 @@ function fluffNodes(text) {
 }
 // a short screen glitch when a new Leo archive arrives
 function glitch() {
+  if (!document.body.classList.contains('amb')) return; // the ambiance only starts once a message has been opened
   document.body.classList.add('glitch');
   setTimeout(() => document.body.classList.remove('glitch'), 450);
 }
@@ -336,6 +347,8 @@ function openMail(i) {
   const list = state.inbox, m = list[i];
   if (!m) return;
   markRead([m]); renderInbox();
+  try { localStorage.setItem(ambKey(), '1'); } catch {}
+  applyAmbiance();
   const dlg = h('dialog', { class: 'reader' + (m.fx ? ' fx-' + m.fx : '') });
   const go = (j) => { dlg.close(); openMail(j); };
   dlg.append(...[
@@ -411,12 +424,12 @@ function buildEditor() {
     return e;
   };
   const armies = h('table', {}, (draft.armies || []).map((a) => h('tr', {}, h('td', {}, a.name), h('td', {}, planetSel(a)),
-    h('td', { style: 'white-space:nowrap' }, a.bonus ? [num(a.bonus, 'pct', { style: 'width:56px' }), ' %'] : ''), h('td', {}, wipeSel(a)))));
+    h('td', {}, wipeSel(a)))));
   const json = h('textarea', { style: 'height:240px;font:12px monospace' }); json.value = JSON.stringify(draft, null, 1);
   editorEl.replaceChildren(h('h3', { style: 'margin-top:12px' }, 'Seuils des paliers'),
     h('p', { class: 'dim' }, 'Points à atteindre par un camp pour remporter chaque palier : le premier camp (loyalistes ou renégats) à atteindre le seuil gagne le palier (✓ = déjà remporté). Un palier débloqué le reste ; baisser un seuil sous le total actuel le remporte à l\'enregistrement.'),
     grid, h('h3', { style: 'margin-top:12px' }, 'Contenu des paliers'), ...details,
-    h('h3', { style: 'margin-top:12px' }, 'Bonus des légions'), h('p', { class: 'dim' }, 'Bonus en % sur les points investis par le joueur sur la planète choisie, et pouvoir de destruction (1 fois par joueur).'), armies,
+    h('h3', { style: 'margin-top:12px' }, 'Bonus des légions'), h('p', { class: 'dim' }, '+25 % sur les points investis par le joueur sur la planète choisie, et pouvoir de destruction (1 fois par joueur).'), armies,
     h('div', { class: 'row', style: 'margin-top:8px' }, save, h('button', { onclick: () => { dirty = false; draft = structuredClone(state.config); buildEditor(); } }, 'Annuler les modifications')),
     h('details', { class: 'ed' }, h('summary', {}, 'JSON brut (avancé)'), json,
       h('button', { onclick: () => { try { draft = JSON.parse(json.value); touch(); buildEditor(); } catch (e) { $('#err').textContent = e.message; } } }, 'Charger dans l\'éditeur')));

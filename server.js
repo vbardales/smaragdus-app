@@ -256,7 +256,7 @@ function view(role, me) {
   const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id)).slice(0, 40).map(({ t, text }) => ({ t, text }));
   const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
   if (me) {
-    out.me = { id: me.id, name: me.name, fluffName: me.fluffName || null, factionId: me.factionId, points: me.points - spent(me), gauges: allowedGauges(me), army: me.army || null, planetBonus: army(me)?.bonus ? { planetId: army(me).bonus.planetId, planetName: S.targets.find((t) => t.id === army(me).bonus.planetId)?.name, pct: army(me).bonus.pct } : null, wipe: !me.abilityUsed ? wipeSide(me) : null };
+    out.me = { id: me.id, name: me.name, fluffName: me.fluffName || null, factionId: me.factionId, points: me.points - spent(me), gauges: allowedGauges(me), army: me.army || null, wipe: !me.abilityUsed ? wipeSide(me) : null };
     // inbox: reports are read live from the config, so an edit on the day also fixes reports already delivered
     out.inbox = me.inbox.map((m) => {
       const t = S.targets.find((x) => x.id === m.targetId), pa = t?.tiers.find((x) => x.id === m.tierId);

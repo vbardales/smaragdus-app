@@ -6,7 +6,7 @@
 <title>Système Smaragdus</title>
 <link rel="icon" href="data:,">
 <style>
-:root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
+:root{--bg:#14110F;--panel:#1b1612;--line:#4a3d2a;--gold:#E09F3E;--cyan:#7AD7F0;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Georgia,serif}
 h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
@@ -19,7 +19,7 @@ body.isadmin #side{margin-top:12px}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
 dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(360px,90vw)}
-.toast{background:var(--panel);border:1px solid var(--gold);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
+.toast{background:var(--panel);border:1px solid var(--cyan);color:var(--text);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
 #players td:last-child{white-space:nowrap}#players input[type=number]{width:64px}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
 #map{position:relative;aspect-ratio:3/2;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
@@ -28,14 +28,14 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
 .bar i{display:block;height:100%;background:var(--gold)}
-.tier{padding:6px 0;border-top:1px solid #2a2330}
+.tier{padding:6px 0;border-top:1px solid #3a2f22}
 .tier.won b{color:var(--green)}
 .dim{color:var(--dim);font-size:13px}
-button,input,select,textarea{background:#0e0c11;color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
-button{cursor:pointer;color:var(--gold)}button:hover{background:#221c28}
+button,input,select,textarea{background:#100d0a;color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
+button{cursor:pointer;color:var(--gold)}button:hover{background:#2a211a}
 input[type=number]{width:80px}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px solid #2a2330;padding:4px;text-align:left}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px solid #3a2f22;padding:4px;text-align:left}
 #log{max-height:220px;overflow:auto;font-size:13px}
 #err{color:var(--red);min-height:1.2em}
 textarea{width:100%;height:340px;font:12px monospace}
@@ -48,22 +48,48 @@ textarea{width:100%;height:340px;font:12px monospace}
 .sb u{display:block;height:100%;background:#e0c040}
 .sb.zero{background:#666}
 .bonus{color:var(--gold)}
-/* inbox */
-#inbox .list{max-height:70vh;overflow-y:auto;padding-right:2px}
-.msg{background:#1c1822;border:1px solid #2a2330;border-left:3px solid var(--line);margin:8px 0;padding:8px 10px}
-.msg.new{border-left-color:var(--green)}
-.msg summary{cursor:pointer;list-style:none}.msg summary::-webkit-details-marker{display:none}
-.msg .meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim);font-variant:small-caps;letter-spacing:.04em}
-.msg .pill{background:var(--green);color:#06210f;padding:0 7px;border-radius:8px;font-size:11px;font-variant:normal;font-weight:bold}
-.msg .title{display:block;color:var(--gold);font-size:15px;margin-top:2px}
-.msg .preview{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--dim);font-size:13px;margin-top:2px}
-.msg[open] .preview{display:none}
-.msg .fluff{white-space:pre-wrap;margin:10px 0;padding-left:10px;border-left:2px solid var(--line);font-size:14.5px;line-height:1.55}
-.msg img{max-width:100%;display:block;margin:8px 0;border:1px solid var(--line)}
-.msg .box{border:1px solid var(--gold);padding:6px 8px;margin:8px 0;font-size:14px}.msg .box b{color:var(--gold)}
-.msg .camp{margin:8px 0 0;font-size:13px}.camp-loyalist{color:#e0c040}.camp-renegade{color:#e0605f}
-details.ed{border-top:1px solid #2a2330;padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
+/* ambiance: CRT scanlines and grain, interference accents */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.55;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0,rgba(0,0,0,.22) 1px,transparent 1px,transparent 3px),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .75 0 0 0 0 .4 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+body.mapview::after{display:none}
+.vox{font-family:Consolas,'Courier New',monospace;font-size:13px;color:var(--gold);margin:3px 0;line-height:1.45}
+.noise{color:var(--cyan);text-shadow:0 0 6px #7AD7F055}
+@keyframes glitch{0%{transform:translate(0)}15%{transform:translate(-4px,1px);filter:hue-rotate(60deg) saturate(1.6)}30%{transform:translate(3px,-1px);clip-path:inset(0 0 55% 0)}45%{transform:translate(-2px,0);clip-path:inset(45% 0 0 0)}60%{transform:translate(4px,1px);filter:hue-rotate(-40deg)}80%{transform:translate(-1px,0)}100%{transform:none;filter:none;clip-path:none}}
+body.glitch #app{animation:glitch .42s steps(1,end)}
+body.glitch::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:59;background:rgba(122,215,240,.07)}
+@media(prefers-reduced-motion:reduce){body.glitch #app{animation:none}body.glitch::before{display:none}}
+.pw{position:relative;display:inline-flex}.pw input{padding-right:34px}
+#peek{position:absolute;right:3px;top:50%;transform:translateY(-50%);border:0;background:none;padding:4px;color:var(--dim);display:flex;line-height:0}#peek:hover{background:none;color:var(--gold)}
+input::-ms-reveal,input::-ms-clear{display:none}
+/* inbox: mail list and reader */
+#inbox .list{max-height:70vh;overflow-y:auto;border:1px solid #3a2f22}
+.mail{display:grid;grid-template-columns:10px 1fr auto;gap:1px 8px;padding:8px 10px;border-bottom:1px solid #3a2f22;cursor:pointer;background:var(--panel)}
+.mail:last-child{border-bottom:0}.mail:hover,.mail:focus-visible{background:#2a211a;outline:none}
+.mail .dot{grid-row:1/4;width:8px;height:8px;border-radius:50%;margin-top:6px}.mail.new .dot{background:var(--green)}
+.mail .from{font-size:12px;color:var(--dim);font-variant:small-caps;letter-spacing:.04em}.mail .date{font-size:12px;color:var(--dim)}
+.mail .subject{grid-column:2/4;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mail.new .subject{color:var(--gold);font-weight:bold}
+.mail .preview{grid-column:2/4;color:var(--dim);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{background:var(--green);color:#06210f;padding:0 7px;border-radius:8px;font-size:11px;font-weight:bold}.pill.gold{background:var(--gold)}
+dialog.reader{width:min(720px,94vw);max-height:88vh;overflow:auto}
+.reader .head{border-bottom:1px solid #3a2f22;padding-bottom:8px;margin-bottom:10px}.reader .meta{font-size:13px;color:var(--dim)}.reader h2{margin:6px 0 2px}
+.reader .fluff{white-space:pre-wrap;margin:10px 0;padding-left:10px;border-left:2px solid var(--line);font-size:14.5px;line-height:1.55}
+.reader img{max-width:100%;display:block;margin:8px 0;border:1px solid var(--line)}
+.reader .box{border:1px solid var(--gold);padding:6px 8px;margin:8px 0;font-size:14px}.reader .box b{color:var(--gold)}
+.camp-loyalist{color:#e0c040}.camp-renegade{color:#e0605f}
+/* planet effect "solar" (Leo): the effects stay on the messages of that planet while they are read */
+@keyframes flicker{0%,90%,100%{opacity:1}92%{opacity:.8}94%{opacity:1}97%{opacity:.88}}
+@keyframes glitchmini{0%{transform:translate(0)}25%{transform:translate(-3px,1px);filter:hue-rotate(50deg) saturate(1.5)}50%{transform:translate(3px,-1px);clip-path:inset(0 0 60% 0)}75%{transform:translate(-2px,0);clip-path:inset(50% 0 0 0)}100%{transform:none;filter:none;clip-path:none}}
+dialog.reader.fx-solar{border-color:#E09F3E99;box-shadow:0 0 40px #E09F3E26,inset 0 0 70px #E09F3E14;text-shadow:0 0 2px #E09F3E44;animation:flicker 6s infinite;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.28) 0,rgba(0,0,0,.28) 1px,transparent 1px,transparent 3px),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .75 0 0 0 0 .4 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),var(--panel)}
+dialog.reader.fx-solar.mini{animation:glitchmini .26s steps(1,end)}
+dialog.reader.fx-solar::backdrop{background:radial-gradient(circle at 50% 40%,rgba(58,29,10,.8),rgba(0,0,0,.88));animation:flicker 5s infinite}
+.mail.fx-solar{border-left:2px solid var(--cyan)}
+@media(prefers-reduced-motion:reduce){dialog.reader.fx-solar,dialog.reader.fx-solar.mini,dialog.reader.fx-solar::backdrop{animation:none}}
+details.ed{border-top:1px solid #3a2f22;padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
 .ed textarea{height:64px;font:13px Georgia,serif;margin-top:4px}.ed input{margin-top:4px}
+.spot .nat{font-size:10px;color:var(--dim);max-width:120px;text-align:center;white-space:normal;line-height:1.15}
 .spot .mine{color:#9fe3a0;font-size:12px}
 /* map-only window (projector view): ?view=map */
 body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
@@ -81,7 +107,7 @@ body.mapview .spot{pointer-events:none}
 <div id="login" class="panel" style="max-width:420px;margin:40px auto">
   <h2>Identification</h2>
   <p class="dim">Entre ton code joueur (ou le mot de passe admin).</p>
-  <div class="row"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="peek" type="button" title="Afficher ou masquer le code">Afficher</button><button id="go">Entrer</button></div>
+  <div class="row"><div class="pw"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="peek" type="button" aria-label="Afficher le code" aria-pressed="false" title="Afficher le code"></button></div><button id="go">Entrer</button></div>
   <p id="lerr" style="color:var(--red)"></p>
 </div>
 
@@ -134,7 +160,11 @@ function toast(text, onclick) {
 function announce(s) {
   const key = (m) => `${m.targetId}/${m.tierId}`;
   if (knownInbox) {
-    for (const m of s.inbox || []) if (!knownInbox.has(key(m))) toast(`Nouveau rapport : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
+    for (const m of s.inbox || []) {
+      if (knownInbox.has(key(m))) continue;
+      toast(`Nouveau rapport : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
+      if (m.fx && !m.teaser) glitch();
+    }
     for (const l of s.log) if (/^(PALIER|LOT|Premier contact)/.test(l.text) && !knownLog.has(`${l.t}|${l.text}`)) toast(l.text);
   }
   knownInbox = new Set((s.inbox || []).map(key));
@@ -179,6 +209,7 @@ function render() {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
       h('span', {}, t.name, s.me?.planetBonus?.planetId === t.id ? ' ★' : ''),
+      t.nature ? h('span', { class: 'nat' }, t.nature) : null,
       s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet
       h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
@@ -227,7 +258,7 @@ function renderSide() {
   if (s.me?.planetBonus?.planetId === t.id) add(h('p', { class: 'bonus' }, `★ Bonus de légion : tes points investis ici comptent +${s.me.planetBonus.pct} %.`));
   if (t.nature) add(h('p', {}, h('b', {}, 'Nature : '), t.nature));
   if (t.specialty) add(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
-  add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
+  add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}${s.me.planetBonus?.planetId === t.id && t.mine ? ` (compte pour ${+(t.mine * (1 + s.me.planetBonus.pct / 100)).toFixed(2)} avec ton bonus)` : ''}` : ''),
     sel, tierBlocks(t), investRow(t, sel));
   if (isAdmin || s.me?.wipe) {
     add(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Détruire les points des ${SIDE[s.me.wipe]} (1 fois)`));
@@ -252,7 +283,6 @@ function renderMe() {
   box.classList.remove('hide');
   const f = state.factions.find((x) => x.id === m.factionId)?.name;
   box.replaceChildren(...[h('h2', { style: 'font-size:1.05em;line-height:1.3' }, m.fluffName || m.name),
-    m.fluffName ? h('p', { class: 'dim' }, m.name) : null,
     h('p', {}, h('b', {}, `${m.points} points`), ' à investir'),
     f ? h('p', {}, h('b', {}, 'Faction : '), f) : null,
     m.army ? h('p', {}, h('b', {}, 'Légion : '), m.army) : null,
@@ -261,42 +291,73 @@ function renderMe() {
 }
 
 // ---------- inbox (player) ----------
+// Transcript lines ([hh:mm:ss] ... or ++ ... ++) are shown as a vox log; [++ NOISE ++] marks interference.
+function fluffNodes(text) {
+  return text.split('\n').map((line) => {
+    if (!/^(\[\d\d:\d\d:\d\d\]|\+\+)/.test(line)) return h('div', {}, line || '\u00a0');
+    return h('div', { class: 'vox' }, line.split(/(\[\+\+[^\]]*\+\+\])/).map((p) => (p.startsWith('[++') ? h('span', { class: 'noise' }, p) : p)));
+  });
+}
+// a short screen glitch when a new Leo archive arrives
+function glitch() {
+  document.body.classList.add('glitch');
+  setTimeout(() => document.body.classList.remove('glitch'), 450);
+}
 const readKeys = () => { try { return new Set(JSON.parse(localStorage.getItem('smg-read') || '[]')); } catch { return new Set(); } };
-const openMsgs = new Set();
+const when = (t) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const mailKey = (m) => `${m.targetId}/${m.tierId}`;
+function markRead(list) {
+  const r = readKeys();
+  for (const m of list) r.add(mailKey(m));
+  try { localStorage.setItem('smg-read', JSON.stringify([...r])); } catch {}
+}
+
+// Inbox: a mail list; a click opens the message in a modal reader (with previous / next).
 function renderInbox() {
   const box = $('#inbox');
   if (!state.me) return box.classList.add('hide');
   box.classList.remove('hide');
-  const read = readKeys(), key = (m) => `${m.targetId}/${m.tierId}`;
-  const fresh = state.inbox.filter((m) => !read.has(key(m))).length;
+  const read = readKeys(), fresh = state.inbox.filter((m) => !read.has(mailKey(m))).length;
   updateTitle();
-  const markAll = () => { try { localStorage.setItem('smg-read', JSON.stringify([...new Set([...read, ...state.inbox.map(key)])])); } catch {} renderInbox(); };
-  const when = (t) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   box.replaceChildren(...[
     h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, 'Messagerie'),
-      fresh ? h('button', { onclick: markAll }, `Tout marquer comme lu (${fresh})`) : null),
-    h('p', { class: 'dim' }, state.inbox.length ? `${state.inbox.length} transmission${state.inbox.length > 1 ? 's' : ''} des équipes de reconnaissance${fresh ? ` · ${fresh} non lue${fresh > 1 ? 's' : ''}` : ''}`
-      : 'Aucune transmission pour le moment. Investis des points sur une planète pour recevoir les comptes-rendus des équipes de reconnaissance.'),
-    h('div', { class: 'list' }, state.inbox.map((m) => {
-      const isNew = !read.has(key(m));
-      const d = h('details', { class: 'msg' + (isNew ? ' new' : '') },
-        h('summary', {},
-          h('div', { class: 'meta' }, h('span', {}, m.targetName), isNew ? h('span', { class: 'pill' }, 'nouveau') : null, h('span', { style: 'margin-left:auto' }, when(m.t))),
-          h('span', { class: 'title' }, m.title || m.label),
-          m.fluff ? h('div', { class: 'preview' }, m.fluff.replace(/\s+/g, ' ')) : null),
-        h('p', { class: 'camp ' + (m.side ? 'camp-' + m.side : 'dim') }, m.label + (m.side ? ` · remporté par les ${SIDE[m.side]}` : '')),
-        h('div', { class: 'fluff' }, m.fluff || 'Transmission en cours de déchiffrement…'),
-        m.images.map((src) => h('a', { href: src, target: '_blank' }, h('img', { src, alt: '' }))),
-        m.rules ? h('div', { class: 'box' }, h('b', {}, 'Règle débloquée'), h('div', {}, m.rules)) : null,
-        m.hasPrize ? h('div', { class: 'box' }, h('b', {}, 'Lot'), h('div', {}, m.won ? `Remporté par toi : ${m.prize}` : m.winnerName ? `Tiré au sort : ${m.winnerName}` : 'Tirage à venir')) : null);
-      if (openMsgs.has(key(m))) d.open = true;
-      d.ontoggle = () => {
-        if (d.open) { openMsgs.add(key(m)); const r = readKeys(); r.add(key(m)); try { localStorage.setItem('smg-read', JSON.stringify([...r])); } catch {} d.classList.remove('new'); d.querySelector('.pill')?.remove(); updateTitle(); }
-        else openMsgs.delete(key(m));
-      };
-      return d;
-    })),
+      fresh ? h('button', { onclick: () => { markRead(state.inbox); renderInbox(); } }, `Tout marquer comme lu (${fresh})`) : null),
+    h('p', { class: 'dim' }, state.inbox.length ? `${state.inbox.length} message${state.inbox.length > 1 ? 's' : ''}${fresh ? ` · ${fresh} non lu${fresh > 1 ? 's' : ''}` : ''}`
+      : 'Aucun message pour le moment. Investis des points sur une planète pour recevoir les comptes-rendus des équipes de reconnaissance.'),
+    state.inbox.length ? h('div', { class: 'list' }, state.inbox.map((m, i) => h('div', {
+      class: 'mail' + (read.has(mailKey(m)) ? '' : ' new') + (m.fx ? ' fx-' + m.fx : ''), role: 'button', tabindex: '0', onclick: () => openMail(i),
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMail(i); } },
+    }, h('span', { class: 'dot' }), h('span', { class: 'from' }, `${m.targetName}${m.teaser ? ' · aperçu' : ''}`), h('span', { class: 'date' }, when(m.t)),
+    h('span', { class: 'subject' }, m.title || m.label), h('span', { class: 'preview' }, (m.fluff || '').replace(/\s+/g, ' '))))) : null,
   ].filter(Boolean));
+}
+
+function openMail(i) {
+  const list = state.inbox, m = list[i];
+  if (!m) return;
+  markRead([m]); renderInbox();
+  const dlg = h('dialog', { class: 'reader' + (m.fx ? ' fx-' + m.fx : '') });
+  const go = (j) => { dlg.close(); openMail(j); };
+  dlg.append(...[
+    h('div', { class: 'head' },
+      h('h2', { style: 'margin-top:0' }, m.title || m.label),
+      m.teaser ? h('span', { class: 'pill gold' }, 'aperçu')
+        : h('div', { class: 'meta ' + (m.side ? 'camp-' + m.side : '') }, m.label + (m.side ? ` · remporté par les ${SIDE[m.side]}` : ''))),
+    h('div', { class: 'fluff' }, m.fluff ? fluffNodes(m.fluff) : 'Transmission en cours de déchiffrement…'),
+    m.teaser ? h('p', { class: 'dim' }, 'Investis des points sur cette planète pour lire le rapport complet.') : null,
+    m.images.map((src) => h('a', { href: src, target: '_blank' }, h('img', { src, alt: '' }))),
+    m.rules ? h('div', { class: 'box' }, h('b', {}, 'Règle débloquée'), h('div', {}, m.rules)) : null,
+    m.hasPrize ? h('div', { class: 'box' }, h('b', {}, 'Lot'), h('div', {}, m.won ? `Remporté par toi : ${m.prize}` : m.winnerName ? `Tiré au sort : ${m.winnerName}` : 'Tirage à venir')) : null,
+    h('div', { class: 'row', style: 'justify-content:space-between;margin-top:12px' },
+      h('div', { class: 'row' },
+        Object.assign(h('button', { onclick: () => go(i - 1) }, '‹ Plus récent'), { disabled: i === 0 }),
+        Object.assign(h('button', { onclick: () => go(i + 1) }, 'Plus ancien ›'), { disabled: i === list.length - 1 })),
+      h('button', { onclick: () => dlg.close() }, 'Fermer'))].flat().filter(Boolean));
+  // while a message of an effect planet is open, the effect keeps coming back (a short glitch every few seconds)
+  const mini = m.fx ? setInterval(() => { dlg.classList.add('mini'); setTimeout(() => dlg.classList.remove('mini'), 270); }, 6000 + Math.random() * 3000) : null;
+  dlg.onclose = () => { clearInterval(mini); dlg.remove(); };
+  document.body.append(dlg);
+  dlg.showModal();
 }
 
 // ---------- tier editor (admin) ----------
@@ -314,7 +375,7 @@ function buildEditor() {
   const save = h('button', { onclick: async () => {
     try { await api('PUT', '/api/admin/config', draft); dirty = false; $('#err').textContent = ''; await refresh(); } catch (e) { $('#err').textContent = e.message; }
   } }, 'Enregistrer');
-  const addTier = (t) => { const n = t.tiers.length; t.tiers.push({ id: `${t.id}-${Date.now().toString(36)}`, threshold: (Math.max(0, ...t.tiers.map((p) => p.threshold)) || 0) + 10, label: `Palier ${n + 1}`, title: 'À définir', fluff: '', images: [], rules: '', prize: '', nature: '', shared: false }); touch(); buildEditor(); };
+  const addTier = (t) => { const n = t.tiers.length; t.tiers.push({ id: `${t.id}-${Date.now().toString(36)}`, threshold: (Math.max(0, ...t.tiers.map((p) => p.threshold)) || 0) + 10, label: `Palier ${n + 1}`, title: 'À définir', fluff: '', images: [], rules: '', prize: '', nature: '', teaser: '', shared: false }); touch(); buildEditor(); };
   const planets = draft.targets.filter((t) => t.kind === 'planet'); // gauges have no tiers of their own
   const grid = h('table', {}, planets.map((t) => h('tr', {}, h('td', {}, t.name), h('td', {},
     t.tiers.map((pa) => h('span', { style: 'margin-right:6px;white-space:nowrap' }, num(pa, 'threshold', { style: 'width:62px' }), live(t.id, pa.id)?.unlocked ? '✓' : '')),
@@ -327,6 +388,7 @@ function buildEditor() {
           text(pa, 'label', { placeholder: 'Nom public', style: 'width:110px' }), text(pa, 'title', { placeholder: 'Titre du rapport', style: 'flex:1' }),
           h('button', { onclick: () => { t.tiers = t.tiers.filter((x) => x !== pa); touch(); buildEditor(); } }, '✕')),
         area(pa, 'fluff', { placeholder: 'Rapport (texte fluff, visible des contributeurs du camp vainqueur)' }),
+        area(pa, 'teaser', { placeholder: 'Encart court pour les membres du camp qui n\'ont pas investi ici (1re ligne = titre)' }),
         area(pa, 'images', { placeholder: 'Images : une URL par ligne (ex. /img/mk6.webp)' }, (v) => (v || []).join('\n'), (v) => v.split('\n').map((x) => x.trim()).filter(Boolean)),
         text(pa, 'nature', { placeholder: 'Nature de la planète révélée à ce palier (optionnel)', style: 'width:100%' }),
         flag(pa, 'shared', 'Premier contact : pas de course, rapport pour les deux camps'),
@@ -494,10 +556,18 @@ function renderAdmin() {
   box.replaceChildren(h('h2', {}, 'Configuration'), editorEl);
 }
 
+// eye at the end of the code field: toggles between masked and visible
+const ICON = (inner) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const EYE = ICON('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>');
+const EYE_OFF = ICON('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>');
+$('#peek').innerHTML = EYE;
+$('#peek').onmousedown = (e) => e.preventDefault(); // keep the focus in the field
 $('#peek').onclick = () => {
   const show = $('#code').type === 'password';
   $('#code').type = show ? 'text' : 'password';
-  $('#peek').textContent = show ? 'Masquer' : 'Afficher';
+  $('#peek').innerHTML = show ? EYE_OFF : EYE;
+  const label = show ? 'Masquer le code' : 'Afficher le code';
+  $('#peek').title = label; $('#peek').setAttribute('aria-label', label); $('#peek').setAttribute('aria-pressed', String(show));
   $('#code').focus();
 };
 $('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };

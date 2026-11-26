@@ -20,6 +20,13 @@ Admin: enter that password on the login page. Players: the admin creates them an
 | `ADMIN_PASSWORD` | none (required) | admin login |
 | `PORT` | `3000` | HTTP port |
 | `DATA_FILE` | `./data.json` | persisted state (keep it on a persistent disk) |
+| `RESET_ON_DEPLOY` | on Azure (`WEBSITE_SITE_NAME`), else off | `1` forces the reset below |
+| `KEEP_STATE` | unset | `1` freezes the state: no reset on deployment |
+
+A new deployment (any change to `server.js`, `public/index.html` or the `seed-*.json` files) starts from a clean state
+when running on Azure: the saved state is replaced by the seed, and the old file is kept once as `<DATA_FILE>.prev`.
+A plain restart with the same code keeps the state. **Once the game has started, set `KEEP_STATE=1`** in the app settings,
+or the next deployment erases the points.
 
 Single instance only: state lives in memory and is written to `DATA_FILE`.
 

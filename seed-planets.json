@@ -15,7 +15,8 @@
     "shared": true,
     "fluff": "Rapport des éclaireurs : découverte d'une planète civilisée, dotée d'un centre urbain (« Xian ») et de plusieurs autres installations disséminées sur le continent. Niveau d'autosuffisance atteint. Aucune trace d'une population humaine.\n\nNous demandons l'autorisation d'enquêter sur cette disparition.",
     "rules": "",
-    "nature": ""
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "grus-1",
@@ -24,7 +25,8 @@
     "fluff": "Une bibliothèque. Nous y avons trouvé un poème :\n\nNe demande pas quelle créature hurle dans la nuit,\nNe questionne pas ce qui t'attend dans l'ombre.\nCe sont mes hurlements qui te réveillent la nuit,\nEt mon corps qui est tapi dans l'ombre.\nJe suis Tzeentch et tu es le pantin\nQui danse sur ma musique.\n\nKarazantor le Vil, le Traître de Xian",
     "rules": "",
     "nature": "",
-    "title": "Un poème"
+    "title": "Un poème",
+    "teaser": ""
    },
    {
     "id": "grus-2",
@@ -33,7 +35,8 @@
     "fluff": "En explorant les formations rocheuses à 150 km à l'est de Xian, nous avons retrouvé la trace de la population de la cité ! Cependant, les habitants semblent avoir régressé à un niveau pré-féodal et adopté un mode de vie troglodyte. Ils se sont montrés extrêmement agressifs.\n\nRecommandation : reclasser ce monde en type ɸλ (monde sauvage).",
     "rules": "",
     "nature": "Monde sauvage (type ɸλ)",
-    "title": "Population indigène"
+    "title": "Population indigène",
+    "teaser": ""
    },
    {
     "id": "grus-3",
@@ -42,7 +45,8 @@
     "fluff": "Les tests d'aptitude effectués sur les indigènes se sont révélés très prometteurs. Une fois correctement canalisée, leur agressivité est un atout au combat.",
     "rules": "Choisissez une unité ayant les Traits Solar Auxilia, Imperialis Militia ou la règle spéciale Inductii. Elle gagne la règle spéciale Feral Warriors (voir Liber Militia p.6).",
     "nature": "",
-    "title": "Recrues Astartes"
+    "title": "Recrues Astartes",
+    "teaser": ""
    },
    {
     "id": "grus-4",
@@ -51,7 +55,8 @@
     "fluff": "Mes recherches démontrent l'effondrement brutal d'une civilisation autrefois tournée vers les arts et le meilleur de l'Humanité. De telles décadences ont déjà été rencontrées par le passé, mais aucune ne s'est produite dans un laps de temps aussi fulgurant. Les esprits des autochtones semblent avoir été réduits à leur plus simple expression, comme si l'on avait voulu cacher quelque chose. Ou, plus exactement, comme si l'on avait souhaité ôter quelque chose à leur mémoire.\n\nJe ne connais qu'un seul individu capable d'un tel exploit psychique, en dehors de l'Empereur. Je parle bien sûr de son âme damnée, le tristement célèbre Malcador…",
     "rules": "",
     "nature": "",
-    "title": "Tout est faux"
+    "title": "Tout est faux",
+    "teaser": ""
    }
   ]
  },
@@ -71,7 +76,8 @@
     "shared": true,
     "fluff": "Les analyses cartographiques font état d'une planète à l'écosystème remarquablement préservé. Les paysages sont variés, avec des zones côtières paisibles, des forêts tempérées et des chaînes de montagnes moyennes.\n\nPourquoi ce monde idéal n'a-t-il pas été exploité ? La seule hypothèse qui nous vienne est que la ceinture d'astéroïdes qui le sépare de l'extérieur du système ait contribué à l'abandon d'un monde autrement prometteur.",
     "rules": "",
-    "nature": ""
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "phoenix-1",
@@ -80,7 +86,8 @@
     "fluff": "Nous avons suivi l'hypothèse du Maître Apothicaire Asclépios, lui-même disciple des théories du seigneur Fabius Bile. Nous recherchons un environnement libre de toute pollution, propre à réunir les conditions optimales d'expériences génétiques de grande ampleur. Un tel laboratoire, et je suis convaincu qu'il existe, abriterait sans nul doute des avancées scientifiques majeures.\n\nToutefois, le champ de recherche est particulièrement vaste. Je vous prie d'appuyer ma requête pour que mes confrères se joignent diligemment à cette quête.",
     "rules": "Votre Détachement Principal gagne un Choix de Support. Ce Choix ne peut servir qu'à sélectionner une unité d'Apothicaire.",
     "nature": "",
-    "title": "Un slot d'Apothicaire gratuit dans le Détachement Principal"
+    "title": "Un slot d'Apothicaire gratuit dans le Détachement Principal",
+    "teaser": ""
    },
    {
     "id": "phoenix-2",
@@ -89,7 +96,8 @@
     "fluff": "Mon seigneur, pardonnez-moi cette intrusion, mais nous avons trouvé le laboratoire ! À l'intérieur, nous avons fait une découverte majeure. Les données étaient là, librement accessibles, comme si elles nous attendaient depuis toutes ces années. Je vous envoie immédiatement le dossier, tant mon exaltation est grande.\n\nMagnificat : le Magnificat, également appelé « l'Amplificateur », est un petit lobe de la taille d'une vignette inséré dans le cortex du cerveau. Il sécrète des hormones qui augmentent les fonctions de croissance de l'organisme tout en intensifiant celles des autres implants transhumains, en particulier le Bioscopea et l'Ossmodula. Les Astartes soumis à l'implantation sont ainsi plus grands d'un pied terrien (environ 0,31 mètre) et physiquement plus forts que leurs homologues.\n\nEn vérité, le Magnificat n'est que la moitié de la véritable Glande Immortis à double valve (la soi-disant « créatrice de Dieu ») que l'Empereur a conçue pour ses primarques. Nous n'avons toutefois trouvé que les matériaux et les plans génétiques du « lobe dextrophique » (la moitié droite de la glande). Les plans du « Sintarius » (la moitié gauche), qui compléterait le super-organe d'origine, semblent avoir été entièrement éradiqués de l'Imperium. Que cela ait été fait de la propre main de l'Empereur ou par une source infâme, nous ne pouvons le dire.",
     "rules": "",
     "nature": "Laboratoire génétique (type ρ)",
-    "title": "Une étude sur les organes Primaris"
+    "title": "Une étude sur les organes Primaris",
+    "teaser": ""
    },
    {
     "id": "phoenix-3",
@@ -98,7 +106,8 @@
     "fluff": "Je dois concéder que les expériences sur le lobe se sont soldées par des échecs cuisants. Je requiers l'assistance de mes pairs généticiens pour sortir de l'impasse. Cependant, les théories de maturation avancée sont prometteuses : dans quelque temps, je serai en mesure de les mettre en pratique pour accélérer la création d'implants Space Marine de phase 3.",
     "rules": "Une unité Astartes de votre armée gagne la règle spéciale Expendable (1).",
     "nature": "",
-    "title": "Une unité Astartes de votre armée gagne la règle Expendable (1)"
+    "title": "Une unité Astartes de votre armée gagne la règle Expendable (1)",
+    "teaser": ""
    },
    {
     "id": "phoenix-4",
@@ -107,7 +116,8 @@
     "fluff": "Le seigneur Bile avait raison ! Aujourd'hui, les secrets de la science génétique de l'Empereur paraissent enfin à portée de main ! Tout ce qu'il nous reste à faire, c'est oser transgresser les interdits d'un autre âge, et nous aurons magnifié le travail des Séléniens.",
     "rules": "Tous les Choix de Troupes de votre Détachement Principal sont des Choix Principaux (comme pour les Primarques).",
     "nature": "",
-    "title": "Un Détachement Principal avec tous les choix de Troupes en Prime (comme pour les Primarques)"
+    "title": "Un Détachement Principal avec tous les choix de Troupes en Prime (comme pour les Primarques)",
+    "teaser": ""
    }
   ]
  },
@@ -127,7 +137,8 @@
     "shared": true,
     "fluff": "Les bombardements ne visaient aucune cible de quelconque valeur. Cela ressemble plus à un pas de tir qu'à une bataille rangée.",
     "rules": "",
-    "nature": ""
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "scorpius-2",
@@ -136,7 +147,8 @@
     "fluff": "",
     "rules": "Peut récupérer une info d'une autre planète de rang équivalent.",
     "nature": "",
-    "title": "Espionnage"
+    "title": "Espionnage",
+    "teaser": ""
    },
    {
     "id": "scorpius-3",
@@ -145,7 +157,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "À définir"
+    "title": "À définir",
+    "teaser": ""
    },
    {
     "id": "scorpius-4",
@@ -154,7 +167,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "À définir"
+    "title": "À définir",
+    "teaser": ""
    }
   ]
  },
@@ -174,7 +188,8 @@
     "shared": true,
     "fluff": "Les éclaireurs signalent une anomalie Warp étendue, consécutive à l'explosion d'un moteur Warp.",
     "rules": "",
-    "nature": ""
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "cancer-1",
@@ -183,7 +198,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "À définir"
+    "title": "À définir",
+    "teaser": ""
    },
    {
     "id": "cancer-2",
@@ -192,7 +208,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Bonus Legions Imperialis"
+    "title": "Bonus Legions Imperialis",
+    "teaser": ""
    },
    {
     "id": "cancer-3",
@@ -201,7 +218,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Grenade Vortex"
+    "title": "Grenade Vortex",
+    "teaser": ""
    },
    {
     "id": "cancer-4",
@@ -210,7 +228,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "L'explosion d'un moteur Warp a agrandi la faille. Les démons sont jouables"
+    "title": "L'explosion d'un moteur Warp a agrandi la faille. Les démons sont jouables",
+    "teaser": ""
    }
   ]
  },
@@ -230,7 +249,8 @@
     "shared": true,
     "fluff": "Nous avons atterri sur une planète faite de steppes balayées par les vents. La morne toponymie nous a permis de repérer aisément les onze installations industrielles réparties de manière singulièrement homogène sur l'ensemble du continent sud.\n\nATTENTION : les périmètres d'au moins trois de ces complexes sont défendus par des serviteurs en protocole Protector. La plus grande prudence est de mise lors de chaque tentative d'approche (pertes estimées : 24 %).\n\nIndice : forte présence du Mechanicum, inhabituelle pour un domaine Astartes.",
     "rules": "",
-    "nature": ""
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "unicornis-1",
@@ -239,7 +259,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "BluePrint Repulsor"
+    "title": "BluePrint Repulsor",
+    "teaser": ""
    },
    {
     "id": "unicornis-2",
@@ -248,7 +269,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Blueprint Land Speeder Tempest"
+    "title": "Blueprint Land Speeder Tempest",
+    "teaser": ""
    },
    {
     "id": "unicornis-3",
@@ -257,7 +279,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Razorback"
+    "title": "Razorback",
+    "teaser": ""
    },
    {
     "id": "unicornis-4",
@@ -266,7 +289,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Land Speeder Tempest"
+    "title": "Land Speeder Tempest",
+    "teaser": ""
    }
   ]
  },
@@ -286,7 +310,8 @@
     "shared": true,
     "fluff": "",
     "rules": "",
-    "nature": ""
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "draco-1",
@@ -295,7 +320,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Stations d'écoute"
+    "title": "Stations d'écoute",
+    "teaser": ""
    },
    {
     "id": "draco-2",
@@ -304,7 +330,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "À définir"
+    "title": "À définir",
+    "teaser": ""
    },
    {
     "id": "draco-3",
@@ -313,7 +340,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "À définir"
+    "title": "À définir",
+    "teaser": ""
    },
    {
     "id": "draco-4",
@@ -322,7 +350,8 @@
     "fluff": "",
     "rules": "",
     "nature": "",
-    "title": "Émission d'un signal-code inconnu. Code impérial"
+    "title": "Émission d'un signal-code inconnu. Code impérial",
+    "teaser": ""
    }
   ]
  },
@@ -337,12 +366,24 @@
    {
     "id": "leo-0",
     "threshold": 1,
-    "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "label": "Rapport de la Flotte de Reconnaissance",
+    "title": "Dossier de Reconnaissance",
     "shared": true,
-    "fluff": "Les équipes de reconnaissance rapportent avoir découvert une planète balayée par les vents solaires. La température élevée et les perturbations électromagnétiques rendront les explorations dangereuses et difficiles.\n\nClassification : monde hostile de type δτ.",
+    "fluff": "WARNING\n\nCLASSIFICATION : VERMILLON // PROVENANCE : Sonde d'Avant-Garde Auspex-IX\nDÉSIGNATION PLANÉTAIRE : LEO (Système frontalier - Relevé de Palier 1)\nINDICE THERMIQUE : Critique (+68 °C à l'ombre des crêtes, pics > 140 °C en exposition directe)\nSATURATION ÉLECTROMAGNÉTIQUE : Sévère. Interférences coronales continues (Perte Vox estimée : 64 %)\n\nSynthèse des équipes d'exploration :\n\nLe monde désigné sous l'appellation Leo gravite dangereusement près d'une étoile instable dont les éruptions coronales balaient la surface à intervalles imprévisibles. À basse altitude, l'atmosphère n'est plus qu'un voile de poussière ferreuse surchauffée, parcouru d'arcs statiques bleuâtres qui aveuglent les auspex et grillent les circuits non blindés en quelques minutes.\n\nLes premières équipes déposées sur les crêtes d'obsidienne confirment que toute campagne prolongée sur Leo mettra à rude épreuve les systèmes de refroidissement des armures énergétiques comme des châssis blindés. Les liaisons orbitales sont instables, les balises de téléportation dérivent sous l'orage ionique et chaque déploiement exige de lire le ciel avant de lire le terrain.\n\nPourtant, à travers la brume incandescente des plaines cendreuses, les pict-captures de longue portée ont révélé ce que les vents solaires n'ont pas réussi à effacer : des pylônes d'antennes anciens et des structures à demi ensevelies, orientés vers un point précis de la vallée. Quelque chose (ou quelqu'un) a bâti sur cet enfer bien avant notre arrivée.",
     "rules": "",
-    "nature": "Monde hostile (type δτ)"
+    "nature": "Monde hostile (type δτ)",
+    "teaser": "MONDE LEO : LE SEUIL DE CENDRE\nSous une étoile furieuse qui calcine la roche et déchire les fréquences vox, les premières équipes de reconnaissance ont repéré des antennes à demi ensevelies dans la tempête ionique. La chaleur étouffe les moteurs, l'orage aveugle les auspex… mais sous la poussière brûlante, un vieux signal continue d'appeler."
+   },
+   {
+    "id": "leo-0b",
+    "threshold": 1,
+    "label": "Premier contact",
+    "title": "Fragment Vox Récupéré (Canal 44-Thêta)",
+    "shared": true,
+    "fluff": "Enregistrement extrait d'une balise de secours récupérée à l'orée des crêtes noires. Bande fortement dégradée par le rayonnement solaire.\n\n[00:00:04] ++ SIGNAL ACCROCHÉ — ÉQUIPE DE RECO « ÉCLAIREUR-SEPT » ++\n[00:00:07] ÉCLAIREUR-SEPT : ...ici Sept. On a posé le pied sur la crête est. Les thermomètres d'armure clignotent déjà dans l'ambre et la poussière grésille sur les visières.\n[00:00:14] ORBITE : Reçu Sept. Maintenez le relevé [++ PARASITE SOLAIRE ++] ...ne descendez pas dans la cuvette avant la fin de la fenêtre coronale.\n[00:00:21] ÉCLAIREUR-SEPT : Négatif Orbite, vous devez voir ça. Les pylônes au fond du ravin... ce ne sont pas juste des ruines. L'auspex capte un cycle régulier sous la roche. Un vieux transpondeur. Il pulse toutes les dix secondes.\n[00:00:32] ORBITE : Identifiez la signature. Impériale ? Mechanicum ? Pré-Unification ?\n[00:00:37] ÉCLAIREUR-SEPT : Impossible à [++ CRÉPITEMENT ÉLECTROMAGNÉTIQUE ++] ...le ciel vire au blanc. Nouvelle éruption ! Les arcs frappent les antennes et—\n[00:00:43] ++ SURTENSION DÉTECTÉE — COUPLAGE VOX ROMPU ++\n[00:00:46] ++ ...bip... bip... bip... [SIGNAL RÉSIDUEL NON IDENTIFIÉ] ... ++",
+    "rules": "",
+    "nature": "",
+    "teaser": ""
    },
    {
     "id": "leo-1",
@@ -351,7 +392,8 @@
     "fluff": "Les vestiges d'un baraquement-chapelle. À l'intérieur, nous avons trouvé les plans d'un prototype d'armure : le Mk6.",
     "rules": "",
     "nature": "",
-    "title": "Baraquement-Chapelle + Blue print armure Mk6"
+    "title": "Baraquement-Chapelle + Blue print armure Mk6",
+    "teaser": ""
    },
    {
     "id": "leo-2",
@@ -360,7 +402,8 @@
     "fluff": "Les ruines d'une armurerie Astartes. À l'intérieur, nous avons trouvé les plans d'un prototype d'armure : le Mk7.",
     "rules": "",
     "nature": "",
-    "title": "Armurerie + Blue print armure Mk7"
+    "title": "Armurerie + Blue print armure Mk7",
+    "teaser": ""
    },
    {
     "id": "leo-3",
@@ -369,7 +412,8 @@
     "fluff": "Les décombres d'un site ayant abrité une relique du Moyen-Âge Technologique.",
     "rules": "",
     "nature": "",
-    "title": "Artefact Sacré"
+    "title": "Artefact Sacré",
+    "teaser": ""
    },
    {
     "id": "leo-4",
@@ -378,8 +422,10 @@
     "fluff": "La localisation d'une forteresse-monastère Astartes ! Malheureusement, le site est extrêmement bien défendu : toutes nos tentatives d'approche ont été repoussées.",
     "rules": "",
     "nature": "",
-    "title": "Localisation de la Forteresse-Monastère"
+    "title": "Localisation de la Forteresse-Monastère",
+    "teaser": ""
    }
-  ]
+  ],
+  "fx": "solar"
  }
 ]

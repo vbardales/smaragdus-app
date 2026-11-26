@@ -17,8 +17,11 @@ if (!ADMIN_PASSWORD) { console.error('ADMIN_PASSWORD is missing: set the environ
 // wins that tier (winnerSide). Its contributors receive the report (title, fluff, images, rules); if `prize` is set,
 // a lottery weighted by invested points picks one winner among them (winnerId).
 // A "shared" tier is a first contact: no race, every contributor of either camp gets the report once the planet's total reaches the threshold.
-// `nature` (optional) replaces the planet's displayed nature once the tier is won.
-const tier = (t) => ({ title: 'À définir', fluff: '', images: [], rules: '', prize: '', nature: '', shared: false, ...t, unlocked: false, winnerSide: null, winnerId: null, winnerName: null });
+// `nature` (optional) replaces the planet's displayed nature once the tier is won; the players of the served camps see it (`camps`: the winner
+// of a race tier, the camps that invested for a shared one), not only the contributors.
+// `teaser` (optional, first line = title) is a short notice sent to the members of the same camp who did not contribute on that planet;
+// when they invest later, it is replaced by the full report.
+const tier = (t) => ({ title: 'À définir', fluff: '', images: [], rules: '', prize: '', nature: '', teaser: '', camps: [], shared: false, ...t, unlocked: false, winnerSide: null, winnerId: null, winnerName: null });
 // Planets, their tiers and report texts live in seed-planets.json (edit the texts there or in the admin panel).
 const PLANETS = JSON.parse(fs.readFileSync(path.join(DIR, 'seed-planets.json'), 'utf8'));
 // Legion table: [army, planet with a +25% bonus | null, wipe target | null]. Army names match the players' `army` field.
@@ -62,13 +65,25 @@ try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); loadedFromFile = true;
   loadFailed = e.code !== 'ENOENT'; // unreadable or corrupt file: it may still hold the real state
   S = seed();
 }
+// A new deployment (any change to the code or to the seed files) starts from a clean state when running on Azure (or with
+// RESET_ON_DEPLOY=1). Set KEEP_STATE=1 to freeze the state, for instance once the game has started. The previous state file is kept as <file>.prev.
+const BUILD = crypto.createHash('sha1');
+for (const f of ['server.js', 'public/index.html', 'seed-players.json', 'seed-planets.json']) { try { BUILD.update(fs.readFileSync(path.join(DIR, f))); } catch {} }
+const BUILD_ID = BUILD.digest('hex').slice(0, 12);
+const RESET_ON_DEPLOY = (!!process.env.WEBSITE_SITE_NAME || process.env.RESET_ON_DEPLOY === '1') && process.env.KEEP_STATE !== '1';
+if (loadedFromFile && RESET_ON_DEPLOY && S.build !== BUILD_ID) {
+  console.log(`New deployment (${S.build || 'unknown'} -> ${BUILD_ID}): resetting the state, the old file is kept as ${DATA_FILE}.prev`);
+  try { fs.copyFileSync(DATA_FILE, DATA_FILE + '.prev'); } catch (e) { console.error(`Could not keep a copy of the old state: ${e.message}`); }
+  S = seed(); loadedFromFile = false;
+}
 // data saved by an older schema (no tiers, or global gauges without planetId): start fresh
 if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) { S = seed(); loadedFromFile = false; }
+S.build = BUILD_ID;
 // Planet positions are tied to the map image, so the code owns them: refresh saved data from the seed on every start.
 const seedPos = Object.fromEntries(seed().targets.filter((t) => t.kind === 'planet').map((t) => [t.id, { x: t.x, y: t.y }]));
 for (const t of S.targets) if (seedPos[t.id]) Object.assign(t, seedPos[t.id]);
 // older saves: tiers had a reward and a mode, gauges had tiers of their own, players had no inbox
-const migrateTier = ({ reward, mode, ...pa }) => ({ title: 'À définir', fluff: '', images: [], rules: '', prize: reward && reward !== 'Lot à définir' ? reward : '', nature: '', shared: false, unlocked: !!pa.winnerId, winnerSide: null, ...pa });
+const migrateTier = ({ reward, mode, ...pa }) => ({ title: 'À définir', fluff: '', images: [], rules: '', prize: reward && reward !== 'Lot à définir' ? reward : '', nature: '', teaser: '', camps: [], shared: false, unlocked: !!pa.winnerId, winnerSide: null, ...pa });
 for (const t of S.targets) t.tiers = t.kind === 'gauge' ? [] : t.tiers.map(migrateTier);
 for (const p of Object.values(S.players)) p.inbox ??= [];
 // The roster file owns identity data: refresh saved players that come from it (their points and investments are kept).
@@ -149,7 +164,10 @@ function settle(planet) {
     if (pa.shared) { // first contact: unlocked by the planet's total, delivered to the contributors of both camps
       const mine = Object.values(S.players).filter((q) => ['loyalist', 'renegade'].some((side) => q.alloc[gaugeOf(planet, side)?.id] > 0));
       if (!pa.unlocked && camps[0].total + camps[1].total >= pa.threshold) { pa.unlocked = true; logEvt(`Premier contact établi sur ${planet.name}`, 'public'); }
-      if (pa.unlocked) deliver(planet, pa, mine);
+      if (pa.unlocked) {
+        for (const c of camps) if (c.total > 0 && !pa.camps.includes(c.side)) pa.camps.push(c.side);
+        deliver(planet, pa, mine); deliverTeasers(planet, pa, mine);
+      }
       continue;
     }
     if (!pa.unlocked) {
@@ -170,17 +188,36 @@ function settle(planet) {
       logEvt(`LOT ${planet.name} « ${pa.label} » → ${winner.name} (tirage pondéré)`, 'public');
     }
     deliver(planet, pa, entries);
+    deliverTeasers(planet, pa, entries);
   }
 }
+// full report; it replaces a teaser the player already got
 function deliver(planet, pa, players) {
   for (const q of players) {
-    if (q.inbox.some((m) => m.tierId === pa.id)) continue;
-    q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now() });
+    const had = q.inbox.find((m) => m.tierId === pa.id);
+    if (had && !had.teaser) continue;
+    if (had) { delete had.teaser; had.t = Date.now(); } else q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now() });
     logEvt(`Nouveau rapport : ${planet.name} « ${pa.label} »`, q.id);
   }
 }
+// short notice for the players tied to a served camp (the winner of a race tier, the camps of the contributors of a shared tier) who have not contributed.
+// Players who pick their camp at each investment belong to no camp and get none.
+function deliverTeasers(planet, pa, contributors) {
+  if (!pa.teaser.trim()) return;
+  const served = new Set(pa.winnerSide ? [pa.winnerSide] : contributors.map(fixedSide).filter(Boolean));
+  for (const q of Object.values(S.players)) {
+    if (contributors.includes(q) || !served.has(fixedSide(q)) || q.inbox.some((m) => m.tierId === pa.id)) continue;
+    q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now(), teaser: true });
+    logEvt(`Nouvelle transmission : ${planet.name}`, q.id);
+  }
+}
 // what the planet is taken to be: the nature of the highest unlocked tier that sets one, else its starting nature
-const natureOf = (planet) => planet.tiers.filter((pa) => pa.unlocked && pa.nature).sort((a, b) => b.threshold - a.threshold)[0]?.nature || planet.nature || '';
+// A tier's nature is seen by the players of the camps it served (fixed camp, or an investment on that camp's gauge) and by the admin (viewer null).
+const seesTier = (viewer, planet, pa) => {
+  const sides = pa.winnerSide ? [pa.winnerSide] : pa.camps;
+  return sides.some((side) => fixedSide(viewer) === side || viewer.alloc[gaugeOf(planet, side)?.id] > 0);
+};
+const natureOf = (planet, viewer) => planet.tiers.filter((pa) => pa.unlocked && pa.nature && (!viewer || seesTier(viewer, planet, pa))).sort((a, b) => b.threshold - a.threshold)[0]?.nature || planet.nature || '';
 
 // Legion power "wipe", once per player: destroys every other player's points invested on one camp's gauge of a planet.
 // The points are lost for good: the victims' quota shrinks by the wiped amount. Tiers already won stay won.
@@ -207,7 +244,7 @@ function wipe(p, planet) {
 function view(role, me) {
   const isAdmin = role === 'admin';
   const targets = S.targets.map((t) => ({
-    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t) : '', multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
+    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t, isAdmin ? null : me) : '', multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
     total: t.kind === 'planet' ? sideTotal(t, 'loyalist') + sideTotal(t, 'renegade') : sideTotal(planetOfGauge(t), t.side),
     mine: me ? (t.kind === 'planet' ? ['loyalist', 'renegade'].reduce((n, side) => n + (me.alloc[gaugeOf(t, side)?.id] || 0), 0) : me.alloc[t.id] || 0) : 0,
     // players never learn the tiers nobody has unlocked yet, not even how many there are; unlocked ones show only threshold, public label and prize winner
@@ -224,13 +261,17 @@ function view(role, me) {
     out.inbox = me.inbox.map((m) => {
       const t = S.targets.find((x) => x.id === m.targetId), pa = t?.tiers.find((x) => x.id === m.tierId);
       if (!pa) return null;
+      if (m.teaser) { // only the short notice, never the report, the rules or the prize
+        const [head, ...rest] = pa.teaser.split('\n');
+        return { teaser: true, fx: t.fx || '', t: m.t, targetId: t.id, tierId: pa.id, targetName: t.name, label: pa.label, title: head.trim(), fluff: rest.join('\n').trim(), images: [], rules: '', hasPrize: false, prize: null, won: false };
+      }
       const won = pa.winnerId === me.id;
-      return { t: m.t, targetId: t.id, tierId: pa.id, targetName: t.name, side: pa.winnerSide, label: pa.label, title: pa.title, fluff: pa.fluff, images: pa.images, rules: pa.rules, hasPrize: !!pa.prize, prize: won ? pa.prize : null, won, winnerName: pa.winnerName };
+      return { t: m.t, fx: t.fx || '', targetId: t.id, tierId: pa.id, targetName: t.name, side: pa.winnerSide, label: pa.label, title: pa.title, fluff: pa.fluff, images: pa.images, rules: pa.rules, hasPrize: !!pa.prize, prize: won ? pa.prize : null, won, winnerName: pa.winnerName };
     }).filter(Boolean).reverse();
   }
   if (isAdmin) {
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
-    out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, multiplier, x, y, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, multiplier, x, y, planetId, side, tiers: tiers.map(({ id, threshold, label, title, fluff, images, rules, prize, nature, shared }) => ({ id, threshold, label, title, fluff, images, rules, prize, nature, shared })) })) };
+    out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, planetId, side, tiers: tiers.map(({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared }) => ({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared })) })) };
   }
   return out;
 }
@@ -338,7 +379,7 @@ http.createServer(async (req, res) => {
         p.factionId = b.factionId;
       } else if (route === 'POST /api/admin/reset') {
         // Reset game: investments, winners, log. Config is kept.
-        for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; }
+        for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; pa.camps = []; }
         if (b.deletePlayers) { S.deleted = [...(S.deleted || []), ...Object.keys(S.players)]; S.players = {}; }
         else for (const p of Object.values(S.players)) { p.alloc = {}; p.abilityUsed = false; p.inbox = []; }
         S.log = [];
@@ -354,7 +395,7 @@ http.createServer(async (req, res) => {
         const str = (v) => String(v ?? '');
         S.targets = b.targets.map((t) => ({ ...t, tiers: t.kind === 'gauge' ? [] : t.tiers.map((pa) => { // unlock state and prize winner are kept by tier id
           const o = old.get(pa.id);
-          return { id: pa.id, threshold: Number(pa.threshold), label: str(pa.label), title: str(pa.title), fluff: str(pa.fluff), images: (pa.images || []).map(str).filter(Boolean), rules: str(pa.rules), prize: str(pa.prize), nature: str(pa.nature), shared: !!pa.shared, unlocked: o?.unlocked ?? false, winnerSide: o?.winnerSide ?? null, winnerId: o?.winnerId ?? null, winnerName: o?.winnerName ?? null };
+          return { id: pa.id, threshold: Number(pa.threshold), label: str(pa.label), title: str(pa.title), fluff: str(pa.fluff), images: (pa.images || []).map(str).filter(Boolean), rules: str(pa.rules), prize: str(pa.prize), nature: str(pa.nature), teaser: str(pa.teaser), shared: !!pa.shared, unlocked: o?.unlocked ?? false, camps: o?.camps ?? [], winnerSide: o?.winnerSide ?? null, winnerId: o?.winnerId ?? null, winnerName: o?.winnerName ?? null };
         }) }));
         for (const t of S.targets) if (t.kind === 'planet') settle(t); // new thresholds or prizes can unlock tiers right away
         logEvt('Configuration mise à jour');

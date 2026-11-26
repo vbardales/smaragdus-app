@@ -1,10 +1,7 @@
-# Deploys the app to the Azure Web App "smaragdus-antre" on every push to main (or by hand from the Actions tab).
-# Login uses OIDC (no password stored): create the three repository secrets below from the Azure app registration
-# that has a federated credential for this repository and the Contributor role on the web app.
-#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
-# Reminder: on Azure every new deployment resets the game state unless the app setting KEEP_STATE=1 is set.
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Deploy to Azure Web App - smaragdus-antre
+name: Build and deploy Node.js app to Azure Web App - smaragdus-antre
 
 on:
   push:
@@ -12,21 +9,17 @@ on:
       - 'main'
   workflow_dispatch:
 
-concurrency:
-  group: deploy-smaragdus
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read # required for actions/checkout
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '22.x'
 
@@ -46,26 +39,27 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write # required for requesting the JWT
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: node-app
-
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4C38566BDF194507B7C33369E36938AF }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8D06ED398C9548FEB8CD6AB0404CA8FB }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4AF4BC0AD237404F87E08ED1D3F38B7B }}
 
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'smaragdus-antre'
           slot-name: 'Production'
           package: .
+          

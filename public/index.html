@@ -39,6 +39,10 @@ textarea{width:100%;height:340px;font:12px monospace}
 .sb{display:inline-block;width:44px;height:6px;background:#e0605f;border-radius:3px;overflow:hidden}
 .sb u{display:block;height:100%;background:#e0c040}
 .sb.zero{background:#666}
+.msg{border-top:1px solid #2a2330;padding:6px 0}.msg summary{cursor:pointer}.msg.new summary b::after{content:" · NOUVEAU";color:var(--green);font-size:12px}
+.msg .fluff{white-space:pre-wrap;margin:8px 0}.msg img{max-width:100%;display:block;margin:6px 0;border:1px solid var(--line)}
+details.ed{border-top:1px solid #2a2330;padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
+.ed textarea{height:64px;font:13px Georgia,serif;margin-top:4px}.ed input{margin-top:4px}
 .spot .mine{color:#9fe3a0;font-size:12px}
 /* map-only window (projector view): ?view=map */
 body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
@@ -67,6 +71,7 @@ body.mapview .spot{pointer-events:none}
   </section>
   <aside>
     <div class="panel" id="side"><p class="dim">Clique sur une planète.</p></div>
+    <div class="panel hide" id="inbox" style="margin-top:12px"></div>
     <div class="panel hide" id="admin" style="margin-top:12px"></div>
   </aside>
 </main>
@@ -103,6 +108,9 @@ async function refresh() {
   render();
 }
 
+// base of the player links: the live site, even when the admin page is opened from a local server
+const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https://smaragdus.antredudragon.fr' : location.origin;
+const SIDE = { loyalist: 'Loyalistes', renegade: 'Renégats' };
 const gaugeOf = (planet, side) => state.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
 
 // the gauges have no known maximum: show the loyalist share against the renegade one
@@ -114,7 +122,7 @@ function splitBar(l, r) {
 function render() {
   const s = state, isAdmin = s.role === 'admin';
   const who = $('#who'); who.replaceChildren();
-  if (s.me) who.append(h('span', {}, `${s.me.name} · ${s.factions.find((f) => f.id === s.me.factionId)?.name || ''} · `), h('b', {}, `${s.me.points} pts`), s.me.gauges.length ? h('b', {}, ` · ${s.me.bonus} bonus faction`) : '');
+  if (s.me) who.append(h('span', {}, `${s.me.fluffName || s.me.name} · ${s.factions.find((f) => f.id === s.me.factionId)?.name || ''} · `), h('b', {}, `${s.me.points} pts`), s.me.army ? h('span', { class: 'dim', style: 'margin-left:8px' }, `${s.me.army}${s.me.planetBonus ? ` · ${s.me.planetBonus.planetName} +${s.me.planetBonus.pct} %` : ' · pas de bonus de planète'}`) : '');
   if (isAdmin) who.append(h('b', {}, 'ADMIN'));
   who.append(h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter'));
 
@@ -127,31 +135,34 @@ function render() {
       h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
-  renderSide(); renderAdmin();
+  renderSide(); renderInbox(); renderAdmin();
 }
 
-// tier list of a target (planet or gauge)
+// tier list of a planet: the loyalist and renegade camps race to each threshold, the first one wins the tier.
+// Players only see won tiers; the report itself is in the inbox of the winning camp's contributors.
 function tierBlocks(t) {
+  const isAdmin = state.role === 'admin';
+  const L = gaugeOf(t, 'loyalist')?.total ?? 0, R = gaugeOf(t, 'renegade')?.total ?? 0;
   const shown = t.tiers.filter((p) => !p.hidden).sort((a, b) => a.threshold - b.threshold);
   const hiddenCount = t.tiers.length - shown.length;
-  return [...shown.map((p) => {
-    const won = !!p.winnerId;
-    return h('div', { class: 'tier' + (won ? ' won' : '') },
-      h('b', {}, `${p.threshold} — ${p.label}`), h('span', { class: 'dim' }, p.mode === 'draw' ? ' (tirage pondéré)' : ' (1er à franchir)'),
-      h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, t.total / p.threshold * 100)}%` })),
-      won ? h('div', {}, `Remporté par ${p.winnerName}`) : null,
-      p.reward ? h('div', { class: 'dim' }, `Lot : ${p.reward}`) : null);
-  }), hiddenCount ? h('div', { class: 'tier dim' }, `Paliers cachés : ${hiddenCount}`) : null];
+  return [...shown.map((p) => h('div', { class: 'tier' + (p.unlocked ? ' won' : '') },
+    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · remporté par les ${SIDE[p.winnerSide]}` : ' · débloqué') : null,
+    isAdmin && p.title ? h('div', { class: 'dim' }, p.title) : null,
+    isAdmin && !p.unlocked ? h('div', { class: 'dim' }, `Loyalistes ${L}/${p.threshold} · Renégats ${R}/${p.threshold}`) : null,
+    isAdmin && p.prize ? h('div', { class: 'dim' }, `Lot : ${p.prize}${p.winnerName ? ` → ${p.winnerName}` : ' (tirage à venir)'}`) : null,
+    !isAdmin && p.hasPrize ? h('div', { class: 'dim' }, p.winnerName ? `Lot tiré au sort : ${p.winnerName}` : 'Un lot est en jeu') : null,
+    !isAdmin && state.inbox?.some((m) => m.tierId === p.id) ? h('div', { class: 'dim' }, 'Rapport reçu dans ta messagerie') : null)),
+  hiddenCount ? h('div', { class: 'tier dim' }, `Paliers cachés : ${hiddenCount}`) : null];
 }
 
-// amount input + invest button for a target; the admin picks the player
+// camp + amount + invest button for a planet; the admin picks the player
 function investRow(t, sel) {
-  const bonus = t.kind === 'gauge';
+  const sides = state.role === 'admin' ? ['loyalist', 'renegade'] : state.me.gauges;
+  const camp = h('select', {}, sides.map((x) => h('option', { value: x }, SIDE[x])));
   const amt = h('input', { type: 'number', min: 1, value: 1 });
-  const avail = state.me ? (bonus ? state.me.bonus : state.me.points) : null;
-  return [h('div', { class: 'row', style: 'margin-top:6px' }, amt,
-    h('button', { onclick: () => act('POST', '/api/allocate', { targetId: t.id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
-    avail != null ? h('p', { class: 'dim' }, `Disponible : ${avail} ${bonus ? 'points bonus' : 'points'}`) : null];
+  return [h('div', { class: 'row', style: 'margin-top:6px' }, camp, amt,
+    h('button', { onclick: () => act('POST', '/api/allocate', { targetId: gaugeOf(t, camp.value).id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
+    state.me ? h('p', { class: 'dim' }, `Disponible : ${state.me.points} points`) : null];
 }
 
 function renderSide() {
@@ -161,18 +172,12 @@ function renderSide() {
   const sel = isAdmin ? h('select', { style: 'margin-bottom:6px' }, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
   side.replaceChildren(h('h2', {}, t.name));
   const add = (...xs) => side.append(...xs.flat().filter(Boolean)); // flatten arrays, skip null
+  if (t.nature) add(h('p', {}, h('b', {}, 'Nature : '), t.nature));
   if (t.specialty) add(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
-  add(h('p', {}, `Total investi : ${t.total}`, s.me ? ` · dont toi : ${t.mine}` : ''), sel, tierBlocks(t), investRow(t, sel));
-  if (isAdmin || s.me?.ability === 'wipe') {
-    add(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points des autres joueurs sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, 'Briser les points des autres (1 fois)'));
-  }
-  for (const side_ of ['loyalist', 'renegade']) {
-    const g = gaugeOf(t, side_);
-    if (!g) continue;
-    const allowed = isAdmin || s.me?.gauges.includes(side_);
-    add(h('h3', { class: side_ === 'loyalist' ? 'ly' : 'rn', style: 'margin-top:16px' }, `Jauge ${side_ === 'loyalist' ? 'loyaliste' : 'renégate'} : ${g.total}${s.me ? ` · toi : ${g.mine}` : ''}`),
-      h('div', { class: 'gauge ' + (side_ === 'loyalist' ? 'loy' : 'ren') }, tierBlocks(g)),
-      allowed ? investRow(g, sel) : h('p', { class: 'dim' }, 'Jauge inaccessible à ta faction.'));
+  add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
+    sel, tierBlocks(t), investRow(t, sel));
+  if (isAdmin || s.me?.wipe) {
+    add(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Détruire les points des ${SIDE[s.me.wipe]} (1 fois)`));
   }
 }
 
@@ -187,6 +192,119 @@ async function copyLink(link, btn) {
   }
 }
 
+// ---------- inbox (player) ----------
+const readKeys = () => { try { return new Set(JSON.parse(localStorage.getItem('smg-read') || '[]')); } catch { return new Set(); } };
+const openMsgs = new Set();
+function renderInbox() {
+  const box = $('#inbox');
+  if (!state.me) return box.classList.add('hide');
+  box.classList.remove('hide');
+  const read = readKeys(), key = (m) => `${m.targetId}/${m.tierId}`;
+  const fresh = state.inbox.filter((m) => !read.has(key(m))).length;
+  box.replaceChildren(...[h('h2', {}, `Messagerie${fresh ? ` (${fresh} nouveau${fresh > 1 ? 'x' : ''})` : ''}`), state.me.fluffName ? h('p', { class: 'dim' }, `Destinataire : ${state.me.fluffName}`) : null,
+    state.inbox.length ? null : h('p', { class: 'dim' }, 'Aucun rapport pour le moment. Investis des points sur une planète pour recevoir les comptes-rendus des équipes de reconnaissance.'),
+    state.inbox.map((m) => {
+      const d = h('details', { class: 'msg' + (read.has(key(m)) ? '' : ' new') },
+        h('summary', {}, h('b', {}, `${m.targetName} · ${m.title || m.label}`), h('span', { class: 'dim' }, ` ${new Date(m.t).toLocaleString()}`)),
+        m.side ? h('p', { class: 'dim' }, `Palier remporté par les ${SIDE[m.side]}`) : null,
+        h('div', { class: 'fluff' }, m.fluff || 'Rapport en cours de déchiffrement…'),
+        m.images.map((src) => h('a', { href: src, target: '_blank' }, h('img', { src, alt: '' }))),
+        m.rules ? h('p', {}, h('b', {}, 'Règle débloquée : '), m.rules) : null,
+        m.hasPrize ? h('p', {}, h('b', {}, 'Lot : '), m.won ? `remporté par toi — ${m.prize}` : m.winnerName ? `tiré au sort : ${m.winnerName}` : 'tirage à venir') : null);
+      if (openMsgs.has(key(m))) d.open = true;
+      d.ontoggle = () => {
+        if (d.open) { openMsgs.add(key(m)); const r = readKeys(); r.add(key(m)); try { localStorage.setItem('smg-read', JSON.stringify([...r])); } catch {} d.classList.remove('new'); }
+        else openMsgs.delete(key(m));
+      };
+      return d;
+    })].flat().filter(Boolean));
+}
+
+// ---------- tier editor (admin) ----------
+// Edits go to `draft`, a copy of the config; nothing is sent until "Enregistrer". While there are unsaved edits,
+// live refreshes do not rebuild the editor, so typing is never overwritten.
+let draft = null, dirty = false;
+const editorEl = h('div'), openEd = new Set();
+function buildEditor() {
+  const live = (tid, pid) => state.targets.find((x) => x.id === tid)?.tiers.find((x) => x.id === pid);
+  const touch = () => { dirty = true; save.textContent = 'Enregistrer (modifications non enregistrées)'; };
+  const text = (obj, key, attrs = {}) => { const e = h('input', attrs); e.value = obj[key] ?? ''; e.oninput = () => { obj[key] = e.value; touch(); }; return e; };
+  const area = (obj, key, attrs = {}, get = (v) => v ?? '', set = (v) => v) => { const e = h('textarea', attrs); e.value = get(obj[key]); e.oninput = () => { obj[key] = set(e.value); touch(); }; return e; };
+  const flag = (obj, key, label) => { const e = h('input', { type: 'checkbox' }); e.checked = !!obj[key]; e.onchange = () => { obj[key] = e.checked; touch(); }; return h('label', { class: 'dim', style: 'display:block;margin-top:4px' }, e, ' ', label); };
+  const num = (obj, key, attrs = {}) => { const e = h('input', { type: 'number', step: 'any', ...attrs }); e.value = obj[key]; e.oninput = () => { obj[key] = Number(e.value); touch(); }; return e; };
+  const save = h('button', { onclick: async () => {
+    try { await api('PUT', '/api/admin/config', draft); dirty = false; $('#err').textContent = ''; await refresh(); } catch (e) { $('#err').textContent = e.message; }
+  } }, 'Enregistrer');
+  const addTier = (t) => { const n = t.tiers.length; t.tiers.push({ id: `${t.id}-${Date.now().toString(36)}`, threshold: (Math.max(0, ...t.tiers.map((p) => p.threshold)) || 0) + 10, label: `Palier ${n + 1}`, title: 'À définir', fluff: '', images: [], rules: '', prize: '', nature: '', shared: false }); touch(); buildEditor(); };
+  const planets = draft.targets.filter((t) => t.kind === 'planet'); // gauges have no tiers of their own
+  const grid = h('table', {}, planets.map((t) => h('tr', {}, h('td', {}, t.name), h('td', {},
+    t.tiers.map((pa) => h('span', { style: 'margin-right:6px;white-space:nowrap' }, num(pa, 'threshold', { style: 'width:62px' }), live(t.id, pa.id)?.unlocked ? '✓' : '')),
+    h('button', { onclick: () => addTier(t) }, '+')))));
+  const details = planets.map((t) => {
+    const d = h('details', { class: 'ed' }, h('summary', {}, `${t.name} (${t.tiers.length} palier${t.tiers.length > 1 ? 's' : ''})`),
+      t.kind === 'planet' ? h('div', { class: 'row' }, text(t, 'nature', { placeholder: 'Nature affichée au départ', style: 'flex:1' }), text(t, 'specialty', { placeholder: 'Spécialité', style: 'flex:1' }), h('span', { class: 'dim' }, '×'), num(t, 'multiplier', { style: 'width:60px' })) : null,
+      [...t.tiers].sort((a, b) => a.threshold - b.threshold).map((pa) => h('div', { class: 'tier' },
+        h('div', { class: 'row' }, h('b', {}, `${pa.threshold} pts${live(t.id, pa.id)?.unlocked ? ' ✓ débloqué' : ''}`),
+          text(pa, 'label', { placeholder: 'Nom public', style: 'width:110px' }), text(pa, 'title', { placeholder: 'Titre du rapport', style: 'flex:1' }),
+          h('button', { onclick: () => { t.tiers = t.tiers.filter((x) => x !== pa); touch(); buildEditor(); } }, '✕')),
+        area(pa, 'fluff', { placeholder: 'Rapport (texte fluff, visible des contributeurs du camp vainqueur)' }),
+        area(pa, 'images', { placeholder: 'Images : une URL par ligne (ex. /img/mk6.webp)' }, (v) => (v || []).join('\n'), (v) => v.split('\n').map((x) => x.trim()).filter(Boolean)),
+        text(pa, 'nature', { placeholder: 'Nature de la planète révélée à ce palier (optionnel)', style: 'width:100%' }),
+        flag(pa, 'shared', 'Premier contact : pas de course, rapport pour les deux camps'),
+        text(pa, 'rules', { placeholder: 'Règle débloquée en jeu (optionnel)', style: 'width:100%' }),
+        text(pa, 'prize', { placeholder: 'Lot tiré au sort, pondéré par les points investis (optionnel)', style: 'width:100%' }))));
+    d.open = openEd.has(t.id);
+    d.ontoggle = () => (d.open ? openEd.add(t.id) : openEd.delete(t.id));
+    return d;
+  });
+  const planetSel = (a) => { // planet of the +% bonus
+    const e = h('select', {}, h('option', { value: '' }, 'aucun bonus'), planets.map((p) => h('option', { value: p.id }, p.name)));
+    e.value = a.bonus?.planetId || '';
+    e.onchange = () => { a.bonus = e.value ? { planetId: e.value, pct: a.bonus?.pct ?? 25 } : null; touch(); buildEditor(); };
+    return e;
+  };
+  const wipeSel = (a) => {
+    const e = h('select', {}, [['', 'pas de pouvoir'], ['loyalist', 'détruit les Loyalistes'], ['renegade', 'détruit les Renégats'], ['opponent', 'détruit le camp adverse']].map(([v, l]) => h('option', { value: v }, l)));
+    e.value = a.wipe || '';
+    e.onchange = () => { a.wipe = e.value || null; touch(); };
+    return e;
+  };
+  const armies = h('table', {}, (draft.armies || []).map((a) => h('tr', {}, h('td', {}, a.name), h('td', {}, planetSel(a)),
+    h('td', {}, a.bonus ? [num(a.bonus, 'pct', { style: 'width:56px' }), ' %'] : ''), h('td', {}, wipeSel(a)))));
+  const json = h('textarea', { style: 'height:240px;font:12px monospace' }); json.value = JSON.stringify(draft, null, 1);
+  editorEl.replaceChildren(h('h3', { style: 'margin-top:12px' }, 'Seuils des paliers'),
+    h('p', { class: 'dim' }, 'Points à atteindre par un camp pour remporter chaque palier : le premier camp (loyalistes ou renégats) à atteindre le seuil gagne le palier (✓ = déjà remporté). Un palier débloqué le reste ; baisser un seuil sous le total actuel le remporte à l\'enregistrement.'),
+    grid, h('h3', { style: 'margin-top:12px' }, 'Contenu des paliers'), ...details,
+    h('h3', { style: 'margin-top:12px' }, 'Bonus des légions'), h('p', { class: 'dim' }, 'Bonus en % sur les points investis par le joueur sur la planète choisie, et pouvoir de destruction (1 fois par joueur).'), armies,
+    h('div', { class: 'row', style: 'margin-top:8px' }, save, h('button', { onclick: () => { dirty = false; draft = structuredClone(state.config); buildEditor(); } }, 'Annuler les modifications')),
+    h('details', { class: 'ed' }, h('summary', {}, 'JSON brut (avancé)'), json,
+      h('button', { onclick: () => { try { draft = JSON.parse(json.value); touch(); buildEditor(); } catch (e) { $('#err').textContent = e.message; } } }, 'Charger dans l\'éditeur')));
+  if (dirty) save.textContent = 'Enregistrer (modifications non enregistrées)';
+}
+
+// Mail to a player with their personal link, opened in the default mail client (mailto). The closing depends on the camp.
+const MAIL_CLOSING = { loyalist: 'Gloire à l\'Empereur !', renegade: 'Mort au faux Empereur !', alpha: 'Nous sommes un. Nous sommes légion.' };
+function mailtoFor(p) {
+  const camp = state.factions.find((f) => f.id === p.factionId)?.gauge;
+  const closing = MAIL_CLOSING[p.factionId === 'alpha' ? 'alpha' : camp] || 'Que les étoiles guident vos armées.';
+  const body = [`Salutations, ${p.fluffName || p.name},`, '',
+    'Les éclaireurs ont quitté l\'orbite et les premières transmissions parviennent au Système Smaragdus.',
+    'Voici le tableau de bord où consigner nos prises de victoire, tel que vous l\'avez demandé :', '',
+    `${PUBLIC_URL}/?code=${p.code}`, '',
+    'Ce lien est personnel : il vous identifie auprès du Système. Ne le confiez à personne.', '', closing].join('\r\n');
+  return `mailto:${p.email}?subject=${encodeURIComponent('Système Smaragdus : votre tableau de bord de conquête')}&body=${encodeURIComponent(body)}`;
+}
+
+// one line per player with the personal link, ready for a mail merge (the link uses the address this page is served from)
+function exportLinks() {
+  const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [['nom', 'nom_fluff', 'email', 'legion', 'lien']].concat(state.players.map((p) => [p.name, p.fluffName, p.email, p.army, `${PUBLIC_URL}/?code=${p.code}`]));
+  const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' }));
+  const a = h('a', { href: url, download: 'liens-joueurs.csv' });
+  document.body.append(a); // some browsers ignore a click on a detached link
+  a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function renderAdmin() {
   const box = $('#admin');
   if (state.role !== 'admin') return box.classList.add('hide');
@@ -194,7 +312,7 @@ function renderAdmin() {
   if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // do not overwrite user input
   const s = state;
   const fsel = () => h('select', {}, s.factions.map((f) => h('option', { value: f.id }, f.name)));
-  const nm = h('input', { placeholder: 'Nom du joueur' }), cd = h('input', { placeholder: 'Code (optionnel)', style: 'width:140px' }), fs = fsel();
+  const nm = h('input', { placeholder: 'Nom du joueur' }), cd = h('input', { placeholder: 'Code (optionnel)', style: 'width:140px' }), fs = fsel(), ar = h('select', {}, h('option', { value: '' }, 'Légion'), (s.config.armies || []).map((a) => h('option', { value: a.name }, a.name)));
   // live check while typing; the server enforces it anyway (unique whatever the case, 4-32 chars of letters, digits, - or _)
   const hint = h('span', { style: 'color:var(--red);font-size:13px' });
   cd.oninput = () => {
@@ -203,24 +321,22 @@ function renderAdmin() {
     hint.textContent = !v ? '' : !/^[a-z0-9_-]{4,32}$/.test(v) ? 'Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)'
       : s.players.some((p) => p.code.toLowerCase() === v) ? 'Code déjà utilisé' : '';
   };
-  const cfg = h('textarea', {}); cfg.value = JSON.stringify(s.config, null, 1);
+  if (!dirty) { draft = structuredClone(s.config); buildEditor(); }
   box.replaceChildren(h('h2', {}, 'Admin'),
     h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)'),
-    h('div', { class: 'row' }, nm, cd, fs, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, code: cd.value, factionId: fs.value }) }, 'Créer joueur')),
+    h('div', { class: 'row' }, nm, cd, fs, ar, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, code: cd.value, factionId: fs.value, army: ar.value }) }, 'Créer joueur')),
     hint,
-    h('table', {}, h('tr', {}, ['Joueur', 'Pts', 'Bonus', ''].map((x) => h('th', {}, x))),
+    h('button', { onclick: exportLinks }, 'Exporter les liens (CSV pour mailing)'),
+    h('table', {}, h('tr', {}, ['Joueur', 'Pts', ''].map((x) => h('th', {}, x))),
       s.players.map((p) => {
         const a = h('input', { type: 'number', value: 5 });
-        const link = `${location.origin}/?code=${p.code}`;
-        return h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'dim' }, s.factions.find((f) => f.id === p.factionId)?.name), h('div', { class: 'dim' }, p.code, ' ', h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'))),
-          h('td', {}, `${p.left}/${p.points}`), h('td', {}, `${p.bonusLeft}/${p.bonus}`),
+        const link = `${PUBLIC_URL}/?code=${p.code}`;
+        return h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'dim' }, [s.factions.find((f) => f.id === p.factionId)?.name, p.army].filter(Boolean).join(' · ')), h('div', { class: 'dim' }, p.code, ' ', h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ', p.email ? h('button', { onclick: () => { location.href = mailtoFor(p); } }, '✉ mail') : null)),
+          h('td', {}, `${p.left}/${p.points}`),
           h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'),
-            h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'bonus' }) }, '+bonus'),
             h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
       })),
-    h('h3', { style: 'margin-top:12px' }, 'Configuration (JSON)'),
-    h('p', { class: 'dim' }, 'Planètes, jauges, tiers (mode: crosser | draw), lots, factions (gauge: loyalist | renegade | choice | null). Les gagnants existants sont conservés par id de palier.'),
-    cfg, h('button', { onclick: () => { try { act('PUT', '/api/admin/config', JSON.parse(cfg.value)); } catch (e) { $('#err').textContent = e.message; } } }, 'Enregistrer la config'),
+    editorEl,
     h('h3', { style: 'margin-top:16px;color:var(--red)' }, 'Zone dangereuse'),
     h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers et le journal. Les joueurs, leurs points et la config sont conservés.'),
     h('div', { class: 'row' },

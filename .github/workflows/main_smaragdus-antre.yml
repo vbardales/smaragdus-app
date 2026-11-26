@@ -54,6 +54,7 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4C38566BDF194507B7C33369E36938AF }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8D06ED398C9548FEB8CD6AB0404CA8FB }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4AF4BC0AD237404F87E08ED1D3F38B7B }}
+          allow-no-subscriptions: true # the identity only has a role on the web app, not on the subscription
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp

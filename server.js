@@ -210,16 +210,16 @@ function view(role, me) {
     id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t) : '', multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
     total: t.kind === 'planet' ? sideTotal(t, 'loyalist') + sideTotal(t, 'renegade') : sideTotal(planetOfGauge(t), t.side),
     mine: me ? (t.kind === 'planet' ? ['loyalist', 'renegade'].reduce((n, side) => n + (me.alloc[gaugeOf(t, side)?.id] || 0), 0) : me.alloc[t.id] || 0) : 0,
-    // players never learn the tiers nobody has unlocked yet; unlocked ones show only threshold, public label and prize winner
+    // players never learn the tiers nobody has unlocked yet, not even how many there are; unlocked ones show only threshold, public label and prize winner
     // (the report itself, rules and prize text go to the inbox of the contributors)
-    tiers: t.tiers.map((pa) => (isAdmin ? { id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, prize: pa.prize, unlocked: pa.unlocked, winnerSide: pa.winnerSide, winnerId: pa.winnerId, winnerName: pa.winnerName }
+    tiers: t.tiers.filter((pa) => isAdmin || pa.unlocked).map((pa) => (isAdmin ? { id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, prize: pa.prize, unlocked: pa.unlocked, winnerSide: pa.winnerSide, winnerId: pa.winnerId, winnerName: pa.winnerName }
       : pa.unlocked ? { id: pa.id, threshold: pa.threshold, label: pa.label, unlocked: true, winnerSide: pa.winnerSide, hasPrize: !!pa.prize, winnerName: pa.winnerName }
-      : { id: pa.id, hidden: true })),
+      : null)),
   }));
   const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id)).slice(0, 40).map(({ t, text }) => ({ t, text }));
   const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
   if (me) {
-    out.me = { id: me.id, name: me.name, fluffName: me.fluffName || null, factionId: me.factionId, points: me.points - spent(me), gauges: allowedGauges(me), army: me.army || null, planetBonus: army(me)?.bonus ? { planetName: S.targets.find((t) => t.id === army(me).bonus.planetId)?.name, pct: army(me).bonus.pct } : null, wipe: !me.abilityUsed ? wipeSide(me) : null };
+    out.me = { id: me.id, name: me.name, fluffName: me.fluffName || null, factionId: me.factionId, points: me.points - spent(me), gauges: allowedGauges(me), army: me.army || null, planetBonus: army(me)?.bonus ? { planetId: army(me).bonus.planetId, planetName: S.targets.find((t) => t.id === army(me).bonus.planetId)?.name, pct: army(me).bonus.pct } : null, wipe: !me.abilityUsed ? wipeSide(me) : null };
     // inbox: reports are read live from the config, so an edit on the day also fixes reports already delivered
     out.inbox = me.inbox.map((m) => {
       const t = S.targets.find((x) => x.id === m.targetId), pa = t?.tiers.find((x) => x.id === m.tierId);
@@ -246,6 +246,8 @@ function auth(req) {
 // ---------- HTTP ----------
 const clients = new Set();
 const broadcast = () => { for (const c of clients) c.write('data: tick\n\n'); };
+// SSE comment every 25 s: proxies (Azure) cut idle connections after about 4 minutes
+setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 25000).unref();
 const send = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
 const MIME = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml' };
 const newCode = () => crypto.randomBytes(4).toString('hex');

@@ -12,7 +12,15 @@ body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Georgia,serif
 h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
-@media(max-width:900px){main{grid-template-columns:1fr}}
+body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
+@media(max-width:900px){main,body.isadmin main{grid-template-columns:1fr}}
+body.isadmin #side{margin-top:12px}
+.tools{margin:8px 0}.tools input[type=search]{flex:1;min-width:200px}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
+dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(360px,90vw)}
+.toast{background:var(--panel);border:1px solid var(--gold);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
+#players td:last-child{white-space:nowrap}#players input[type=number]{width:64px}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
 #map{position:relative;aspect-ratio:3/2;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
 .spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:11px Georgia}
@@ -39,8 +47,21 @@ textarea{width:100%;height:340px;font:12px monospace}
 .sb{display:inline-block;width:44px;height:6px;background:#e0605f;border-radius:3px;overflow:hidden}
 .sb u{display:block;height:100%;background:#e0c040}
 .sb.zero{background:#666}
-.msg{border-top:1px solid #2a2330;padding:6px 0}.msg summary{cursor:pointer}.msg.new summary b::after{content:" · NOUVEAU";color:var(--green);font-size:12px}
-.msg .fluff{white-space:pre-wrap;margin:8px 0}.msg img{max-width:100%;display:block;margin:6px 0;border:1px solid var(--line)}
+.bonus{color:var(--gold)}
+/* inbox */
+#inbox .list{max-height:70vh;overflow-y:auto;padding-right:2px}
+.msg{background:#1c1822;border:1px solid #2a2330;border-left:3px solid var(--line);margin:8px 0;padding:8px 10px}
+.msg.new{border-left-color:var(--green)}
+.msg summary{cursor:pointer;list-style:none}.msg summary::-webkit-details-marker{display:none}
+.msg .meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim);font-variant:small-caps;letter-spacing:.04em}
+.msg .pill{background:var(--green);color:#06210f;padding:0 7px;border-radius:8px;font-size:11px;font-variant:normal;font-weight:bold}
+.msg .title{display:block;color:var(--gold);font-size:15px;margin-top:2px}
+.msg .preview{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--dim);font-size:13px;margin-top:2px}
+.msg[open] .preview{display:none}
+.msg .fluff{white-space:pre-wrap;margin:10px 0;padding-left:10px;border-left:2px solid var(--line);font-size:14.5px;line-height:1.55}
+.msg img{max-width:100%;display:block;margin:8px 0;border:1px solid var(--line)}
+.msg .box{border:1px solid var(--gold);padding:6px 8px;margin:8px 0;font-size:14px}.msg .box b{color:var(--gold)}
+.msg .camp{margin:8px 0 0;font-size:13px}.camp-loyalist{color:#e0c040}.camp-renegade{color:#e0605f}
 details.ed{border-top:1px solid #2a2330;padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
 .ed textarea{height:64px;font:13px Georgia,serif;margin-top:4px}.ed input{margin-top:4px}
 .spot .mine{color:#9fe3a0;font-size:12px}
@@ -60,22 +81,25 @@ body.mapview .spot{pointer-events:none}
 <div id="login" class="panel" style="max-width:420px;margin:40px auto">
   <h2>Identification</h2>
   <p class="dim">Entre ton code joueur (ou le mot de passe admin).</p>
-  <div class="row"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="go">Entrer</button></div>
+  <div class="row"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="peek" type="button" title="Afficher ou masquer le code">Afficher</button><button id="go">Entrer</button></div>
   <p id="lerr" style="color:var(--red)"></p>
 </div>
 
 <main id="app" class="hide">
   <section>
     <div id="map"></div>
-        <div class="panel" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
+    <div class="panel hide" id="players" style="margin-top:12px"></div>
+    <div class="panel" id="journal" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
   </section>
   <aside>
     <div class="panel" id="side"><p class="dim">Clique sur une planète.</p></div>
+    <div class="panel hide" id="me" style="margin-top:12px"></div>
     <div class="panel hide" id="inbox" style="margin-top:12px"></div>
     <div class="panel hide" id="admin" style="margin-top:12px"></div>
   </aside>
 </main>
 <p id="err" style="padding:0 16px"></p>
+<div id="toasts"></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -98,12 +122,37 @@ async function api(method, p, body) {
 // on failure also resync: a stale list (deleted player, restarted server) would otherwise keep failing
 const act = async (m, p, b) => { try { $('#err').textContent = ''; await api(m, p, b); await refresh(); } catch (e) { $('#err').textContent = e.message; await refresh(); } };
 
+// ---------- notifications ----------
+// A toast for each new report in the inbox and for each new tier won / prize drawn (also on the projector map view).
+// The first state received after loading only records what is already known.
+let knownInbox = null, knownLog = null;
+function toast(text, onclick) {
+  const t = h('div', { class: 'toast', onclick: () => { onclick?.(); t.remove(); } }, text);
+  $('#toasts').append(t);
+  setTimeout(() => t.remove(), 9000);
+}
+function announce(s) {
+  const key = (m) => `${m.targetId}/${m.tierId}`;
+  if (knownInbox) {
+    for (const m of s.inbox || []) if (!knownInbox.has(key(m))) toast(`Nouveau rapport : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
+    for (const l of s.log) if (/^(PALIER|LOT|Premier contact)/.test(l.text) && !knownLog.has(`${l.t}|${l.text}`)) toast(l.text);
+  }
+  knownInbox = new Set((s.inbox || []).map(key));
+  knownLog = new Set(s.log.map((l) => `${l.t}|${l.text}`));
+}
+// unread count in the tab title
+function updateTitle() {
+  const read = readKeys(), fresh = (state.inbox || []).filter((m) => !read.has(`${m.targetId}/${m.tierId}`)).length;
+  document.title = (fresh ? `(${fresh}) ` : '') + 'Système Smaragdus';
+}
+
 async function refresh() {
   try { state = await api('GET', '/api/state'); } catch (e) {
     if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#lerr').textContent = token ? 'Code invalide' : ''; }
     return;
   }
   localStorage.setItem('smg-token', token);
+  announce(state);
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
   render();
 }
@@ -122,7 +171,6 @@ function splitBar(l, r) {
 function render() {
   const s = state, isAdmin = s.role === 'admin';
   const who = $('#who'); who.replaceChildren();
-  if (s.me) who.append(h('span', {}, `${s.me.fluffName || s.me.name} · ${s.factions.find((f) => f.id === s.me.factionId)?.name || ''} · `), h('b', {}, `${s.me.points} pts`), s.me.army ? h('span', { class: 'dim', style: 'margin-left:8px' }, `${s.me.army}${s.me.planetBonus ? ` · ${s.me.planetBonus.planetName} +${s.me.planetBonus.pct} %` : ' · pas de bonus de planète'}`) : '');
   if (isAdmin) who.append(h('b', {}, 'ADMIN'));
   who.append(h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter'));
 
@@ -130,12 +178,16 @@ function render() {
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
-      h('span', {}, t.name),
+      h('span', {}, t.name, s.me?.planetBonus?.planetId === t.id ? ' ★' : ''),
       s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet
       h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
-  renderSide(); renderInbox(); renderAdmin();
+  document.body.classList.toggle('isadmin', isAdmin);
+  const sidePanel = $('#side'), center = $('#app section');
+  if (isAdmin && sidePanel.parentNode !== center) center.insertBefore(sidePanel, $('#players')); // admin: planet panel in the center
+  else if (!isAdmin && sidePanel.parentNode === center) $('#app aside').prepend(sidePanel);
+  renderSide(); renderMe(); renderInbox(); renderPlayers(); renderAdmin();
 }
 
 // tier list of a planet: the loyalist and renegade camps race to each threshold, the first one wins the tier.
@@ -144,7 +196,6 @@ function tierBlocks(t) {
   const isAdmin = state.role === 'admin';
   const L = gaugeOf(t, 'loyalist')?.total ?? 0, R = gaugeOf(t, 'renegade')?.total ?? 0;
   const shown = t.tiers.filter((p) => !p.hidden).sort((a, b) => a.threshold - b.threshold);
-  const hiddenCount = t.tiers.length - shown.length;
   return [...shown.map((p) => h('div', { class: 'tier' + (p.unlocked ? ' won' : '') },
     h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · remporté par les ${SIDE[p.winnerSide]}` : ' · débloqué') : null,
     isAdmin && p.title ? h('div', { class: 'dim' }, p.title) : null,
@@ -152,17 +203,18 @@ function tierBlocks(t) {
     isAdmin && p.prize ? h('div', { class: 'dim' }, `Lot : ${p.prize}${p.winnerName ? ` → ${p.winnerName}` : ' (tirage à venir)'}`) : null,
     !isAdmin && p.hasPrize ? h('div', { class: 'dim' }, p.winnerName ? `Lot tiré au sort : ${p.winnerName}` : 'Un lot est en jeu') : null,
     !isAdmin && state.inbox?.some((m) => m.tierId === p.id) ? h('div', { class: 'dim' }, 'Rapport reçu dans ta messagerie') : null)),
-  hiddenCount ? h('div', { class: 'tier dim' }, `Paliers cachés : ${hiddenCount}`) : null];
+  ];
 }
 
-// camp + amount + invest button for a planet; the admin picks the player
+// camp + amount + invest button for a planet; the admin picks the player. A player tied to one camp gets no camp selector.
 function investRow(t, sel) {
   const sides = state.role === 'admin' ? ['loyalist', 'renegade'] : state.me.gauges;
-  const camp = h('select', {}, sides.map((x) => h('option', { value: x }, SIDE[x])));
+  const camp = sides.length > 1 ? h('select', {}, sides.map((x) => h('option', { value: x }, SIDE[x]))) : null;
   const amt = h('input', { type: 'number', min: 1, value: 1 });
-  return [h('div', { class: 'row', style: 'margin-top:6px' }, camp, amt,
-    h('button', { onclick: () => act('POST', '/api/allocate', { targetId: gaugeOf(t, camp.value).id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
-    state.me ? h('p', { class: 'dim' }, `Disponible : ${state.me.points} points`) : null];
+  return [camp ? null : h('p', { class: 'dim' }, 'Ton camp : ', h('b', { class: sides[0] === 'loyalist' ? 'ly' : 'rn' }, SIDE[sides[0]])),
+    h('div', { class: 'row', style: 'margin-top:6px' }, camp, amt,
+      h('button', { onclick: () => act('POST', '/api/allocate', { targetId: gaugeOf(t, camp ? camp.value : sides[0]).id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
+    state.me ? h('p', { class: 'dim' }, `Disponible : ${state.me.points} points`) : null].filter(Boolean);
 }
 
 function renderSide() {
@@ -172,6 +224,7 @@ function renderSide() {
   const sel = isAdmin ? h('select', { style: 'margin-bottom:6px' }, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
   side.replaceChildren(h('h2', {}, t.name));
   const add = (...xs) => side.append(...xs.flat().filter(Boolean)); // flatten arrays, skip null
+  if (s.me?.planetBonus?.planetId === t.id) add(h('p', { class: 'bonus' }, `★ Bonus de légion : tes points investis ici comptent +${s.me.planetBonus.pct} %.`));
   if (t.nature) add(h('p', {}, h('b', {}, 'Nature : '), t.nature));
   if (t.specialty) add(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
   add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
@@ -192,6 +245,21 @@ async function copyLink(link, btn) {
   }
 }
 
+// ---------- player card (side column, under the planet panel) ----------
+function renderMe() {
+  const box = $('#me'), m = state.me;
+  if (!m) return box.classList.add('hide');
+  box.classList.remove('hide');
+  const f = state.factions.find((x) => x.id === m.factionId)?.name;
+  box.replaceChildren(...[h('h2', { style: 'font-size:1.05em;line-height:1.3' }, m.fluffName || m.name),
+    m.fluffName ? h('p', { class: 'dim' }, m.name) : null,
+    h('p', {}, h('b', {}, `${m.points} points`), ' à investir'),
+    f ? h('p', {}, h('b', {}, 'Faction : '), f) : null,
+    m.army ? h('p', {}, h('b', {}, 'Légion : '), m.army) : null,
+    m.planetBonus ? h('p', { class: 'bonus' }, h('b', {}, '★ Bonus de légion : '), `${m.planetBonus.planetName} +${m.planetBonus.pct} % sur tes points investis`) : (m.army ? h('p', { class: 'dim' }, 'Ta légion n\'a pas de bonus de planète.') : null),
+    m.wipe ? h('p', { class: 'dim' }, `Pouvoir disponible : détruire les points des ${SIDE[m.wipe]} sur une planète (1 fois).`) : null].filter(Boolean));
+}
+
 // ---------- inbox (player) ----------
 const readKeys = () => { try { return new Set(JSON.parse(localStorage.getItem('smg-read') || '[]')); } catch { return new Set(); } };
 const openMsgs = new Set();
@@ -201,23 +269,34 @@ function renderInbox() {
   box.classList.remove('hide');
   const read = readKeys(), key = (m) => `${m.targetId}/${m.tierId}`;
   const fresh = state.inbox.filter((m) => !read.has(key(m))).length;
-  box.replaceChildren(...[h('h2', {}, `Messagerie${fresh ? ` (${fresh} nouveau${fresh > 1 ? 'x' : ''})` : ''}`), state.me.fluffName ? h('p', { class: 'dim' }, `Destinataire : ${state.me.fluffName}`) : null,
-    state.inbox.length ? null : h('p', { class: 'dim' }, 'Aucun rapport pour le moment. Investis des points sur une planète pour recevoir les comptes-rendus des équipes de reconnaissance.'),
-    state.inbox.map((m) => {
-      const d = h('details', { class: 'msg' + (read.has(key(m)) ? '' : ' new') },
-        h('summary', {}, h('b', {}, `${m.targetName} · ${m.title || m.label}`), h('span', { class: 'dim' }, ` ${new Date(m.t).toLocaleString()}`)),
-        m.side ? h('p', { class: 'dim' }, `Palier remporté par les ${SIDE[m.side]}`) : null,
-        h('div', { class: 'fluff' }, m.fluff || 'Rapport en cours de déchiffrement…'),
+  updateTitle();
+  const markAll = () => { try { localStorage.setItem('smg-read', JSON.stringify([...new Set([...read, ...state.inbox.map(key)])])); } catch {} renderInbox(); };
+  const when = (t) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  box.replaceChildren(...[
+    h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, 'Messagerie'),
+      fresh ? h('button', { onclick: markAll }, `Tout marquer comme lu (${fresh})`) : null),
+    h('p', { class: 'dim' }, state.inbox.length ? `${state.inbox.length} transmission${state.inbox.length > 1 ? 's' : ''} des équipes de reconnaissance${fresh ? ` · ${fresh} non lue${fresh > 1 ? 's' : ''}` : ''}`
+      : 'Aucune transmission pour le moment. Investis des points sur une planète pour recevoir les comptes-rendus des équipes de reconnaissance.'),
+    h('div', { class: 'list' }, state.inbox.map((m) => {
+      const isNew = !read.has(key(m));
+      const d = h('details', { class: 'msg' + (isNew ? ' new' : '') },
+        h('summary', {},
+          h('div', { class: 'meta' }, h('span', {}, m.targetName), isNew ? h('span', { class: 'pill' }, 'nouveau') : null, h('span', { style: 'margin-left:auto' }, when(m.t))),
+          h('span', { class: 'title' }, m.title || m.label),
+          m.fluff ? h('div', { class: 'preview' }, m.fluff.replace(/\s+/g, ' ')) : null),
+        h('p', { class: 'camp ' + (m.side ? 'camp-' + m.side : 'dim') }, m.label + (m.side ? ` · remporté par les ${SIDE[m.side]}` : '')),
+        h('div', { class: 'fluff' }, m.fluff || 'Transmission en cours de déchiffrement…'),
         m.images.map((src) => h('a', { href: src, target: '_blank' }, h('img', { src, alt: '' }))),
-        m.rules ? h('p', {}, h('b', {}, 'Règle débloquée : '), m.rules) : null,
-        m.hasPrize ? h('p', {}, h('b', {}, 'Lot : '), m.won ? `remporté par toi — ${m.prize}` : m.winnerName ? `tiré au sort : ${m.winnerName}` : 'tirage à venir') : null);
+        m.rules ? h('div', { class: 'box' }, h('b', {}, 'Règle débloquée'), h('div', {}, m.rules)) : null,
+        m.hasPrize ? h('div', { class: 'box' }, h('b', {}, 'Lot'), h('div', {}, m.won ? `Remporté par toi : ${m.prize}` : m.winnerName ? `Tiré au sort : ${m.winnerName}` : 'Tirage à venir')) : null);
       if (openMsgs.has(key(m))) d.open = true;
       d.ontoggle = () => {
-        if (d.open) { openMsgs.add(key(m)); const r = readKeys(); r.add(key(m)); try { localStorage.setItem('smg-read', JSON.stringify([...r])); } catch {} d.classList.remove('new'); }
+        if (d.open) { openMsgs.add(key(m)); const r = readKeys(); r.add(key(m)); try { localStorage.setItem('smg-read', JSON.stringify([...r])); } catch {} d.classList.remove('new'); d.querySelector('.pill')?.remove(); updateTitle(); }
         else openMsgs.delete(key(m));
       };
       return d;
-    })].flat().filter(Boolean));
+    })),
+  ].filter(Boolean));
 }
 
 // ---------- tier editor (admin) ----------
@@ -270,7 +349,7 @@ function buildEditor() {
     return e;
   };
   const armies = h('table', {}, (draft.armies || []).map((a) => h('tr', {}, h('td', {}, a.name), h('td', {}, planetSel(a)),
-    h('td', {}, a.bonus ? [num(a.bonus, 'pct', { style: 'width:56px' }), ' %'] : ''), h('td', {}, wipeSel(a)))));
+    h('td', { style: 'white-space:nowrap' }, a.bonus ? [num(a.bonus, 'pct', { style: 'width:56px' }), ' %'] : ''), h('td', {}, wipeSel(a)))));
   const json = h('textarea', { style: 'height:240px;font:12px monospace' }); json.value = JSON.stringify(draft, null, 1);
   editorEl.replaceChildren(h('h3', { style: 'margin-top:12px' }, 'Seuils des paliers'),
     h('p', { class: 'dim' }, 'Points à atteindre par un camp pour remporter chaque palier : le premier camp (loyalistes ou renégats) à atteindre le seuil gagne le palier (✓ = déjà remporté). Un palier débloqué le reste ; baisser un seuil sous le total actuel le remporte à l\'enregistrement.'),
@@ -284,15 +363,44 @@ function buildEditor() {
 
 // Mail to a player with their personal link, opened in the default mail client (mailto). The closing depends on the camp.
 const MAIL_CLOSING = { loyalist: 'Gloire à l\'Empereur !', renegade: 'Mort au faux Empereur !', alpha: 'Nous sommes un. Nous sommes légion.' };
-function mailtoFor(p) {
+function mailOf(p) {
   const camp = state.factions.find((f) => f.id === p.factionId)?.gauge;
   const closing = MAIL_CLOSING[p.factionId === 'alpha' ? 'alpha' : camp] || 'Que les étoiles guident vos armées.';
   const body = [`Salutations, ${p.fluffName || p.name},`, '',
     'Les éclaireurs ont quitté l\'orbite et les premières transmissions parviennent au Système Smaragdus.',
     'Voici le tableau de bord où consigner nos prises de victoire, tel que vous l\'avez demandé :', '',
     `${PUBLIC_URL}/?code=${p.code}`, '',
-    'Ce lien est personnel : il vous identifie auprès du Système. Ne le confiez à personne.', '', closing].join('\r\n');
-  return `mailto:${p.email}?subject=${encodeURIComponent('Système Smaragdus : votre tableau de bord de conquête')}&body=${encodeURIComponent(body)}`;
+    'Ce lien est personnel : il vous identifie auprès du Système. Ne le confiez à personne.', '', closing].join('\n');
+  return { to: p.email, subject: 'Système Smaragdus : votre tableau de bord de conquête', body };
+}
+
+// Mail dialog: shows the message (editable) and three ways to send it. A bare mailto: link does nothing visible when no
+// mail client is configured, so Gmail and "copy" are always available, and every button gives feedback.
+function showMail(p) {
+  const m = mailOf(p);
+  const dlg = h('dialog', {});
+  const subject = h('input', { style: 'width:100%' }), body = h('textarea', {});
+  subject.value = m.subject; body.value = m.body;
+  const note = h('p', { class: 'dim', style: 'min-height:1.4em' });
+  const enc = encodeURIComponent;
+  const btn = (label, fn) => h('button', { onclick: fn }, label);
+  dlg.append(h('h2', {}, 'Mail à ' + p.name), h('p', { class: 'dim' }, 'À : ' + m.to), subject, body, note,
+    h('div', { class: 'row' },
+      btn('Ouvrir mon client mail', () => {
+        location.href = `mailto:${m.to}?subject=${enc(subject.value)}&body=${enc(body.value.replace(/\n/g, '\r\n'))}`;
+        note.textContent = 'Demande envoyée au client mail. Si rien ne s\'ouvre, aucun client n\'est configuré : utilise Gmail ou copie le texte.';
+      }),
+      btn('Ouvrir dans Gmail', () => {
+        window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${enc(m.to)}&su=${enc(subject.value)}&body=${enc(body.value)}`, '_blank');
+        note.textContent = 'Gmail ouvert dans un nouvel onglet.';
+      }),
+      btn('Copier le texte', async () => {
+        try { await navigator.clipboard.writeText(body.value); note.textContent = 'Texte copié ✓'; } catch { body.select(); note.textContent = 'Copie impossible : le texte est sélectionné, fais Ctrl+C.'; }
+      }),
+      btn('Fermer', () => dlg.close())));
+  dlg.onclose = () => dlg.remove();
+  document.body.append(dlg);
+  dlg.showModal();
 }
 
 // one line per player with the personal link, ready for a mail merge (the link uses the address this page is served from)
@@ -305,45 +413,93 @@ function exportLinks() {
   a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ---------- players panel (admin, center) ----------
+// The controls are built once, so typing in the filter or the create form is never interrupted by live refreshes;
+// only the table rows are refilled.
+let playerFilter = '', playersUi = null;
+const playersEl = $('#players');
+function setOptions(sel, items, first) { // refresh a select's options without losing its value
+  const sig = JSON.stringify(items);
+  if (sel.dataset.sig === sig) return;
+  const v = sel.value;
+  sel.replaceChildren(...[first ? h('option', { value: '' }, first) : null, ...items.map(([val, label]) => h('option', { value: val }, label))].filter(Boolean));
+  sel.dataset.sig = sig;
+  sel.value = v;
+}
+function buildPlayersUi() {
+  const filter = h('input', { type: 'search', placeholder: 'Filtrer : nom, légion, faction, code, email…' });
+  filter.oninput = () => { playerFilter = filter.value; fillPlayers(); };
+  const count = h('span', { class: 'dim' }), rows = h('tbody');
+  const nm = h('input', { placeholder: 'Nom du joueur' }), fn = h('input', { placeholder: 'Nom fluff (optionnel)', style: 'width:200px' }), cd = h('input', { placeholder: 'Code (optionnel)', style: 'width:140px' });
+  const fs = h('select'), ar = h('select'), hint = h('span', { style: 'color:var(--red);font-size:13px' });
+  // live check while typing; the server enforces it anyway (unique whatever the case, 4-32 chars of letters, digits, - or _)
+  cd.oninput = () => {
+    cd.value = cd.value.toLowerCase(); // codes are always lowercase
+    const v = cd.value.trim();
+    hint.textContent = !v ? '' : !/^[a-z0-9_-]{4,32}$/.test(v) ? 'Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)'
+      : state.players.some((p) => p.code.toLowerCase() === v) ? 'Code déjà utilisé' : '';
+  };
+  const create = h('button', { onclick: async () => {
+    await act('POST', '/api/admin/player', { name: nm.value, fluffName: fn.value, code: cd.value, factionId: fs.value, army: ar.value });
+    if (!$('#err').textContent) nm.value = fn.value = cd.value = ''; // keep the fields when the server refused
+  } }, 'Créer joueur');
+  playersEl.replaceChildren(h('h2', {}, 'Joueurs'),
+    h('div', { class: 'row tools' }, filter, count),
+    h('div', { class: 'row tools' },
+      h('button', { onclick: exportLinks }, 'Exporter les liens (CSV pour mailing)'),
+      h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)')),
+    h('details', { class: 'ed' }, h('summary', {}, 'Créer un joueur'), h('div', { class: 'row' }, nm, fn, cd, fs, ar, create), hint),
+    h('table', {}, h('thead', {}, h('tr', {}, ['Joueur', 'Pts', 'Actions'].map((x) => h('th', {}, x)))), rows),
+    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', { style: 'color:var(--red)' }, 'Zone dangereuse'),
+      h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers, rapports reçus et le journal. Les joueurs, leurs points et la config sont conservés.'),
+      h('div', { class: 'row' },
+        h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
+        h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs'))));
+  return { count, rows, fs, ar };
+}
+function fillPlayers() {
+  const s = state, q = playerFilter.trim().toLowerCase();
+  const fname = (p) => s.factions.find((f) => f.id === p.factionId)?.name || '';
+  const list = s.players.filter((p) => !q || [p.name, p.fluffName, p.army, fname(p), p.code, p.email, p.discord].some((v) => String(v || '').toLowerCase().includes(q)));
+  playersUi.count.textContent = `${list.length} / ${s.players.length}`;
+  playersUi.rows.replaceChildren(...list.map((p) => {
+    const a = h('input', { type: 'number', value: 5 });
+    const link = `${PUBLIC_URL}/?code=${p.code}`;
+    return h('tr', {},
+      h('td', {}, h('b', {}, p.name), p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army, p.code].filter(Boolean).join(' · '))),
+      h('td', {}, `${p.left}/${p.points}`),
+      h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'), ' ',
+        h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ',
+        p.email ? h('button', { onclick: () => showMail(p) }, '✉ mail') : null, ' ',
+        h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
+  }));
+}
+function renderPlayers() {
+  if (state.role !== 'admin') return playersEl.classList.add('hide');
+  playersEl.classList.remove('hide');
+  playersUi ??= buildPlayersUi();
+  setOptions(playersUi.fs, state.factions.map((f) => [f.id, f.name]));
+  setOptions(playersUi.ar, (state.config.armies || []).map((x) => [x.name, x.name]), 'Légion');
+  const typing = playersUi.rows.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; // an amount being typed
+  if (!typing) fillPlayers();
+}
+
+// ---------- configuration (admin, right column) ----------
 function renderAdmin() {
   const box = $('#admin');
   if (state.role !== 'admin') return box.classList.add('hide');
   box.classList.remove('hide');
   if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // do not overwrite user input
-  const s = state;
-  const fsel = () => h('select', {}, s.factions.map((f) => h('option', { value: f.id }, f.name)));
-  const nm = h('input', { placeholder: 'Nom du joueur' }), cd = h('input', { placeholder: 'Code (optionnel)', style: 'width:140px' }), fs = fsel(), ar = h('select', {}, h('option', { value: '' }, 'Légion'), (s.config.armies || []).map((a) => h('option', { value: a.name }, a.name)));
-  // live check while typing; the server enforces it anyway (unique whatever the case, 4-32 chars of letters, digits, - or _)
-  const hint = h('span', { style: 'color:var(--red);font-size:13px' });
-  cd.oninput = () => {
-    cd.value = cd.value.toLowerCase(); // codes are always lowercase
-    const v = cd.value.trim();
-    hint.textContent = !v ? '' : !/^[a-z0-9_-]{4,32}$/.test(v) ? 'Code invalide (4 à 32 caractères : lettres, chiffres, - ou _)'
-      : s.players.some((p) => p.code.toLowerCase() === v) ? 'Code déjà utilisé' : '';
-  };
-  if (!dirty) { draft = structuredClone(s.config); buildEditor(); }
-  box.replaceChildren(h('h2', {}, 'Admin'),
-    h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)'),
-    h('div', { class: 'row' }, nm, cd, fs, ar, h('button', { onclick: () => act('POST', '/api/admin/player', { name: nm.value, code: cd.value, factionId: fs.value, army: ar.value }) }, 'Créer joueur')),
-    hint,
-    h('button', { onclick: exportLinks }, 'Exporter les liens (CSV pour mailing)'),
-    h('table', {}, h('tr', {}, ['Joueur', 'Pts', ''].map((x) => h('th', {}, x))),
-      s.players.map((p) => {
-        const a = h('input', { type: 'number', value: 5 });
-        const link = `${PUBLIC_URL}/?code=${p.code}`;
-        return h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'dim' }, [s.factions.find((f) => f.id === p.factionId)?.name, p.army].filter(Boolean).join(' · ')), h('div', { class: 'dim' }, p.code, ' ', h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ', p.email ? h('button', { onclick: () => { location.href = mailtoFor(p); } }, '✉ mail') : null)),
-          h('td', {}, `${p.left}/${p.points}`),
-          h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'),
-            h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
-      })),
-    editorEl,
-    h('h3', { style: 'margin-top:16px;color:var(--red)' }, 'Zone dangereuse'),
-    h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers et le journal. Les joueurs, leurs points et la config sont conservés.'),
-    h('div', { class: 'row' },
-      h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
-      h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs')));
+  if (!dirty) { draft = structuredClone(state.config); buildEditor(); }
+  box.replaceChildren(h('h2', {}, 'Configuration'), editorEl);
 }
 
+$('#peek').onclick = () => {
+  const show = $('#code').type === 'password';
+  $('#code').type = show ? 'text' : 'password';
+  $('#peek').textContent = show ? 'Masquer' : 'Afficher';
+  $('#code').focus();
+};
 $('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };
 // braces matter: an arrow returning false from onkeydown cancels the keystroke
 $('#code').onkeydown = (e) => { if (e.key === 'Enter') $('#go').click(); };

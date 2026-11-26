@@ -114,7 +114,7 @@ function save() {
     }
   }, 100);
 }
-// scope: 'public' = every player, a player id = that player (and admin), undefined = admin only
+// scope: 'public' = every player, 'camp:<side>' = that camp's players (and the players without a fixed camp), a player id = that player (and admin), undefined = admin only
 const logEvt = (text, scope) => { S.log.unshift({ t: Date.now(), text, scope }); S.log.length = Math.min(S.log.length, 200); };
 
 // ---------- logic ----------
@@ -163,7 +163,10 @@ function settle(planet) {
   for (const pa of planet.tiers) {
     if (pa.shared) { // first contact: unlocked by the planet's total, delivered to the contributors of both camps
       const mine = Object.values(S.players).filter((q) => ['loyalist', 'renegade'].some((side) => q.alloc[gaugeOf(planet, side)?.id] > 0));
-      if (!pa.unlocked && camps[0].total + camps[1].total >= pa.threshold) { pa.unlocked = true; logEvt(`Premier contact établi sur ${planet.name}`, 'public'); }
+      if (!pa.unlocked && camps[0].total + camps[1].total >= pa.threshold) {
+        const first = !planet.tiers.some((x) => x.shared && x.unlocked); // one log line per planet, even with several first-contact archives
+        pa.unlocked = true;
+        if (first) logEvt(`Premier contact établi sur ${planet.name}`, campScope(camps.filter((c) => c.total > 0).map((c) => c.side))); }
       if (pa.unlocked) {
         for (const c of camps) if (c.total > 0 && !pa.camps.includes(c.side)) pa.camps.push(c.side);
         deliver(planet, pa, mine); deliverTeasers(planet, pa, mine);
@@ -176,7 +179,7 @@ function settle(planet) {
       const best = Math.max(...reached.map((c) => c.total)), top = reached.filter((c) => c.total === best); // a tie only happens after a config edit
       pa.winnerSide = top[crypto.randomInt(top.length)].side;
       pa.unlocked = true;
-      logEvt(`PALIER ${planet.name} « ${pa.label} » (${pa.threshold}) remporté par les ${SIDE_NAME[pa.winnerSide]}`, 'public');
+      logEvt(`PALIER ${planet.name} « ${pa.label} » (${pa.threshold}) remporté par les ${SIDE_NAME[pa.winnerSide]}`, campScope([pa.winnerSide]));
     }
     const g = pa.winnerSide && gaugeOf(planet, pa.winnerSide);
     if (!g) continue; // tier won before camps existed (old save): nothing to deliver
@@ -185,7 +188,7 @@ function settle(planet) {
       let r = crypto.randomInt(entries.reduce((n, q) => n + q.alloc[g.id], 0));
       const winner = entries.find((q) => (r -= q.alloc[g.id]) < 0);
       pa.winnerId = winner.id; pa.winnerName = winner.name;
-      logEvt(`LOT ${planet.name} « ${pa.label} » → ${winner.name} (tirage pondéré)`, 'public');
+      logEvt(`LOT ${planet.name} « ${pa.label} » → ${winner.name} (tirage pondéré)`, campScope([pa.winnerSide]));
     }
     deliver(planet, pa, entries);
     deliverTeasers(planet, pa, entries);
@@ -201,23 +204,28 @@ function deliver(planet, pa, players) {
   }
 }
 // short notice for the players tied to a served camp (the winner of a race tier, the camps of the contributors of a shared tier) who have not contributed.
-// Players who pick their camp at each investment belong to no camp and get none.
+// Players who pick their camp at each investment (no fixed camp) get the notice of every tier.
 function deliverTeasers(planet, pa, contributors) {
   if (!pa.teaser.trim()) return;
   const served = new Set(pa.winnerSide ? [pa.winnerSide] : contributors.map(fixedSide).filter(Boolean));
   for (const q of Object.values(S.players)) {
-    if (contributors.includes(q) || !served.has(fixedSide(q)) || q.inbox.some((m) => m.tierId === pa.id)) continue;
+    if (contributors.includes(q) || (fixedSide(q) && !served.has(fixedSide(q))) || q.inbox.some((m) => m.tierId === pa.id)) continue;
     q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now(), teaser: true });
     logEvt(`Nouvelle transmission : ${planet.name}`, q.id);
   }
 }
 // what the planet is taken to be: the nature of the highest unlocked tier that sets one, else its starting nature
-// A tier's nature is seen by the players of the camps it served (fixed camp, or an investment on that camp's gauge) and by the admin (viewer null).
-const seesTier = (viewer, planet, pa) => {
-  const sides = pa.winnerSide ? [pa.winnerSide] : pa.camps;
-  return sides.some((side) => fixedSide(viewer) === side || viewer.alloc[gaugeOf(planet, side)?.id] > 0);
+// Who is told about a tier: the players tied to a camp it served (the winner of a race tier, the camps that invested for a shared one), and
+// the players who pick their camp at each investment (Alpha Legion, neutrals), since both camps are open to them. The other camp learns nothing:
+// not the tier, not its nature, not who won. The admin (viewer null) sees everything.
+const servedBy = (viewer, pa) => {
+  const side = fixedSide(viewer);
+  return !side || (pa.winnerSide ? [pa.winnerSide] : pa.camps).includes(side);
 };
-const natureOf = (planet, viewer) => planet.tiers.filter((pa) => pa.unlocked && pa.nature && (!viewer || seesTier(viewer, planet, pa))).sort((a, b) => b.threshold - a.threshold)[0]?.nature || planet.nature || '';
+// log line scope for the camps involved: one camp = only its players (and free-choice players), several = everyone
+const campScope = (sides) => (sides.length === 1 ? `camp:${sides[0]}` : 'public');
+const revealedNature = (planet, viewer) => planet.tiers.filter((pa) => pa.unlocked && pa.nature && (!viewer || servedBy(viewer, pa))).sort((a, b) => b.threshold - a.threshold)[0]?.nature || '';
+const natureOf = (planet, viewer) => revealedNature(planet, viewer) || planet.nature || '';
 
 // Legion power "wipe", once per player: destroys every other player's points invested on one camp's gauge of a planet.
 // The points are lost for good: the victims' quota shrinks by the wiped amount. Tiers already won stay won.
@@ -244,16 +252,17 @@ function wipe(p, planet) {
 function view(role, me) {
   const isAdmin = role === 'admin';
   const targets = S.targets.map((t) => ({
-    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t, isAdmin ? null : me) : '', multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
+    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t, isAdmin ? null : me) : '', natureKnown: t.kind === 'planet' && !!revealedNature(t, isAdmin ? null : me), multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
     total: t.kind === 'planet' ? sideTotal(t, 'loyalist') + sideTotal(t, 'renegade') : sideTotal(planetOfGauge(t), t.side),
     mine: me ? (t.kind === 'planet' ? ['loyalist', 'renegade'].reduce((n, side) => n + (me.alloc[gaugeOf(t, side)?.id] || 0), 0) : me.alloc[t.id] || 0) : 0,
     // players never learn the tiers nobody has unlocked yet, not even how many there are; unlocked ones show only threshold, public label and prize winner
     // (the report itself, rules and prize text go to the inbox of the contributors)
-    tiers: t.tiers.filter((pa) => isAdmin || pa.unlocked).map((pa) => (isAdmin ? { id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, prize: pa.prize, unlocked: pa.unlocked, winnerSide: pa.winnerSide, winnerId: pa.winnerId, winnerName: pa.winnerName }
+    tiers: t.tiers.filter((pa) => isAdmin || (pa.unlocked && servedBy(me, pa))).map((pa) => (isAdmin ? { id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, prize: pa.prize, unlocked: pa.unlocked, winnerSide: pa.winnerSide, winnerId: pa.winnerId, winnerName: pa.winnerName }
       : pa.unlocked ? { id: pa.id, threshold: pa.threshold, label: pa.label, unlocked: true, winnerSide: pa.winnerSide, hasPrize: !!pa.prize, winnerName: pa.winnerName }
       : null)),
   }));
-  const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id)).slice(0, 40).map(({ t, text }) => ({ t, text }));
+  const campLog = (l) => me && l.scope?.startsWith('camp:') && (!fixedSide(me) || fixedSide(me) === l.scope.slice(5)); // a camp's own news
+  const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id) || campLog(l)).slice(0, 40).map(({ t, text }) => ({ t, text }));
   const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
   if (me) {
     out.me = { id: me.id, name: me.name, fluffName: me.fluffName || null, factionId: me.factionId, points: me.points - spent(me), gauges: allowedGauges(me), army: me.army || null, wipe: !me.abilityUsed ? wipeSide(me) : null };
@@ -270,6 +279,7 @@ function view(role, me) {
     }).filter(Boolean).reverse();
   }
   if (isAdmin) {
+    out.mailEnabled = mailEnabled;
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
     out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, planetId, side, tiers: tiers.map(({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared }) => ({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared })) })) };
   }
@@ -282,6 +292,19 @@ function auth(req) {
   if (a.length === b.length && crypto.timingSafeEqual(a, b)) return { role: 'admin' };
   const p = Object.values(S.players).find((q) => q.code.toLowerCase() === tok.toLowerCase()); // codes are case-insensitive
   return p ? { role: 'player', me: p } : null;
+}
+
+// ---------- mail ----------
+// Sends the players' links by SMTP (Infomaniak by default). Credentials only come from the environment, never from the repository.
+// nodemailer is loaded on the first send, so the game runs without it when mail is not configured.
+const MAIL = { host: process.env.SMTP_HOST || 'mail.infomaniak.com', port: Number(process.env.SMTP_PORT || 587), user: process.env.SMTP_USER, pass: process.env.SMTP_PASS };
+MAIL.from = process.env.MAIL_FROM || MAIL.user;
+const mailEnabled = !!(MAIL.user && MAIL.pass);
+let transport = null;
+async function sendMail(to, subject, text) {
+  if (!mailEnabled) throw new Error('Envoi de mail non configuré (variables SMTP_USER et SMTP_PASS)');
+  transport ??= (await import('nodemailer')).default.createTransport({ host: MAIL.host, port: MAIL.port, secure: MAIL.port === 465, requireTLS: MAIL.port === 587, auth: { user: MAIL.user, pass: MAIL.pass } });
+  await transport.sendMail({ from: MAIL.from, to, subject, text });
 }
 
 // ---------- HTTP ----------
@@ -377,6 +400,16 @@ http.createServer(async (req, res) => {
         const p = S.players[b.playerId];
         if (!p || !S.factions.some((f) => f.id === b.factionId)) throw new Error('Joueur ou faction inconnu');
         p.factionId = b.factionId;
+      } else if (route === 'POST /api/admin/mail') {
+        // the recipient is always the address saved for the player, never one taken from the request
+        const p = S.players[b.playerId];
+        if (!p) throw new Error('Joueur inconnu');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p.email || '')) throw new Error(`Pas d'adresse mail valide pour ${p.name}`);
+        const subject = String(b.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200), text = String(b.body || '').slice(0, 20000);
+        if (!subject || !text.trim()) throw new Error('Objet et texte requis');
+        await sendMail(p.email, subject, text);
+        p.mailedAt = Date.now();
+        logEvt(`Mail envoyé à ${p.name} (${p.email})`);
       } else if (route === 'POST /api/admin/reset') {
         // Reset game: investments, winners, log. Config is kept.
         for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; pa.camps = []; }

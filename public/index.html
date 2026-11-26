@@ -17,6 +17,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12p
 body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
 @media(max-width:900px){main,body.isadmin main{grid-template-columns:1fr}}
 body.isadmin #side{margin-top:12px}
+aside{display:flex;flex-direction:column}
+body:not(.isadmin) #me{order:-1;margin-top:0!important}body:not(.isadmin) #side{margin-top:12px}
+dialog.planetdlg{width:min(560px,94vw);max-height:88vh;overflow:auto}
 .tools{margin:8px 0}.tools input[type=search]{flex:1;min-width:200px}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
 dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
@@ -25,7 +28,7 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #players td:last-child{white-space:nowrap}#players input[type=number]{width:64px}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
 #map{position:relative;aspect-ratio:3/2;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
-.spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:11px Georgia}
+.spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:bold 16px Georgia}
 .spot:hover,.spot.sel{background:transparent;border-color:var(--gold);box-shadow:0 0 14px var(--gold)}
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
@@ -45,11 +48,12 @@ textarea{width:100%;height:340px;font:12px monospace}
 .hide{display:none}
 .ly{color:#e0c040}.rn{color:#e0605f}
 .gauge.loy .bar i{background:#e0c040}.gauge.ren .bar i{background:#e0605f}
-.gl{font-size:12px;display:flex;align-items:center;gap:4px;justify-content:center}
+.gl{font-size:15px;display:flex;align-items:center;gap:4px;justify-content:center}
 .sb{display:inline-block;width:44px;height:6px;background:#e0605f;border-radius:3px;overflow:hidden}
 .sb u{display:block;height:100%;background:#e0c040}
 .sb.zero{background:#666}
 .bonus{color:var(--gold)}
+.warn{color:var(--red);font-size:13px;margin:4px 0;min-height:1.2em}
 /* ambiance: CRT scanlines and grain, interference accents */
 body.amb::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.55;
   background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0,rgba(0,0,0,.22) 1px,transparent 1px,transparent 3px),
@@ -57,10 +61,11 @@ body.amb::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60
 body.mapview::after{display:none}
 .vox{font-family:Consolas,'Courier New',monospace;font-size:13px;color:var(--gold);margin:3px 0;line-height:1.45}
 .noise{color:var(--cyan);text-shadow:0 0 6px #7AD7F055}
-@keyframes glitch{0%{transform:translate(0)}15%{transform:translate(-4px,1px);filter:hue-rotate(60deg) saturate(1.6)}30%{transform:translate(3px,-1px);clip-path:inset(0 0 55% 0)}45%{transform:translate(-2px,0);clip-path:inset(45% 0 0 0)}60%{transform:translate(4px,1px);filter:hue-rotate(-40deg)}80%{transform:translate(-1px,0)}100%{transform:none;filter:none;clip-path:none}}
-body.glitch #app{animation:glitch .42s steps(1,end)}
-body.glitch::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:59;background:rgba(122,215,240,.07)}
-@media(prefers-reduced-motion:reduce){body.glitch #app{animation:none}body.glitch::before{display:none}}
+@keyframes glitchbands{0%{opacity:0;transform:translateY(-6%)}15%{opacity:1}35%{transform:translateY(5%)}60%{opacity:.8;transform:translateY(-3%)}100%{opacity:0;transform:translateY(0)}}
+/* arrival glitch: translucent bands over the page, the text itself never moves */
+body.glitch::before{content:"";position:fixed;inset:-8% 0;pointer-events:none;z-index:59;animation:glitchbands .4s steps(3,end);
+  background:linear-gradient(to bottom,transparent 0,transparent 16%,rgba(122,215,240,.09) 16%,rgba(122,215,240,.09) 19%,transparent 19%,transparent 44%,rgba(224,159,62,.10) 44%,rgba(224,159,62,.10) 49%,transparent 49%,transparent 76%,rgba(122,215,240,.07) 76%,rgba(122,215,240,.07) 78%,transparent 78%)}
+@media(prefers-reduced-motion:reduce){body.glitch::before{display:none}}
 .pw{position:relative;display:inline-flex}.pw input{padding-right:34px}
 #peek{position:absolute;right:3px;top:50%;transform:translateY(-50%);border:0;background:none;padding:4px;color:var(--dim);display:flex;line-height:0}#peek:hover{background:none;color:var(--gold)}
 input::-ms-reveal,input::-ms-clear{display:none}
@@ -81,18 +86,18 @@ dialog.reader{width:min(720px,94vw);max-height:88vh;overflow:auto}
 .camp-loyalist{color:#e0c040}.camp-renegade{color:#e0605f}
 /* planet effect "solar" (Leo): the effects stay on the messages of that planet while they are read */
 @keyframes flicker{0%,90%,100%{opacity:1}92%{opacity:.8}94%{opacity:1}97%{opacity:.88}}
-@keyframes glitchmini{0%{transform:translate(0)}25%{transform:translate(-3px,1px);filter:hue-rotate(50deg) saturate(1.5)}50%{transform:translate(3px,-1px);clip-path:inset(0 0 60% 0)}75%{transform:translate(-2px,0);clip-path:inset(50% 0 0 0)}100%{transform:none;filter:none;clip-path:none}}
-dialog.reader.fx-solar{border-color:#E09F3E99;box-shadow:0 0 40px #E09F3E26,inset 0 0 70px #E09F3E14;text-shadow:0 0 2px #E09F3E44;animation:flicker 6s infinite;
+@keyframes borderflash{0%,100%{border-color:#E09F3E99;box-shadow:0 0 40px #E09F3E26,inset 0 0 70px #E09F3E14}50%{border-color:#7AD7F0;box-shadow:0 0 34px #7AD7F055,inset 0 0 50px #7AD7F022}}
+dialog.reader.fx-solar{border-color:#E09F3E99;box-shadow:0 0 40px #E09F3E26,inset 0 0 70px #E09F3E14;
   background:repeating-linear-gradient(to bottom,rgba(0,0,0,.28) 0,rgba(0,0,0,.28) 1px,transparent 1px,transparent 3px),
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .75 0 0 0 0 .4 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),var(--panel)}
-dialog.reader.fx-solar.mini{animation:glitchmini .26s steps(1,end)}
+dialog.reader.fx-solar.mini{animation:borderflash .6s ease-in-out}
 dialog.reader.fx-solar::backdrop{background:radial-gradient(circle at 50% 40%,rgba(58,29,10,.8),rgba(0,0,0,.88));animation:flicker 5s infinite}
 body.amb .mail.fx-solar{border-left:2px solid var(--cyan)}
 @media(prefers-reduced-motion:reduce){dialog.reader.fx-solar,dialog.reader.fx-solar.mini,dialog.reader.fx-solar::backdrop{animation:none}}
 details.ed{border-top:1px solid var(--rule);padding:4px 0}details.ed summary{cursor:pointer;color:var(--gold)}
 .ed textarea{height:64px;font:13px Georgia,serif;margin-top:4px}.ed input{margin-top:4px}
-.spot .nat{font-size:10px;color:var(--dim);max-width:120px;text-align:center;white-space:normal;line-height:1.15}
-.spot .mine{color:#9fe3a0;font-size:12px}
+.spot .nat{font-size:12px;font-weight:normal;color:var(--gold);max-width:150px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.spot .mine{color:#9fe3a0;font-size:14px;font-weight:normal}
 /* map-only window (projector view): ?view=map */
 body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
 body.mapview main{display:block;padding:0}
@@ -120,7 +125,7 @@ body.mapview .spot{pointer-events:none}
     <div class="panel" id="journal" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
   </section>
   <aside>
-    <div class="panel" id="side"><p class="dim">Clique sur une planète.</p></div>
+    <div class="panel" id="side"><p class="dim">Clique sur une planète de la carte pour l'explorer.</p></div>
     <div class="panel hide" id="me" style="margin-top:12px"></div>
     <div class="panel hide" id="inbox" style="margin-top:12px"></div>
     <div class="panel hide" id="admin" style="margin-top:12px"></div>
@@ -148,7 +153,7 @@ async function api(method, p, body) {
   return j;
 }
 // on failure also resync: a stale list (deleted player, restarted server) would otherwise keep failing
-const act = async (m, p, b) => { try { $('#err').textContent = ''; await api(m, p, b); await refresh(); } catch (e) { $('#err').textContent = e.message; await refresh(); } };
+const act = async (m, p, b) => { try { $('#err').textContent = ''; await api(m, p, b); await refresh(); } catch (e) { $('#err').textContent = e.message; toast('⚠ ' + e.message); await refresh(); } };
 
 // ---------- notifications ----------
 // A toast for each new report in the inbox and for each new tier won / prize drawn (also on the projector map view).
@@ -209,18 +214,16 @@ function render() {
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
-    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => { selected = t.id; render(); } },
+    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => openPlanet(t.id) },
       h('span', {}, t.name),
-      t.nature ? h('span', { class: 'nat' }, t.nature) : null,
+      t.natureKnown ? h('span', { class: 'nat' }, t.nature) : null, // the subtitle only appears once it has been discovered
       s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet
       h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
   document.body.classList.toggle('isadmin', isAdmin);
   applyAmbiance();
-  const sidePanel = $('#side'), center = $('#app section');
-  if (isAdmin && sidePanel.parentNode !== center) center.insertBefore(sidePanel, $('#players')); // admin: planet panel in the center
-  else if (!isAdmin && sidePanel.parentNode === center) $('#app aside').prepend(sidePanel);
+  $('#side').classList.toggle('hide', isAdmin); // players: the hint under their card; the planet details are in a pop-in for everyone
   renderSide(); renderMe(); renderInbox(); renderPlayers(); renderAdmin();
 }
 
@@ -241,33 +244,80 @@ function tierBlocks(t) {
 }
 
 // camp + amount + invest button for a planet; the admin picks the player. A player tied to one camp gets no camp selector.
+let lastAmount = '1'; // kept across live refreshes
 function investRow(t, sel) {
-  const sides = state.role === 'admin' ? ['loyalist', 'renegade'] : state.me.gauges;
+  const isAdmin = state.role === 'admin';
+  const sides = isAdmin ? ['loyalist', 'renegade'] : state.me.gauges;
   const camp = sides.length > 1 ? h('select', {}, sides.map((x) => h('option', { value: x }, SIDE[x]))) : null;
-  const amt = h('input', { type: 'number', min: 1, value: 1 });
+  const avail = () => (isAdmin ? state.players.find((p) => p.id === sel?.value)?.left : state.me.points) ?? 0;
+  const amt = h('input', { type: 'number', min: 1, step: 1, value: lastAmount });
+  const info = h('p', { class: 'dim' }), warn = h('p', { class: 'warn' });
+  const btn = h('button', {}, 'Investir');
+  const check = () => { // blocks the button and says why, instead of waiting for the server to refuse
+    const n = Number(amt.value), max = avail();
+    lastAmount = amt.value;
+    amt.max = max;
+    info.textContent = `Disponible : ${max} point${max > 1 ? 's' : ''}`;
+    warn.textContent = max <= 0 ? 'Tu n\'as plus de points à investir.'
+      : amt.value === '' ? '' : !Number.isInteger(n) || n < 1 ? 'Saisis un nombre entier, au moins 1.'
+      : n > max ? `Tu ne peux pas investir plus que tes ${max} point${max > 1 ? 's' : ''} disponibles.` : '';
+    btn.disabled = !!warn.textContent || amt.value === '';
+    return !btn.disabled;
+  };
+  amt.oninput = check;
+  sel?.addEventListener('change', check);
+  btn.onclick = async () => {
+    if (!check()) return;
+    btn.disabled = true;
+    try { await api('POST', '/api/allocate', { targetId: gaugeOf(t, camp ? camp.value : sides[0]).id, amount: Number(amt.value), playerId: sel?.value }); lastAmount = '1'; amt.blur(); await refresh(); }
+    catch (e) { warn.textContent = e.message; btn.disabled = false; }
+  };
+  check();
   return [camp ? null : h('p', { class: 'dim' }, 'Ton camp : ', h('b', { class: sides[0] === 'loyalist' ? 'ly' : 'rn' }, SIDE[sides[0]])),
-    h('div', { class: 'row', style: 'margin-top:6px' }, camp, amt,
-      h('button', { onclick: () => act('POST', '/api/allocate', { targetId: gaugeOf(t, camp ? camp.value : sides[0]).id, amount: Number(amt.value), playerId: sel?.value }) }, 'Investir')),
-    state.me ? h('p', { class: 'dim' }, `Disponible : ${state.me.points} points`) : null].filter(Boolean);
+    h('div', { class: 'row', style: 'margin-top:6px' }, camp, amt, btn), warn, info].filter(Boolean);
 }
 
-function renderSide() {
-  const side = $('#side'), s = state, t = s.targets.find((x) => x.id === selected);
-  if (!t) return;
-  const isAdmin = s.role === 'admin';
-  const sel = isAdmin ? h('select', { style: 'margin-bottom:6px' }, s.players.map((p) => h('option', { value: p.id }, p.name))) : null;
-  side.replaceChildren(h('h2', {}, t.name));
-  const add = (...xs) => side.append(...xs.flat().filter(Boolean)); // flatten arrays, skip null
-  if (t.nature) add(h('p', {}, h('b', {}, 'Nature : '), t.nature));
-  if (t.specialty) add(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
-  add(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
+// planet details (scores, tiers, investment, power), shown in a pop-in
+function planetNodes(t, sel) {
+  const s = state, isAdmin = s.role === 'admin';
+  const out = [];
+  if (t.nature) out.push(h('p', {}, h('b', {}, 'Nature : '), t.nature));
+  if (t.specialty) out.push(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
+  out.push(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
     sel, tierBlocks(t), investRow(t, sel));
   if (isAdmin || s.me?.wipe) {
-    add(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Détruire les points des ${SIDE[s.me.wipe]} (1 fois)`));
+    out.push(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Détruire les points des ${SIDE[s.me.wipe]} (1 fois)`));
   }
+  return out.flat().filter(Boolean);
 }
+let planetDlg = null;
+const typingIn = (el) => el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; // an amount is being typed
+let adminPlayerId = null; // the player the admin invests for, kept across live refreshes
+function fillPlanetDialog() {
+  const t = state.targets.find((x) => x.id === selected);
+  if (!t || !planetDlg?.open || typingIn(planetDlg)) return;
+  let sel = null;
+  if (state.role === 'admin') {
+    sel = h('select', { style: 'margin-bottom:6px' }, state.players.map((p) => h('option', { value: p.id }, p.name)));
+    if (state.players.some((p) => p.id === adminPlayerId)) sel.value = adminPlayerId; else adminPlayerId = sel.value;
+    sel.onchange = () => { adminPlayerId = sel.value; };
+  }
+  planetDlg.replaceChildren(h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, t.name), h('button', { onclick: () => planetDlg.close() }, 'Fermer')), ...planetNodes(t, sel));
+}
+function openPlanet(id) {
+  selected = id;
+  if (!planetDlg) {
+    planetDlg = h('dialog', { class: 'planetdlg' });
+    planetDlg.onclose = () => { selected = null; render(); };
+    document.body.append(planetDlg);
+  }
+  if (!planetDlg.open) planetDlg.showModal();
+  fillPlanetDialog();
+  render();
+}
+function renderSide() { fillPlanetDialog(); } // the pop-in is refreshed in place while it is open
 
-// copy a player link; confirm on the button, or show the link to copy by hand when the clipboard is unavailable
+
 async function copyLink(link, btn) {
   try {
     await navigator.clipboard.writeText(link);
@@ -367,7 +417,7 @@ function openMail(i) {
         Object.assign(h('button', { onclick: () => go(i + 1) }, 'Plus ancien ›'), { disabled: i === list.length - 1 })),
       h('button', { onclick: () => dlg.close() }, 'Fermer'))].flat().filter(Boolean));
   // while a message of an effect planet is open, the effect keeps coming back (a short glitch every few seconds)
-  const mini = m.fx ? setInterval(() => { dlg.classList.add('mini'); setTimeout(() => dlg.classList.remove('mini'), 270); }, 6000 + Math.random() * 3000) : null;
+  const mini = m.fx ? setInterval(() => { dlg.classList.add('mini'); setTimeout(() => dlg.classList.remove('mini'), 650); }, 25000 + Math.random() * 15000) : null;
   dlg.onclose = () => { clearInterval(mini); dlg.remove(); };
   document.body.append(dlg);
   dlg.showModal();
@@ -441,11 +491,17 @@ const MAIL_CLOSING = { loyalist: 'Gloire à l\'Empereur !', renegade: 'Mort au f
 function mailOf(p) {
   const camp = state.factions.find((f) => f.id === p.factionId)?.gauge;
   const closing = MAIL_CLOSING[p.factionId === 'alpha' ? 'alpha' : camp] || 'Que les étoiles guident vos armées.';
-  const body = [`Salutations, ${p.fluffName || p.name},`, '',
-    'Les éclaireurs ont quitté l\'orbite et les premières transmissions parviennent au Système Smaragdus.',
-    'Voici le tableau de bord où consigner nos prises de victoire, tel que vous l\'avez demandé :', '',
+  // the fluff name starts with an article ("Le Maréchal…", "L'Archimagos…"): drop it, it reads badly after "Salutations,"
+  const addressee = (p.fluffName || p.name).replace(/^(les|le|la|l['’])\s*/i, '').replace(/^./, (c) => c.toUpperCase());
+  const body = [`Salutations, ${addressee},`, '',
+    'Les éclaireurs ont quitté l\'orbite et les premières transmissions parviennent au Système Smaragdus. Aux confins de la frontière, les camps se disputent déjà les mondes : chaque point que vous y investirez pèsera dans la balance.', '',
+    'Voici votre accès personnel au tableau de bord où consigner vos prises de victoire :', '',
     `${PUBLIC_URL}/?code=${p.code}`, '',
-    'Ce lien est personnel : il vous identifie auprès du Système. Ne le confiez à personne.', '', closing].join('\n');
+    'Depuis cette console, vous pourrez :',
+    '- investir vos points sur les planètes de la carte ;',
+    '- suivre l\'avancée de la campagne dans le journal ;',
+    '- recevoir dans votre messagerie les comptes-rendus des équipes de reconnaissance.', '',
+    'Ce lien est personnel : il vous identifie auprès du Système. Ne le confiez à personne et conservez-le précieusement.', '', closing].join('\n');
   return { to: p.email, subject: 'Système Smaragdus : votre tableau de bord de conquête', body };
 }
 
@@ -461,6 +517,12 @@ function showMail(p) {
   const btn = (label, fn) => h('button', { onclick: fn }, label);
   dlg.append(h('h2', {}, 'Mail à ' + p.name), h('p', { class: 'dim' }, 'À : ' + m.to), subject, body, note,
     h('div', { class: 'row' },
+      state.mailEnabled && m.to ? btn('Envoyer par mail', async (e) => {
+        const b = e.target; b.disabled = true; note.textContent = 'Envoi…';
+        try { await api('POST', '/api/admin/mail', { playerId: p.id, subject: subject.value, body: body.value }); note.textContent = 'Mail envoyé ✓'; await refresh(); }
+        catch (err) { note.textContent = 'Échec : ' + err.message; }
+        b.disabled = false;
+      }) : null,
       btn('Ouvrir mon client mail', () => {
         location.href = `mailto:${m.to}?subject=${enc(subject.value)}&body=${enc(body.value.replace(/\n/g, '\r\n'))}`;
         note.textContent = 'Demande envoyée au client mail. Si rien ne s\'ouvre, aucun client n\'est configuré : utilise Gmail ou copie le texte.';
@@ -476,6 +538,24 @@ function showMail(p) {
   dlg.onclose = () => dlg.remove();
   document.body.append(dlg);
   dlg.showModal();
+}
+
+// Sends the mail to every player who has an address and has not received it yet (one after the other).
+async function sendMailToAll(e) {
+  const todo = state.players.filter((p) => p.email && !p.mailedAt);
+  if (!todo.length) return alert('Tous les joueurs ont déjà reçu le mail.');
+  if (!confirm(`Envoyer le mail à ${todo.length} joueur${todo.length > 1 ? 's' : ''} qui ne l'ont pas encore reçu ?`)) return;
+  const btn = e.target, failed = [];
+  let sent = 0;
+  btn.disabled = true;
+  for (const p of todo) {
+    btn.textContent = `Envoi… ${sent + failed.length + 1} / ${todo.length}`;
+    const m = mailOf(p);
+    try { await api('POST', '/api/admin/mail', { playerId: p.id, subject: m.subject, body: m.body }); sent++; } catch (err) { failed.push(`${p.name} : ${err.message}`); }
+  }
+  btn.disabled = false; btn.textContent = 'Envoyer le mail à tous';
+  alert(`${sent} mail${sent > 1 ? 's' : ''} envoyé${sent > 1 ? 's' : ''}.${failed.length ? `\n\nÉchecs :\n${failed.join('\n')}` : ''}`);
+  await refresh();
 }
 
 // one line per player with the personal link, ready for a mail merge (the link uses the address this page is served from)
@@ -505,6 +585,7 @@ function buildPlayersUi() {
   const filter = h('input', { type: 'search', placeholder: 'Filtrer : nom, légion, faction, code, email…' });
   filter.oninput = () => { playerFilter = filter.value; fillPlayers(); };
   const count = h('span', { class: 'dim' }), rows = h('tbody');
+  const sendAll = h('button', { class: 'hide', onclick: sendMailToAll }, 'Envoyer le mail à tous');
   const nm = h('input', { placeholder: 'Nom du joueur' }), fn = h('input', { placeholder: 'Nom fluff (optionnel)', style: 'width:200px' }), cd = h('input', { placeholder: 'Code (optionnel)', style: 'width:140px' });
   const fs = h('select'), ar = h('select'), hint = h('span', { style: 'color:var(--red);font-size:13px' });
   // live check while typing; the server enforces it anyway (unique whatever the case, 4-32 chars of letters, digits, - or _)
@@ -521,7 +602,7 @@ function buildPlayersUi() {
   playersEl.replaceChildren(h('h2', {}, 'Joueurs'),
     h('div', { class: 'row tools' }, filter, count),
     h('div', { class: 'row tools' },
-      h('button', { onclick: exportLinks }, 'Exporter les liens (CSV pour mailing)'),
+      sendAll, h('button', { onclick: exportLinks }, 'Exporter les liens (CSV pour mailing)'),
       h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)')),
     h('details', { class: 'ed' }, h('summary', {}, 'Créer un joueur'), h('div', { class: 'row' }, nm, fn, cd, fs, ar, create), hint),
     h('table', {}, h('thead', {}, h('tr', {}, ['Joueur', 'Pts', 'Actions'].map((x) => h('th', {}, x)))), rows),
@@ -530,7 +611,7 @@ function buildPlayersUi() {
       h('div', { class: 'row' },
         h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
         h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs'))));
-  return { count, rows, fs, ar };
+  return { count, rows, fs, ar, sendAll };
 }
 function fillPlayers() {
   const s = state, q = playerFilter.trim().toLowerCase();
@@ -541,7 +622,7 @@ function fillPlayers() {
     const a = h('input', { type: 'number', value: 5 });
     const link = `${PUBLIC_URL}/?code=${p.code}`;
     return h('tr', {},
-      h('td', {}, h('b', {}, p.name), p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army, p.code].filter(Boolean).join(' · '))),
+      h('td', {}, h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army, p.code].filter(Boolean).join(' · '))),
       h('td', {}, `${p.left}/${p.points}`),
       h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'), ' ',
         h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ',
@@ -553,6 +634,7 @@ function renderPlayers() {
   if (state.role !== 'admin') return playersEl.classList.add('hide');
   playersEl.classList.remove('hide');
   playersUi ??= buildPlayersUi();
+  playersUi.sendAll.classList.toggle('hide', !state.mailEnabled);
   setOptions(playersUi.fs, state.factions.map((f) => [f.id, f.name]));
   setOptions(playersUi.ar, (state.config.armies || []).map((x) => [x.name, x.name]), 'Légion');
   const typing = playersUi.rows.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; // an amount being typed
@@ -560,13 +642,21 @@ function renderPlayers() {
 }
 
 // ---------- configuration (admin, right column) ----------
+let configOpen = false;
+try { configOpen = localStorage.getItem('smg-config-open') === '1'; } catch {}
 function renderAdmin() {
   const box = $('#admin');
   if (state.role !== 'admin') return box.classList.add('hide');
   box.classList.remove('hide');
   if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // do not overwrite user input
   if (!dirty) { draft = structuredClone(state.config); buildEditor(); }
-  box.replaceChildren(h('h2', {}, 'Configuration'), editorEl);
+  const toggle = h('button', { 'aria-expanded': String(configOpen), onclick: () => {
+    configOpen = !configOpen;
+    try { localStorage.setItem('smg-config-open', configOpen ? '1' : '0'); } catch {}
+    renderAdmin();
+  } }, configOpen ? 'Replier ▴' : 'Déplier ▾');
+  box.replaceChildren(...[h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, 'Configuration'), toggle), configOpen ? editorEl : null].filter(Boolean));
+  if (!configOpen && dirty) box.append(h('p', { class: 'warn' }, 'Modifications non enregistrées dans la configuration (dépliez pour enregistrer).'));
 }
 
 // eye at the end of the code field: toggles between masked and visible

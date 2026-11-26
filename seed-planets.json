@@ -11,52 +11,61 @@
     "id": "grus-0",
     "threshold": 1,
     "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "title": "Rapport de reconnaissance — Cité de Xian",
     "shared": true,
-    "fluff": "Rapport des éclaireurs : découverte d'une planète civilisée, dotée d'un centre urbain (« Xian ») et de plusieurs autres installations disséminées sur le continent. Niveau d'autosuffisance atteint. Aucune trace d'une population humaine.\n\nNous demandons l'autorisation d'enquêter sur cette disparition.",
+    "fluff": "CLASSIFICATION : AMBRE // PROVENANCE : Avant-Garde Cartographiae — Secteur Grus\nDÉSIGNATION PLANÉTAIRE : GRUS (Relevé de Premier Contact)\nSTATUT URBAIN : Métropole « Xian » intacte — Niveau d'autosuffisance atteint\nDÉMOGRAPHIE RELEVÉE : 0 signe vital humain sur l'ensemble du périmètre urbain\n\nRapport des éclaireurs :\n\nDécouverte d'une planète civilisée d'une élégance rare, articulée autour d'un vaste centre urbain baptisé « Xian » et de plusieurs installations secondaires disséminées sur le continent. Les infrastructures civiques, les aqueducs et les réseaux d'énergie fonctionnent encore en boucle autonome.\n\nPourtant, la ville est absolument vide. Aucun cratère d'artillerie, aucune trace de siège, aucun corps dans les avenues de pierre blanche : tout se présente comme si des millions d'habitants avaient posé leurs outils et quitté les lieux en une seule nuit.\n\n[00:00:08] ++ CANAL VOX — ÉQUIPE D'ÉCLAIREURS « GRUS-ALPHA » ++\n[00:00:11] GRUS-ALPHA : Orbite, ici Alpha. On traverse la grande place de Xian. Les portes sont ouvertes, les fontaines sont sèches, et il n'y a pas un bruit. Pas même un oiseau.\n[00:00:19] ORBITE : Des signes de lutte ? Raid xenos ? Bombardement viral ?\n[00:00:24] GRUS-ALPHA : Négatif. C'est propre. Trop propre. Nous demandons l'autorisation formelle d'enquêter sur cette disparition.",
+    "images": [
+     "/img/grus-xian.jpg"
+    ],
     "rules": "",
-    "nature": "",
-    "teaser": ""
+    "nature": "Centre urbain (type γ)",
+    "teaser": "GRUS : LA CITÉ SANS VOIX\nNos éclaireurs ont découvert Xian, une métropole civilisée parfaitement intacte et autonome… mais vidée de toute présence humaine. Investissez sur Grus pour consulter le dossier complet."
    },
    {
     "id": "grus-1",
     "threshold": 20,
     "label": "Palier 1",
-    "fluff": "Une bibliothèque. Nous y avons trouvé un poème :\n\nNe demande pas quelle créature hurle dans la nuit,\nNe questionne pas ce qui t'attend dans l'ombre.\nCe sont mes hurlements qui te réveillent la nuit,\nEt mon corps qui est tapi dans l'ombre.\nJe suis Tzeentch et tu es le pantin\nQui danse sur ma musique.\n\nKarazantor le Vil, le Traître de Xian",
+    "title": "Un poème",
+    "fluff": "CLASSIFICATION : VERMILLON // ARCHIVE EXTRAITE — GRANDE BIBLIOTHÈQUE DE XIAN\n\nEn inspectant les galeries silencieuses de la bibliothèque centrale de Xian, nos équipes ont découvert des centaines de pupitres où les codex étaient restés ouverts en plein milieu d'un paragraphe. Dans l'alcôve nord, sur un parchemin isolé que la poussière semblait éviter, figurait le texte suivant — recopié ici sous protocole de précaution mémétique :\n\n++ TRANSCRIPTION D'ARCHIVE — SOURCE NON CONFORME ++\nNe demande pas quelle créature hurle dans la nuit,\nNe questionne pas ce qui t'attend dans l'ombre.\nCe sont mes hurlements qui te réveillent la nuit,\nEt mon corps qui est tapi dans l'ombre.\nJe suis Tzeentch et tu es le pantin\nQui danse sur ma musique.\n\n— Karazantor le Vil, le Traître de Xian\n++ FIN DE TRANSCRIPTION [++ ANOMALIE COGNITIVE DÉTECTÉE ++] ++\n\nNote de l'officier de renseignement : plusieurs éclaireurs ayant lu ce fragment rapportent entendre un faible murmure dans les couloirs de pierre dès la tombée du crépuscule. Le nom de « Karazantor » n'apparaît dans aucun registre impérial officiel.",
+    "images": [
+     "/img/grus-library.jpg"
+    ],
     "rules": "",
     "nature": "",
-    "title": "Un poème",
-    "teaser": ""
+    "teaser": "GRUS : ARCHIVE TROUBLANTE À XIAN\nUn document inquiétant a été exhumé de la bibliothèque déserte de Xian. Son contenu évoque une présence tapie dans l'ombre."
    },
    {
     "id": "grus-2",
     "threshold": 30,
     "label": "Palier 2",
-    "fluff": "En explorant les formations rocheuses à 150 km à l'est de Xian, nous avons retrouvé la trace de la population de la cité ! Cependant, les habitants semblent avoir régressé à un niveau pré-féodal et adopté un mode de vie troglodyte. Ils se sont montrés extrêmement agressifs.\n\nRecommandation : reclasser ce monde en type ɸλ (monde sauvage).",
+    "title": "Population indigène",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'EXPÉDITION — CONTREFORTS EST DE XIAN\n\nEn explorant les formations rocheuses situées à 150 kilomètres à l'est de Xian, nos équipes de reconnaissance ont enfin retrouvé la trace de la population disparue de la cité !\n\nLe constat est stupéfiant : les anciens citoyens de Xian ont totalement régressé à un stade pré-féodal et adopté un mode de vie troglodyte dans les réseaux de grottes. Vêtus de lambeaux de soieries urbaines nouées comme des peaux de bêtes, armés de lames de fortune et de pierres taillées, ils se sont montrés d'une agressivité fulgurante dès notre approche.\n\n[00:00:05] ++ ALERTE CONTACT — PATROUILLE EST-04 ++\n[00:00:08] EST-04 : Contact ! Ils sortent des failles par dizaines ! Ils ne parlent pas, ils hurlent — [++ INTERFÉRENCE VOX ++] — ils chargent droit sur nos lignes sans craindre les tirs de sommation !\n[00:00:16] EST-04 : Repli ordonné vers les transports. Deux blessés légers. Ce ne sont plus des citadins, ce sont des bêtes traquées.\n\nRecommandation officielle : reclasser immédiatement ce monde en type ɸλ (Monde sauvage).",
+    "images": [],
     "rules": "",
     "nature": "Monde sauvage (type ɸλ)",
-    "title": "Population indigène",
-    "teaser": ""
+    "teaser": "GRUS : SURVIVANTS HOSTILES REPÉRÉS\nLa population disparue de Xian a été localisée à 150 km à l'est, dans un état de régression sauvage. Reclassification planétaire en cours."
    },
    {
     "id": "grus-3",
     "threshold": 40,
     "label": "Palier 3",
-    "fluff": "Les tests d'aptitude effectués sur les indigènes se sont révélés très prometteurs. Une fois correctement canalisée, leur agressivité est un atout au combat.",
+    "title": "Recrues Astartes",
+    "fluff": "CLASSIFICATION : AMBRE // RAPPORT D'ÉVALUATION MARTIALE — CAMP AVANCÉ DE GRUS\n\nLes tests d'aptitude physique et comportementale menés sur les captifs indigènes issus des cavernes orientales se sont révélés extraordinairement prometteurs.\n\nSi leurs facultés intellectuelles supérieures semblent atrophiées, leur seuil de tolérance à la douleur, leur vitesse de réaction et leur férocité au corps à corps dépassent largement les standards humains ordinaires. Une fois correctement canalisée par nos officiers d'encadrement ou intégrée aux protocoles d'endoctrinement rapide, leur agressivité devient un atout redoutable sur le champ de bataille.",
+    "images": [],
     "rules": "Choisissez une unité ayant les Traits Solar Auxilia, Imperialis Militia ou la règle spéciale Inductii. Elle gagne la règle spéciale Feral Warriors (voir Liber Militia p.6).",
     "nature": "",
-    "title": "Recrues Astartes",
-    "teaser": ""
+    "teaser": "GRUS : POTENTIEL DE RECRUTEMENT\nLes tests menés sur les tribus troglodytes de Grus ouvrent de nouvelles perspectives tactiques pour nos forces au sol."
    },
    {
     "id": "grus-4",
     "threshold": 50,
     "label": "Palier 4",
-    "fluff": "Mes recherches démontrent l'effondrement brutal d'une civilisation autrefois tournée vers les arts et le meilleur de l'Humanité. De telles décadences ont déjà été rencontrées par le passé, mais aucune ne s'est produite dans un laps de temps aussi fulgurant. Les esprits des autochtones semblent avoir été réduits à leur plus simple expression, comme si l'on avait voulu cacher quelque chose. Ou, plus exactement, comme si l'on avait souhaité ôter quelque chose à leur mémoire.\n\nJe ne connais qu'un seul individu capable d'un tel exploit psychique, en dehors de l'Empereur. Je parle bien sûr de son âme damnée, le tristement célèbre Malcador…",
+    "title": "Tout est faux",
+    "fluff": "CLASSIFICATION : ÉCARLATE // MÉMORANDUM CONFIDENTIEL — DESTINATAIRE UNIQUE\n\nMes recherches sur les archives de Xian et l'examen neurologique des tribus troglodytes aboutissent à une conclusion aussi terrifiante qu'indiscutable : nous assistons aux suites de l'effondrement brutal d'une civilisation autrefois tournée vers les arts et le meilleur de l'Humanité.\n\nSi de telles décadences ont déjà été rencontrées au cours de la Grande Croisade, aucune ne s'est jamais produite dans un laps de temps aussi fulgurant. Les esprits des autochtones ne se sont pas érodés au fil des siècles : ils ont été tranchés net et réduits à leur plus simple expression, comme si l'on avait voulu cacher quelque chose. Ou, plus exactement, comme si l'on avait souhaité arracher quelque chose à leur mémoire collective.\n\n++ NOTE FINALE DE L'ENQUÊTEUR — CHIFFREMENT PERSONNEL ++\nJe ne connais qu'un seul individu dans toute la galaxie capable d'un tel exploit psychique à l'échelle d'un monde entier, en dehors de l'Empereur lui-même. Je parle bien sûr de son âme damnée, le tristement célèbre Malcador…",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "Tout est faux",
-    "teaser": ""
+    "teaser": "GRUS : DOSSIER ÉCARLATE DÉBLOQUÉ\nL'enquête sur l'effondrement de Xian touche au cœur d'un secret impérial que quelqu'un a tenté d'effacer à jamais."
    }
   ]
  },
@@ -72,52 +81,63 @@
     "id": "phoenix-0",
     "threshold": 1,
     "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "title": "Rapport de reconnaissance — Biosphère de Phoenix",
     "shared": true,
-    "fluff": "Les analyses cartographiques font état d'une planète à l'écosystème remarquablement préservé. Les paysages sont variés, avec des zones côtières paisibles, des forêts tempérées et des chaînes de montagnes moyennes.\n\nPourquoi ce monde idéal n'a-t-il pas été exploité ? La seule hypothèse qui nous vienne est que la ceinture d'astéroïdes qui le sépare de l'extérieur du système ait contribué à l'abandon d'un monde autrement prometteur.",
+    "fluff": "CLASSIFICATION : AMBRE // RELEVÉ CARTOGRAPHIQUE — SYSTÈME PHOENIX\nINDICE ATMOSPHÉRIQUE : Pur (0,00 % de pollution industrielle détectée)\nOBSTACLE ORBITAL : Ceinture d'astéroïdes dense ceinturant l'approche extérieure\n\nRapport des équipes d'analyse :\n\nLes relevés cartographiques font état d'une planète à l'écosystème remarquablement préservé. Les paysages sont harmonieux et variés : zones côtières paisibles, vastes forêts tempérées et chaînes de montagnes moyennes baignées de brume.\n\nUne question demeure pourtant sur toutes les lèvres au sein de l'état-major : pourquoi un monde aussi idéal n'a-t-il jamais été colonisé ni exploité ? La seule hypothèse rationnelle avancée jusqu'ici est que la ceinture d'astéroïdes qui l'isole du reste du système aurait découragé les flottes marchandes et contribué à l'abandon d'un monde autrement prometteur.\n\nNote d'auspex secondaire : une anomalie géométrique très faible a été relevée sous le couvert végétal d'une falaise côtière. À vérifier lors des phases d'exploration approfondie.",
+    "images": [
+     "/img/phoenix-world.jpg"
+    ],
     "rules": "",
     "nature": "",
-    "teaser": ""
+    "teaser": "PHOENIX : UN ÉDEN TROP CALME\nUn monde tempéré et parfaitement intact, isolé derrière une ceinture d'astéroïdes. Trop pur pour être le fruit du hasard."
    },
    {
     "id": "phoenix-1",
     "threshold": 20,
     "label": "Palier 1",
-    "fluff": "Nous avons suivi l'hypothèse du Maître Apothicaire Asclépios, lui-même disciple des théories du seigneur Fabius Bile. Nous recherchons un environnement libre de toute pollution, propre à réunir les conditions optimales d'expériences génétiques de grande ampleur. Un tel laboratoire, et je suis convaincu qu'il existe, abriterait sans nul doute des avancées scientifiques majeures.\n\nToutefois, le champ de recherche est particulièrement vaste. Je vous prie d'appuyer ma requête pour que mes confrères se joignent diligemment à cette quête.",
+    "title": "Un slot d'Apothicaire gratuit dans le Détachement Principal",
+    "fluff": "CLASSIFICATION : VERMILLON // REQUÊTE SCIENTIFIQUE — MAÎTRE APOTHICAIRE ASCLÉPIOS\n\nMon seigneur,\n\nNous avons suivi l'hypothèse formulée par le Maître Apothicaire Asclépios, lui-même disciple des théories audacieuses du seigneur Fabius Bile (réf. IIIème Légion). Ce qui nous semblait une anomalie géographique prend soudain tout son sens : un environnement totalement libre de toute pollution constitue la chambre stérile idéale pour conduire des expériences génétiques de grande ampleur.\n\nUn tel laboratoire — et je suis désormais convaincu qu'il existe, dissimulé quelque part sous ces côtes paisibles — abriterait sans nul doute des avancées scientifiques majeures. Toutefois, le champ de recherche est particulièrement vaste. Je vous prie d'appuyer ma requête afin que mes confrères Apothicaires se joignent diligemment à cette quête.",
+    "images": [
+     "/img/phoenix-apothecary.jpg"
+    ],
     "rules": "Votre Détachement Principal gagne un Choix de Support. Ce Choix ne peut servir qu'à sélectionner une unité d'Apothicaire.",
     "nature": "",
-    "title": "Un slot d'Apothicaire gratuit dans le Détachement Principal",
-    "teaser": ""
+    "teaser": "PHOENIX : APPEL DU MAÎTRE APOTHICAIRE\nUne piste liée aux théories de la IIIème Légion mobilise nos Apothicaires sur Phoenix. De nouvelles ressources médicales sont débloquées."
    },
    {
     "id": "phoenix-2",
     "threshold": 30,
     "label": "Palier 2",
-    "fluff": "Mon seigneur, pardonnez-moi cette intrusion, mais nous avons trouvé le laboratoire ! À l'intérieur, nous avons fait une découverte majeure. Les données étaient là, librement accessibles, comme si elles nous attendaient depuis toutes ces années. Je vous envoie immédiatement le dossier, tant mon exaltation est grande.\n\nMagnificat : le Magnificat, également appelé « l'Amplificateur », est un petit lobe de la taille d'une vignette inséré dans le cortex du cerveau. Il sécrète des hormones qui augmentent les fonctions de croissance de l'organisme tout en intensifiant celles des autres implants transhumains, en particulier le Bioscopea et l'Ossmodula. Les Astartes soumis à l'implantation sont ainsi plus grands d'un pied terrien (environ 0,31 mètre) et physiquement plus forts que leurs homologues.\n\nEn vérité, le Magnificat n'est que la moitié de la véritable Glande Immortis à double valve (la soi-disant « créatrice de Dieu ») que l'Empereur a conçue pour ses primarques. Nous n'avons toutefois trouvé que les matériaux et les plans génétiques du « lobe dextrophique » (la moitié droite de la glande). Les plans du « Sintarius » (la moitié gauche), qui compléterait le super-organe d'origine, semblent avoir été entièrement éradiqués de l'Imperium. Que cela ait été fait de la propre main de l'Empereur ou par une source infâme, nous ne pouvons le dire.",
+    "title": "Une étude sur les organes Primaris",
+    "fluff": "CLASSIFICATION : ÉCARLATE // TRANSMISSION URGENTE — COMPLEXE SOUTERRAIN DE PHOENIX\n\nMon seigneur, pardonnez-moi cette intrusion, mais nous avons trouvé le laboratoire ! Enfoui sous la roche côtière, alimenté, stérile… et étrangement intact. À l'intérieur, nous avons fait une découverte majeure : les cuves étaient encore sous tension et les banques de données étaient là, librement accessibles, comme si elles nous attendaient depuis toutes ces années. (Seul détail troublant : de subtils motifs d'écailles et de serpents enroulés affleurent dans la gravure du sol, sans aucune signature impériale officielle.)\n\nJe vous envoie immédiatement le dossier extrait des cogitateurs, tant mon exaltation est grande :\n\n++ DOSSIER GÉNÉTIQUE — PROJET MAGNIFICAT ++\nMagnificat : le Magnificat, également appelé « l'Amplificateur », est un petit lobe de la taille d'une vignette inséré dans le cortex du cerveau. Il sécrète des hormones qui augmentent les fonctions de croissance de l'organisme tout en intensifiant celles des autres implants transhumains, en particulier le Bioscopea et l'Ossmodula. En conséquence, les Astartes soumis à l'implantation sont encore plus grands d'un pied terrien (environ 0,31 mètre) et physiquement plus forts que leurs homologues.\n\nEn vérité, le Magnificat n'est que la moitié de la véritable Glande Immortis à double valve (la soi-disant « créatrice de Dieu ») que l'Empereur a conçue pour ses primarques. Cependant, nous n'avons pu trouver que les matériaux et les plans génétiques pour construire le « lobe dextrophique » (la moitié droite de la glande Immortis), tandis que les plans du « Sintarius » (la moitié gauche), qui compléteraient le super-organe d'origine, auraient été entièrement éradiqués de l'Imperium. Que cela ait été fait de la propre main de l'Empereur ou par une source infâme, nous ne pouvons le dire.\n++ FIN DE DOSSIER ++",
+    "images": [
+     "/img/phoenix-lab.jpg"
+    ],
     "rules": "",
     "nature": "Laboratoire génétique (type ρ)",
-    "title": "Une étude sur les organes Primaris",
-    "teaser": ""
+    "teaser": "PHOENIX : LE LABORATOIRE CACHÉ\nNos équipes ont mis au jour un complexe génétique souterrain intact, contenant des plans d'implants Astartes inédits."
    },
    {
     "id": "phoenix-3",
     "threshold": 40,
     "label": "Palier 3",
-    "fluff": "Je dois concéder que les expériences sur le lobe se sont soldées par des échecs cuisants. Je requiers l'assistance de mes pairs généticiens pour sortir de l'impasse. Cependant, les théories de maturation avancée sont prometteuses : dans quelque temps, je serai en mesure de les mettre en pratique pour accélérer la création d'implants Space Marine de phase 3.",
-    "rules": "Une unité Astartes de votre armée gagne la règle spéciale Expendable (1).",
-    "nature": "",
     "title": "Une unité Astartes de votre armée gagne la règle Expendable (1)",
-    "teaser": ""
+    "fluff": "CLASSIFICATION : VERMILLON // JOURNAL CLINIQUE — SUITE DES ESSAIS SUR LE LOBE DEXTROPHIQUE\n\n[00:00:03] ++ ENREGISTREMENT DE LABORATOIRE — SALLE DE STASE 04 ++\n[00:00:07] APOTHICAIRE : Sujet 14… rejet osseux massif. Hyper-croissance incontrôlée. Arrêtez la perfusion. [++ ALARME BIOMÉTRIQUE ++] Notez un nouvel échec.\n\nJe dois concéder que nos premières expériences sur le lobe du Magnificat se sont soldées par des échecs cuisants. Sans la moitié manquante de la glande, la mortalité des sujets demeure inacceptable, et je requiers l'assistance de mes pairs généticiens pour sortir de cette impasse.\n\nCependant, nos travaux n'ont pas été vains : les théories de maturation avancée tirées des banques de données sont extrêmement prometteuses. D'ici peu, je serai en mesure de les mettre en pratique pour accélérer drastiquement la création d'implants Space Marine de phase 3 — au prix, certes, d'une espérance de vie réduite pour ces nouvelles recrues d'assaut.",
+    "images": [],
+    "rules": "Une unité Astartes de votre armée gagne la règle spéciale Expendable (1) (Sacrifiable (1)).",
+    "nature": "",
+    "teaser": "PHOENIX : PROTOCOLES DE MATURATION ACCÉLÉRÉE\nMalgré des essais périlleux sur le Magnificat, nos généticiens ont mis au point une nouvelle méthode d'implantation rapide."
    },
    {
     "id": "phoenix-4",
     "threshold": 50,
     "label": "Palier 4",
-    "fluff": "Le seigneur Bile avait raison ! Aujourd'hui, les secrets de la science génétique de l'Empereur paraissent enfin à portée de main ! Tout ce qu'il nous reste à faire, c'est oser transgresser les interdits d'un autre âge, et nous aurons magnifié le travail des Séléniens.",
+    "title": "Un Détachement Principal avec tous les choix de Troupes en Prime (comme pour les Primarques)",
+    "fluff": "CLASSIFICATION : ÉCARLATE // PERCÉE GÉNÉTIQUE MAJEURE — LABORATOIRE DE PHOENIX\n\n++ TRANSMISSION PRIORITAIRE — PROTOCOLE APOTHÉOSE ++\n\nLe seigneur Bile avait raison !\n\nAujourd'hui, les secrets les mieux gardés de la science génétique de l'Empereur paraissent enfin à portée de main ! Les protocoles de stabilisation cellulaire ont franchi le seuil critique et chaque nouvelle lignée d'implants répond avec une précision chirurgicale.\n\nTout ce qu'il nous reste à faire, c'est oser transgresser les interdits d'un autre âge — et nous aurons magnifié le travail des Séléniens de Luna eux-mêmes. Nos escouades de ligne ne seront plus de simples troupes : elles porteront le sceau d'une perfection transhumaine digne des Primarques.",
+    "images": [],
     "rules": "Tous les Choix de Troupes de votre Détachement Principal sont des Choix Principaux (comme pour les Primarques).",
     "nature": "",
-    "title": "Un Détachement Principal avec tous les choix de Troupes en Prime (comme pour les Primarques)",
-    "teaser": ""
+    "teaser": "PHOENIX : L'HÉRITAGE DES SÉLÉNIENS\nUne percée génétique sans précédent vient d'être accomplie dans les profondeurs de Phoenix. Nos troupes en ressortent transfigurées."
    }
   ]
  },
@@ -133,42 +153,48 @@
     "id": "scorpius-0",
     "threshold": 1,
     "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "title": "Rapport de reconnaissance — Plaines vitrifiées",
     "shared": true,
-    "fluff": "Les bombardements ne visaient aucune cible de quelconque valeur. Cela ressemble plus à un pas de tir qu'à une bataille rangée.",
+    "fluff": "CLASSIFICATION : AMBRE // RELEVÉ ORBITAL — SCORPIUS IV\nÉTAT DE SURFACE : Plaines cendreuses intégralement cratérisées — Aucune biosphère\nANOMALIE BALISTIQUE : Distribution géométrique régulière des impacts\n\nRapport des équipes de reconnaissance :\n\nAu premier coup d'œil, Scorpius IV présente tous les stigmates d'un monde mort ravagé par un bombardement orbital prolongé. Pourtant, l'analyse balistique soulève une anomalie flagrante : les bombardements ne visaient aucune cible stratégique, aucune cité, aucune fortification de valeur.\n\nLes cratères sont espacés selon un quadrillage méthodique, ponctués de pylônes de calibration fondus et d'abris de télémétrie en béton armé. Cela ressemble bien davantage à un gigantesque pas de tir qu'à une bataille rangée.",
+    "images": [
+     "/img/scorpius-world.jpg"
+    ],
     "rules": "",
     "nature": "",
-    "teaser": ""
+    "teaser": "SCORPIUS IV : UN CHAMP DE TIR À L'ÉCHELLE D'UN MONDE\nCe monde mort n'a pas été détruit par une guerre : la géométrie de ses cratères évoque un pas de tir classifié."
    },
    {
     "id": "scorpius-2",
     "threshold": 30,
     "label": "Palier 1",
-    "fluff": "",
+    "title": "Espionnage",
+    "fluff": "CLASSIFICATION : VERMILLON // POSTE DE TÉLÉMÉTRIE NORD — SCORPIUS IV\n\nEn rétablissant l'alimentation d'un bunker d'observation enseveli sous la cendre, nos spécialistes des transmissions ont découvert que le réseau d'écoute de Scorpius IV ne se contentait pas de mesurer des impacts d'artillerie : ses paraboles longue portée couvrent l'ensemble du système Smaragdus.\n\n[00:00:05] ++ INTERCEPTION RÉUSSIE — BUNKER AUGUR-09 ++\n[00:00:09] OPÉRATEUR : Les relais passifs fonctionnent encore ! On capte les paquets vox rebondissant sur les autres mondes du secteur. [++ DÉCHIFFREMENT PARTIEL ++] Donnez-moi une cible et on aspire leur dernier rapport.",
+    "images": [],
     "rules": "Peut récupérer une info d'une autre planète de rang équivalent.",
     "nature": "",
-    "title": "Espionnage",
-    "teaser": ""
+    "teaser": "SCORPIUS IV : RÉSEAU D'ÉCOUTE RÉACTIVÉ\nUn bunker de télémétrie encore fonctionnel permet d'intercepter les transmissions d'une autre planète du secteur."
    },
    {
     "id": "scorpius-3",
     "threshold": 40,
     "label": "Palier 2",
-    "fluff": "",
+    "title": "Polygone de Tir Impérial",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'EXPERTISE BALISTIQUE\n\nL'excavation de plusieurs ogives non explosées fichées dans le basalte vitrifié lève définitivement le voile sur l'histoire de Scorpius IV. Chaque culot d'obus porte le poinçon de l'Ordonnance Impériale de Terra et des numéros de séries expérimentaux datant du début de la Grande Croisade.\n\nScorpius IV n'a jamais connu d'ennemi : la planète entière a été réquisitionnée et sacrifiée comme pas de tir secret de l'artillerie impériale pour calibrer des pièces de siège de classe Titan et des batteries orbitales de rupture.\n\nRecommandation officielle : mettre à jour la désignation cartographique en « Pas de tir d'artillerie impériale ».",
+    "images": [],
     "rules": "",
-    "nature": "",
-    "title": "À définir",
-    "teaser": ""
+    "nature": "Pas de tir d'artillerie impériale",
+    "teaser": "SCORPIUS IV : VÉRITÉ SUR LES BOMBARDEMENTS\nLes munitions exhumées portent les sceaux de l'Ordonnance Impériale : ce monde était un polygone de tir classifié."
    },
    {
     "id": "scorpius-4",
     "threshold": 50,
     "label": "Palier 3",
-    "fluff": "",
+    "title": "Bunker de Télémétrie Profonde",
+    "fluff": "CLASSIFICATION : ÉCARLATE // ARCHIVE DE COMMANDEMENT — CRATÈRE ZÉRO\n\nSous l'épicentre du plus vaste cratère de Scorpius IV, nos sapeurs ont atteint la salle de contrôle blindée du polygone. Les journaux de tir consignent une ultime série d'essais interrompue en urgence peu avant le déclenchement de l'Hérésie : des tests de focalisation d'une arme à rayon navale capable de fendre la croûte d'un monde-forteresse en une seule salve.\n\n++ NOTE DE RENSEIGNEMENT — PRIORITÉ ABSOLUE ++\nLes tables de tir récupérées comportent une clé de cryptage militaire de haut niveau, conçue pour coordonner les frappes orbitales et les reconnaissances à travers tout le système Smaragdus.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "À définir",
-    "teaser": ""
+    "teaser": "SCORPIUS IV : ARCHIVES DU CRATÈRE ZÉRO\nLe bunker central du polygone de tir a livré les journaux d'une arme orbitale expérimentale et des clés de commandement."
    }
   ]
  },
@@ -184,52 +210,61 @@
     "id": "cancer-0",
     "threshold": 1,
     "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "title": "Rapport de reconnaissance — Chantiers fracturés",
     "shared": true,
-    "fluff": "Les éclaireurs signalent une anomalie Warp étendue, consécutive à l'explosion d'un moteur Warp.",
+    "fluff": "CLASSIFICATION : VERMILLON // ALERTE DE NAVIGATION — SYSTÈME CANCER\nANOMALIE DÉTECTÉE : Déchirure résiduelle du Warp en haute atmosphère\nCAUSE PROBABLE : Détonation catastrophique d'un moteur Warp en cale sèche\n\nRapport des éclaireurs :\n\nLes anciens chantiers navals de Cancer ne sont plus qu'un charnier d'acier tordu. L'explosion d'un moteur Warp de vaisseau capital a soufflé les cales sèches et laissé derrière elle une anomalie Warp étendue qui zèbre le ciel d'éclairs violets.\n\nLes lois physiques y flanchent par intermittence : des blocs de blindage flottent à quelques mètres du sol, les boussoles auspex s'affolent et plusieurs équipages de reconnaissance ont signalé des distorsions auditives sur les canaux fermés.",
+    "images": [
+     "/img/cancer-shipyards.jpg"
+    ],
     "rules": "",
-    "nature": "",
-    "teaser": ""
+    "nature": "Monde hostile (type δτ)",
+    "teaser": "CANCER : L'ANOMALIE DES CHANTIERS NAVALS\nL'explosion d'un moteur Warp a ravagé les cales sèches et ouvert une anomalie instable au-dessus de la planète."
    },
    {
     "id": "cancer-1",
     "threshold": 20,
     "label": "Palier 1",
-    "fluff": "",
+    "title": "Cimetière des Cales Sèches",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'EXPLORATION — SECTEUR DES DOCKS\n\nNos équipes ont progressé au milieu des carcasses éventrées de croiseurs inachevés, soudés à la roche par la déflagration originelle. À mesure que l'on s'approche du berceau du réacteur détruit, la température chute brutalement et le givre recouvre les coques malgré l'absence d'humidité.\n\n[00:00:06] ++ CANAL VOX — ÉQUIPE DOCK-02 ++\n[00:00:10] DOCK-02 : Les plaques de pont vibrent sous nos bottes, comme si un moteur tournait encore. Sauf que le vaisseau est coupé en deux. [++ PARASITE WARP ++] ...vous entendez ça sur la fréquence ? On dirait des voix qui comptent à rebours.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "À définir",
-    "teaser": ""
+    "teaser": "CANCER : ÉCHOS DANS LES CARCASSES\nLes cales sèches dévastées résonnent de phénomènes anormaux autour du cœur Warp brisé."
    },
    {
     "id": "cancer-2",
     "threshold": 30,
     "label": "Palier 2",
-    "fluff": "",
+    "title": "Bonus Legions Imperialis",
+    "fluff": "CLASSIFICATION : AMBRE // RAPPORT DE RÉCUPÉRATION — DÉPÔT BLINDÉ K-04\n\nÀ l'abri d'une voûte de blindage naval épargnée par l'onde de choc, nos ingénieurs ont mis la main sur des réserves intactes destinées aux flottes d'expédition : modules de fortifications préfabriquées, bastions de débarquement et parcs de matériel lourd scellés en stase.\n\nL'extraction de ces dépôts offre un avantage logistique décisif pour soutenir nos déploiements massifs et nos opérations à grande échelle sur le théâtre de Smaragdus.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "Bonus Legions Imperialis",
-    "teaser": ""
+    "teaser": "CANCER : DÉPÔTS DE FORTIFICATIONS INTACTS\nDes réserves de matériel lourd et de fortifications ont été sécurisées sous les chantiers navals."
    },
    {
     "id": "cancer-3",
     "threshold": 40,
     "label": "Palier 3",
-    "fluff": "",
+    "title": "Grenade Vortex",
+    "fluff": "CLASSIFICATION : ÉCARLATE // RAPPORT DU MECHANICUM — EXTRACTION DE SINGULARITÉ\n\nAu prix de lourdes pertes parmi les serviteurs de confinement, nos technaugures ont réussi à siphoner et stabiliser plusieurs poches résiduelles du champ Warp autour du réacteur éventré.\n\nEnfermées dans des matrices de stase miniaturisées, ces charges forment d'authentiques Grenades Vortex : des armes prohibées capables d'arracher un char super-lourd ou un escadron entier à la réalité en ouvrant une micro-brèche vers l'Immaterium.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "Grenade Vortex",
-    "teaser": ""
+    "teaser": "CANCER : ARMEMENT PROHIBÉ EXTRAIT\nNos technaugures ont stabilisé des charges instables issues de l'anomalie Warp : des Grenades Vortex."
    },
    {
     "id": "cancer-4",
     "threshold": 50,
     "label": "Palier 4",
-    "fluff": "",
-    "rules": "",
-    "nature": "",
     "title": "L'explosion d'un moteur Warp a agrandi la faille. Les démons sont jouables",
-    "teaser": ""
+    "fluff": "CLASSIFICATION : OMEGA // ALERTE MAXIMALE — RUPTURE DE LA RÉALITÉ SUR CANCER\n\nCe que nous redoutions vient de se produire. Les secousses répétées dans les chantiers navals ont provoqué une détonation secondaire du cœur Warp fracturé. Le ciel de Cancer s'est fendu de part en part en un maelström cramoisi et améthyste.\n\n[00:00:03] ++ ALERTE FLOTTE — TOUTES FRÉQUENCES OUVERTES ++\n[00:00:06] VEILLE ORBITALE : La faille vient de tripler de diamètre ! Les balises de détresse sautent les unes après les autres ! [++ HURLEMENT EMPYRÉEN ++]\n[00:00:14] VEILLE ORBITALE : Quelque chose traverse la brèche au-dessus des cales sèches ! Des silhouettes impossibles ! Les démons de la Tempête de la Ruine foulent désormais Smaragdus !",
+    "images": [
+     "/img/cancer-rift.jpg"
+    ],
+    "rules": "La faille Warp s'est ouverte : les Démons de la Tempête de la Ruine sont désormais jouables.",
+    "nature": "Faille Warp (type Ω)",
+    "teaser": "CANCER : LA FAILLE S'EST OUVERTE !\nUne seconde détonation Warp a déchiré le ciel de Cancer. La Tempête de la Ruine se déverse sur le secteur !"
    }
   ]
  },
@@ -245,52 +280,65 @@
     "id": "unicornis-0",
     "threshold": 1,
     "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "title": "Rapport de reconnaissance — Steppes du Continent Sud",
     "shared": true,
-    "fluff": "Nous avons atterri sur une planète faite de steppes balayées par les vents. La morne toponymie nous a permis de repérer aisément les onze installations industrielles réparties de manière singulièrement homogène sur l'ensemble du continent sud.\n\nATTENTION : les périmètres d'au moins trois de ces complexes sont défendus par des serviteurs en protocole Protector. La plus grande prudence est de mise lors de chaque tentative d'approche (pertes estimées : 24 %).\n\nIndice : forte présence du Mechanicum, inhabituelle pour un domaine Astartes.",
+    "fluff": "CLASSIFICATION : AMBRE // RAPPORT D'INSERTION — UNICORNIS\nTOPOGRAPHIE : Steppes froides balayées par les vents — 11 complexes industriels identifiés\nALERTE PÉRIMÈTRE : Protocoles de défense automatisés actifs (Pertes estimées : 24 %)\n\nRapport des éclaireurs :\n\nNous avons atterri sur une planète faite de steppes balayées par les vents. La morne toponymie nous a permis de repérer aisément les onze installations industrielles réparties de manière singulièrement homogène sur l'ensemble du continent sud.\n\nATTENTION : les périmètres d'au moins trois de ces complexes sont défendus par des serviteurs en protocole Protector. La plus grande prudence est de mise lors de chaque tentative d'approche (pertes estimées : 24 %).\n\nIndice relevé par nos officiers : une forte présence du Mechanicum, tout à fait inhabituelle pour ce qui semblait être un domaine Astartes.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "teaser": ""
+    "teaser": "UNICORNIS : ONZE FORGES DANS LA STEPPE\nOnze complexes industriels défendus par des serviteurs en protocole Protector quadrillent le continent sud."
    },
    {
     "id": "unicornis-1",
     "threshold": 20,
     "label": "Palier 1",
-    "fluff": "",
+    "title": "BluePrint Repulsor",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'INFILTRATION — COMPLEXE SUD-03\n\nAprès avoir neutralisé les tourelles de périmètre et contourné les patrouilles de serviteurs Protector, nos équipes ont pénétré dans les chambres d'archives du Complexe Sud-03.\n\nSous les sceaux conjoints d'un Magos-Artisan inconnu et d'un armurier Astartes, nous avons exhumé les plans complets d'un véhicule de transport et d'appui-feu révolutionnaire : un châssis lourdement blindé monté sur plaques répulsives antigrav, baptisé « Repulsor ».",
+    "images": [
+     "/img/unicornis-repulsor.jpg"
+    ],
     "rules": "",
     "nature": "",
-    "title": "BluePrint Repulsor",
-    "teaser": ""
+    "teaser": "UNICORNIS : PLANS D'UN CHÂSSIS ANTIGRAV\nLe Complexe Sud-03 a livré les schémas d'un blindé expérimental inconnu des arsenaux standards."
    },
    {
     "id": "unicornis-2",
     "threshold": 30,
     "label": "Palier 2",
-    "fluff": "",
+    "title": "Blueprint Land Speeder Tempest",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT TECHNIQUE — HANGAR SUD-07\n\nLes ateliers du Complexe Sud-07 étaient dédiés à l'aéronautique d'assaut rapide. Malgré les défenses automatisées qui ont coûté plusieurs hommes à l'escouade de pointe, les banques de schémas ont été récupérées intactes.\n\nElles détaillent la fabrication d'un chasseur-intercepteur antigrav au cockpit entièrement blindé, doté d'une puissance de feu frontale redoutable : le Land Speeder Tempest.",
+    "images": [
+     "/img/unicornis-tempest.webp"
+    ],
     "rules": "",
     "nature": "",
-    "title": "Blueprint Land Speeder Tempest",
-    "teaser": ""
+    "teaser": "UNICORNIS : SCHÉMAS D'INTERCEPTEUR RAPIDE\nDes plans complets d'un appareil antigrav blindé ont été extraits du Complexe Sud-07."
    },
    {
     "id": "unicornis-3",
     "threshold": 40,
     "label": "Palier 3",
-    "fluff": "",
-    "rules": "",
-    "nature": "",
     "title": "Razorback",
-    "teaser": ""
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT DE RECONNAISSANCE & ARCHIVE — CONTINENT NORD ET COMPLEXE SUD-09\n\nDeux découvertes majeures marquent cette phase d'exploration. D'une part, nos chaînes de reconnaissance au nord ont révélé la véritable nature d'Unicornis : hors des enclaves fortifiées du Mechanicum, la planète est peuplée de clans humains vivant dans un archaïsme féodal strictement maintenu à l'écart des onze forges. Unicornis n'est pas un arsenal impérial classique, mais un monde féodal (type μ) servant de couverture discrète.\n\nD'autre part, le Complexe Sud-09 renfermait une ligne d'assemblage opérationnelle dédiée à une variante lourdement armée du châssis Rhino, équipée d'une tourelle jumelée automatisée : le Razorback (modèle Vortimer).",
+    "images": [
+     "/img/unicornis-razorback.webp"
+    ],
+    "rules": "",
+    "nature": "Monde féodal (type μ)",
+    "teaser": "UNICORNIS : COUVERTURE FÉODALE ET CHÂSSIS RAZORBACK\nUnicornis cache une population féodale autour de ses forges secrètes — et une chaîne d'assemblage de Razorbacks."
    },
    {
     "id": "unicornis-4",
     "threshold": 50,
     "label": "Palier 4",
-    "fluff": "",
+    "title": "Land Speeder Tempest",
+    "fluff": "CLASSIFICATION : ÉCARLATE // PRISE DE GUERRE — HANGAR DE STASE SUD-11\n\nLe onzième et dernier complexe du continent sud a enfin cédé ses secrets. Derrière ses portes blindées, une escadrille complète de Land Speeder Tempest attendait en stase parfaite, moteurs purgés et armements calibrés selon les protocoles du Mechanicum.\n\n[00:00:04] ++ RAPPORT TECHMARINE — COMPLEXE SUD-11 ++\n[00:00:08] TECHMARINE : Les esprits de la machine répondent au quart de tour. Ils n'attendaient qu'une clé d'activation. Les Tempest sont prêts à prendre l'air pour nos prochaines offensives !",
+    "images": [
+     "/img/unicornis-tempest.webp"
+    ],
     "rules": "",
     "nature": "",
-    "title": "Land Speeder Tempest",
-    "teaser": ""
+    "teaser": "UNICORNIS : ESCADRILLE TEMPEST RÉACTIVÉE\nLe onzième complexe renfermait des Land Speeder Tempest complets en stase, prêts au déploiement !"
    }
   ]
  },
@@ -306,52 +354,57 @@
     "id": "draco-0",
     "threshold": 1,
     "label": "Premier contact",
-    "title": "Rapport de reconnaissance",
+    "title": "Rapport de reconnaissance — Flèches du Crépuscule",
     "shared": true,
-    "fluff": "",
+    "fluff": "CLASSIFICATION : AMBRE // APPROCHE ORBITALE — SYSTÈME DRACO\nATMOSPHÈRE : Crépusculaire — Phénomènes auroraux convergents vers la flèche centrale\nSTATUT : Station de recherche (type ρ) silencieuse, alimentation auxiliaire active\n\nRapport des éclaireurs :\n\nDraco est un monde rocheux baigné d'un crépuscule perpétuel, couronné par une impressionnante station de recherche aux flèches d'obsidienne. Aucune garnison ne répond aux sommations orbitales, mais des lueurs ambrées filtrent encore derrière les hautes lancettes gothiques de l'observatoire central.\n\nFait troublant : les aurores magnétiques de la haute atmosphère ne suivent pas les pôles naturels de la planète ; elles s'incurvent toutes vers la plus haute tour de la station, comme attirées par un phare invisible.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "teaser": ""
+    "teaser": "DRACO : L'OBSERVATOIRE SILENCIEUX\nUne station de recherche plongée dans le crépuscule, dont les tours semblent attirer des aurores anormales."
    },
    {
     "id": "draco-1",
     "threshold": 20,
     "label": "Palier 1",
-    "fluff": "",
+    "title": "Stations d'écoute",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'EXPLORATION — ANNEAUX PÉRIPHÉRIQUES\n\nLes crêtes entourant la flèche principale abritent une série de stations d'écoute astropathiques et vox d'une sensibilité hors norme. Contrairement aux relais impériaux classiques, leurs paraboles ne sont pas orientées vers Terra ni vers les routes Warp majeures.\n\nChaque station est verrouillée avec une précision chirurgicale sur les autres mondes du système Smaragdus : Leo, Grus, Phoenix, Scorpius, Unicornis et Cancer. Draco n'était pas une simple station isolée : c'était l'oreille silencieuse du secteur entier.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "Stations d'écoute",
-    "teaser": ""
+    "teaser": "DRACO : TOUT LE SECTEUR SUR ÉCOUTE\nDes stations d'écoute pointées vers chaque planète de Smaragdus ont été mises au jour autour de la tour centrale."
    },
    {
     "id": "draco-2",
     "threshold": 30,
     "label": "Palier 2",
-    "fluff": "",
+    "title": "Chambres d'Illumination",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'ENQUÊTE — NIVEAUX SOUTERRAINS\n\nSous les stations d'écoute s'étendent des galeries circulaires baptisées « Chambres d'Illumination ». Leurs parois sont tapissées de cristaux psy-conducteurs sertis dans une pierre noire qui amortit les échos du Warp.\n\nLes journaux fragmentaires trouvés sur place évoquent des expériences menées sur la frontière entre le Materium et l'Empyrean : des savants — ou des psykers sanctionnés — tentaient d'y observer les courants psychiques sans risquer la corruption, à la recherche d'une lucidité absolue face aux ténèbres à venir.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "À définir",
-    "teaser": ""
+    "teaser": "DRACO : LES CHAMBRES D'ILLUMINATION\nDes salles souterraines dédiées à l'étude de la frontière du Warp ont été découvertes sous la station."
    },
    {
     "id": "draco-3",
     "threshold": 40,
     "label": "Palier 3",
-    "fluff": "",
+    "title": "Archives du Conclave Oublié",
+    "fluff": "CLASSIFICATION : ÉCARLATE // FRAGMENTS D'ARCHIVES — CŒUR DE LA FLÈCHE\n\nLes banques de données centrales de Draco révèlent enfin le fil rouge qui relie tout le système Smaragdus. Des décennies avant notre arrivée, un conclave clandestin d'archivistes, de généticiens et d'agents impériaux a consigné depuis Draco chaque projet mené dans le secteur : les prototypes d'armures de Leo, l'effacement de mémoire sur Grus, le laboratoire scellé de Phoenix, les essais balistiques de Scorpius et les forges secrètes d'Unicornis.\n\nToutes les entrées s'interrompent brutalement à la même date, suivies d'une unique instruction de veille : « Attendre le signal de rappel. Ne répondre qu'au Code Impérial. »",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "À définir",
-    "teaser": ""
+    "teaser": "DRACO : LE FIL ROUGE DE SMARAGDUS\nLes archives centrales de Draco relient entre eux tous les secrets découverts sur les autres mondes du secteur."
    },
    {
     "id": "draco-4",
     "threshold": 50,
     "label": "Palier 4",
-    "fluff": "",
+    "title": "Émission d'un signal-code inconnu. Code impérial",
+    "fluff": "CLASSIFICATION : OMEGA // TRANSMISSION INTERCEPTÉE — FLÈCHE CENTRALE DE DRACO\n\nSans aucune intervention de nos équipes, les condensateurs de la flèche principale se sont brusquement chargés à pleine puissance. Un faisceau astropathique et vox d'une intensité colossale vient de percer le vide profond depuis Draco.\n\n[00:00:02] ++ ALERTE ÉMISSION — CANAL IMPÉRIAL DE PRIORITÉ ABSOLUE ++\n[00:00:06] ASTROPATHE : Le phare vient de s'allumer tout seul ! Il diffuse un signal-code inconnu… mais l'en-tête d'authentification est indiscutable : c'est un Code Impérial de la Première Fondation !\n[00:00:15] ASTROPATHE : [++ ÉCHO LONGUE PORTÉE ++] Attendez… quelque chose au-delà de la bordure du système vient d'accuser réception. Nous ne sommes plus seuls dans Smaragdus.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "Émission d'un signal-code inconnu. Code impérial",
-    "teaser": ""
+    "teaser": "DRACO : CODE IMPÉRIAL ÉMIS !\nLa flèche centrale de Draco s'est réveillée seule et vient d'émettre un signal-code impérial inconnu vers le vide profond."
    }
   ]
  },
@@ -370,6 +423,9 @@
     "title": "Dossier de Reconnaissance",
     "shared": true,
     "fluff": "WARNING\n\nCLASSIFICATION : VERMILLON // PROVENANCE : Sonde d'Avant-Garde Auspex-IX\nDÉSIGNATION PLANÉTAIRE : LEO (Système frontalier - Relevé de Palier 1)\nINDICE THERMIQUE : Critique (+68 °C à l'ombre des crêtes, pics > 140 °C en exposition directe)\nSATURATION ÉLECTROMAGNÉTIQUE : Sévère. Interférences coronales continues (Perte Vox estimée : 64 %)\n\nSynthèse des équipes d'exploration :\n\nLe monde désigné sous l'appellation Leo gravite dangereusement près d'une étoile instable dont les éruptions coronales balaient la surface à intervalles imprévisibles. À basse altitude, l'atmosphère n'est plus qu'un voile de poussière ferreuse surchauffée, parcouru d'arcs statiques bleuâtres qui aveuglent les auspex et grillent les circuits non blindés en quelques minutes.\n\nLes premières équipes déposées sur les crêtes d'obsidienne confirment que toute campagne prolongée sur Leo mettra à rude épreuve les systèmes de refroidissement des armures énergétiques comme des châssis blindés. Les liaisons orbitales sont instables, les balises de téléportation dérivent sous l'orage ionique et chaque déploiement exige de lire le ciel avant de lire le terrain.\n\nPourtant, à travers la brume incandescente des plaines cendreuses, les pict-captures de longue portée ont révélé ce que les vents solaires n'ont pas réussi à effacer : des pylônes d'antennes anciens et des structures à demi ensevelies, orientés vers un point précis de la vallée. Quelque chose (ou quelqu'un) a bâti sur cet enfer bien avant notre arrivée.",
+    "images": [
+     "/img/leo-recon.jpg"
+    ],
     "rules": "",
     "nature": "Monde hostile (type δτ)",
     "teaser": "MONDE LEO : LE SEUIL DE CENDRE\nSous une étoile furieuse qui calcine la roche et déchire les fréquences vox, les premières équipes de reconnaissance ont repéré des antennes à demi ensevelies dans la tempête ionique. La chaleur étouffe les moteurs, l'orage aveugle les auspex… mais sous la poussière brûlante, un vieux signal continue d'appeler."
@@ -381,6 +437,7 @@
     "title": "Fragment Vox Récupéré (Canal 44-Thêta)",
     "shared": true,
     "fluff": "Enregistrement extrait d'une balise de secours récupérée à l'orée des crêtes noires. Bande fortement dégradée par le rayonnement solaire.\n\n[00:00:04] ++ SIGNAL ACCROCHÉ — ÉQUIPE DE RECO « ÉCLAIREUR-SEPT » ++\n[00:00:07] ÉCLAIREUR-SEPT : ...ici Sept. On a posé le pied sur la crête est. Les thermomètres d'armure clignotent déjà dans l'ambre et la poussière grésille sur les visières.\n[00:00:14] ORBITE : Reçu Sept. Maintenez le relevé [++ PARASITE SOLAIRE ++] ...ne descendez pas dans la cuvette avant la fin de la fenêtre coronale.\n[00:00:21] ÉCLAIREUR-SEPT : Négatif Orbite, vous devez voir ça. Les pylônes au fond du ravin... ce ne sont pas juste des ruines. L'auspex capte un cycle régulier sous la roche. Un vieux transpondeur. Il pulse toutes les dix secondes.\n[00:00:32] ORBITE : Identifiez la signature. Impériale ? Mechanicum ? Pré-Unification ?\n[00:00:37] ÉCLAIREUR-SEPT : Impossible à [++ CRÉPITEMENT ÉLECTROMAGNÉTIQUE ++] ...le ciel vire au blanc. Nouvelle éruption ! Les arcs frappent les antennes et—\n[00:00:43] ++ SURTENSION DÉTECTÉE — COUPLAGE VOX ROMPU ++\n[00:00:46] ++ ...bip... bip... bip... [SIGNAL RÉSIDUEL NON IDENTIFIÉ] ... ++",
+    "images": [],
     "rules": "",
     "nature": "",
     "teaser": ""
@@ -389,41 +446,52 @@
     "id": "leo-1",
     "threshold": 20,
     "label": "Palier 1",
-    "fluff": "Les vestiges d'un baraquement-chapelle. À l'intérieur, nous avons trouvé les plans d'un prototype d'armure : le Mk6.",
+    "title": "Baraquement-Chapelle + Blue print armure Mk6",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT D'EXCAVATION — SECTEUR DES PYLÔNES\n\nEn progressant dans le sillage des antennes à demi ensevelies, nos équipes de reconnaissance ont dégagé les vestiges d'un baraquement-chapelle taillé à même le basalte. Les bannières suspendues aux voûtes sont calcinées et l'héraldique des plaques murales a été soigneusement effacée au sablage — impossible d'identifier la Légion qui y a jadis monté la garde.\n\nEn revanche, le coffre blindé au plomb encastré sous l'autel tactique a résisté aux siècles d'orages solaires. À l'intérieur reposaient des plaques de données intactes contenant les plans complets d'un prototype d'armure énergétique avancée : le modèle Mk VI (« Corvus »), doté d'une suite de capteurs frontaux allongée et d'une signature acoustique remarquablement réduite.",
+    "images": [
+     "/img/leo-mk6.webp"
+    ],
     "rules": "",
     "nature": "",
-    "title": "Baraquement-Chapelle + Blue print armure Mk6",
-    "teaser": ""
+    "teaser": "LEO I : VESTIGES DU BARAQUEMENT-CHAPELLE\nUn abri Astartes effacé des registres a été dégagé sous la cendre. Des plans d'armure expérimentale y étaient scellés."
    },
    {
     "id": "leo-2",
     "threshold": 30,
     "label": "Palier 2",
-    "fluff": "Les ruines d'une armurerie Astartes. À l'intérieur, nous avons trouvé les plans d'un prototype d'armure : le Mk7.",
+    "title": "Armurerie + Blue print armure Mk7",
+    "fluff": "CLASSIFICATION : VERMILLON // RAPPORT TECHNIQUE — ARMURERIE SOUTERRAINE\n\nProfitant d'une accalmie de quarante minutes entre deux tempêtes coronales, nos sapeurs ont forcé les sas blindés d'une véritable armurerie Astartes enfouie sous les dunes vitrifiées. Les râteliers d'armes ont été vidés de longue date, mais les ateliers de forge ont conservé un trésor autrement plus précieux pour nos Techmarines.\n\nDans les archives de l'armurier, nos équipes ont exhumé les schémas détaillés d'un second prototype d'armure énergétique, encore plus ambitieux que le précédent : le modèle Mk VII, pensé pour encaisser des tirs directs sur le plastron renforcé tout en simplifiant l'entretien sur le terrain. Un tel projet ne figure encore sur aucune chaîne de production de Mars.",
+    "images": [
+     "/img/leo-mk7.webp",
+     "/img/leo-components.webp"
+    ],
     "rules": "",
     "nature": "",
-    "title": "Armurerie + Blue print armure Mk7",
-    "teaser": ""
+    "teaser": "LEO I : ARMURERIE ASTARTES EXHUMÉE\nUne armurerie souterraine a livré de nouveaux schémas d'armure énergétique d'une génération encore inconnue des Légions."
    },
    {
     "id": "leo-3",
     "threshold": 40,
     "label": "Palier 3",
-    "fluff": "Les décombres d'un site ayant abrité une relique du Moyen-Âge Technologique.",
+    "title": "Artefact Sacré",
+    "fluff": "CLASSIFICATION : ÉCARLATE // RELEVÉ D'ANOMALIE — CHAMBRE RELIQUAIRE EFFONDRÉE\n\nSous les fondations de l'armurerie, nos équipes ont atteint les décombres d'une chambre blindée d'un alliage noir inconnu, aux parois vitrifiées de l'intérieur. Le socle central est brisé, mais les signatures résiduelles de rayonnement chronologique et gravimétrique ne laissent aucun doute aux savants du Mechanicum : ce site a autrefois abrité une authentique relique du Moyen-Âge Technologique.\n\n[00:00:02] ++ RELEVÉ AUSPEX — ÉQUIPE « CHERCHEUR-DEUX » ++\n[00:00:06] CHERCHEUR-DEUX : Les compteurs Geiger restent muets, mais nos chronomètres viennent de reculer de douze secondes en approchant du piédestal.\n[00:00:13] MAGOS-OBSERVATEUR : Ne touchez plus aux débris. [++ DISTORSION SOLAIRE ++] Quoi qui ait dormi dans ce berceau avant la Grande Croisade, quelqu'un a bâti toute cette base uniquement pour le garder… ou pour l'étudier.",
+    "images": [],
     "rules": "",
     "nature": "",
-    "title": "Artefact Sacré",
-    "teaser": ""
+    "teaser": "LEO I : ÉCHO DU MOYEN-ÂGE TECHNOLOGIQUE\nLes décombres d'un sanctuaire scellé portent les traces d'une relique antérieure à l'Imperium lui-même."
    },
    {
     "id": "leo-4",
     "threshold": 50,
     "label": "Palier 4",
-    "fluff": "La localisation d'une forteresse-monastère Astartes ! Malheureusement, le site est extrêmement bien défendu : toutes nos tentatives d'approche ont été repoussées.",
-    "rules": "",
-    "nature": "",
     "title": "Localisation de la Forteresse-Monastère",
-    "teaser": ""
+    "fluff": "CLASSIFICATION : ÉCARLATE // ALERTE TACTIQUE — CANYON BASALTIQUE NORD\n\nEn triangulant enfin le signal résiduel qui pulsait depuis notre premier contact, nos sondes orbitales ont percé le voile incandescent du canyon nord… et révélé la véritable nature de Leo I.\n\nTaillée à même la falaise volcanique, cuirassée de céramite grise et de bronze brûlé par les vents solaires, se dresse une colossale Forteresse-Monastère Astartes ! Mais le site n'est pas mort : ses batteries de défense automatisées et ses tourelles antiaériennes restent pleinement opérationnelles. Toutes nos tentatives d'approche ont été brutalement repoussées sous un déluge de tirs de barrage.\n\n[00:00:04] ++ ALERTE VOL — ESCADRILLE DE RECO « RAPACE-TROIS » ++\n[00:00:07] RAPACE-TROIS : Visuel confirmé sur le canyon nord ! Par le Trône, c'est une forteresse entière dans la montagne ! Les bastions s'ouvrent—\n[00:00:13] RAPACE-TROIS : [++ VERROUILLAGE RADAR MULTI-CIBLES ++] Tirs de flak ! On décroche ! Impossible d'approcher à moins de dix kilomètres sans se faire pulvériser !",
+    "images": [
+     "/img/leo-fortress.jpg"
+    ],
+    "rules": "",
+    "nature": "Monde-forteresse Astartes",
+    "teaser": "LEO I : LA FORTERESSE-MONASTÈRE\nUne forteresse-monastère Astartes intacte et lourdement défendue vient d'être localisée au cœur des canyons solaires !"
    }
   ],
   "fx": "solar"

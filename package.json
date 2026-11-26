@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "scripts": { "start": "node server.js", "dev": "node --watch server.js" },
-  "engines": { "node": ">=18" }
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "nodemailer": "^10.6.1"
+  }
 }

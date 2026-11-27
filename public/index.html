@@ -4,13 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Système Smaragdus</title>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#0b100d">
 <style>
 :root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--cyan:#7AD7F0;--alert:#c9a96a;--input:#0e0c11;--hover:#221c28;--rule:#2a2330;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
 /* ambiance: once a player has opened a message (and for the admin) */
 body.amb{--bg:#14110F;--panel:#1b1612;--gold:#E09F3E;--alert:#7AD7F0;--input:var(--input);--hover:var(--hover);--rule:var(--rule)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Georgia,serif}
+body{margin:0;background-color:var(--bg);background-image:
+  radial-gradient(ellipse at 50% -8%,rgba(40,120,70,.22),transparent 55%),
+  radial-gradient(1px 1px at 12px 24px,rgba(255,255,255,.55),transparent),
+  radial-gradient(1px 1px at 96px 70px,rgba(255,240,210,.40),transparent),
+  radial-gradient(1.5px 1.5px at 41px 133px,rgba(190,225,255,.45),transparent);
+  background-size:100% 100%,170px 170px,233px 233px,311px 311px;background-attachment:fixed;color:var(--text);font:15px/1.4 Georgia,serif}
+/* login: the small header gives way to the hero */
+body:has(#login:not(.hide)) header{display:none}
+body:not(:has(#login:not(.hide))) #hero{display:none}
+#hero{text-align:center;margin:34px 16px 0}#hero .logo{width:118px;height:118px;color:var(--gold);filter:drop-shadow(0 0 14px #3ddc8455)}
+.hero-title{font:600 32px Georgia,serif;font-variant:small-caps;letter-spacing:.14em;color:var(--gold);margin-top:6px}
+.hero-sub{margin:0;color:var(--dim);font-size:13px;letter-spacing:.08em}
+.orn{height:16px;margin:8px auto;max-width:340px;position:relative;background:linear-gradient(90deg,transparent,var(--gold),transparent) center/100% 1px no-repeat}
+.orn::after{content:"◆";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg);padding:0 9px;color:var(--gold);font-size:11px}
 h1{display:flex;align-items:center;gap:10px}.logo{color:var(--gold);flex:none;filter:drop-shadow(0 0 5px #3ddc8466)}
 /* decoration: framed panels, diamond headings, motto, footer */
 .panel{position:relative}
@@ -18,10 +35,18 @@ h1{display:flex;align-items:center;gap:10px}.logo{color:var(--gold);flex:none;fi
 .panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
 h2::before{content:"◆";font-size:.55em;margin-right:.55em;vertical-align:middle;opacity:.7}
 header{box-shadow:0 1px 0 #000,0 2px 0 var(--line)}
-#map{box-shadow:inset 0 0 50px #000c}
+#map{box-shadow:inset 0 0 50px #000c,0 0 0 1px #000,0 0 0 3px var(--line)}
+#map::after{content:"";position:absolute;inset:5px;pointer-events:none;z-index:2;
+  background:
+    linear-gradient(var(--gold),var(--gold)) 0 0/26px 2px no-repeat,linear-gradient(var(--gold),var(--gold)) 0 0/2px 26px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) 100% 0/26px 2px no-repeat,linear-gradient(var(--gold),var(--gold)) 100% 0/2px 26px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) 0 100%/26px 2px no-repeat,linear-gradient(var(--gold),var(--gold)) 0 100%/2px 26px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) 100% 100%/26px 2px no-repeat,linear-gradient(var(--gold),var(--gold)) 100% 100%/2px 26px no-repeat;
+  opacity:.8}
 button{letter-spacing:.02em}
 .motto{margin:14px 0 0;text-align:center;font-variant:small-caps;letter-spacing:.18em;color:var(--dim);font-size:12px}
 .motto i{font-style:normal;color:var(--gold);margin:0 .6em}
+footer.foot::before{content:"";display:block;width:64px;height:64px;margin:0 auto 10px;opacity:.28;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none' stroke='%23c9a96a' stroke-linecap='round'%3E%3Ccircle cx='32' cy='32' r='29' stroke-width='1.6'/%3E%3Ccircle cx='32' cy='32' r='24' stroke-width='.7' stroke-dasharray='2 3'/%3E%3Cpath d='M32 3v10M32 51v10M3 32h10M51 32h10M11.5 11.5l7 7M45.5 45.5l7 7M11.5 52.5l7-7M45.5 18.5l7-7' stroke-width='2'/%3E%3Cpath d='M32 22l6 10-6 10-6-10z' stroke-width='1.5'/%3E%3C/svg%3E") center/contain no-repeat}
 footer.foot{padding:18px 16px 26px;text-align:center;color:var(--dim);font-size:12px;font-variant:small-caps;letter-spacing:.16em}
 h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
@@ -33,7 +58,8 @@ aside{display:flex;flex-direction:column}
 body:not(.isadmin) #me{order:-1;margin-top:0!important}body:not(.isadmin) #side{margin-top:12px}
 dialog.planetdlg{width:min(560px,94vw);max-height:88vh;overflow:auto}
 .tools{margin:8px 0}.tools input[type=search]{flex:1;min-width:200px}
-dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
+dialog h2{border-bottom:1px solid var(--line);padding-bottom:6px;background:linear-gradient(90deg,rgba(201,169,106,.14),transparent)}
+dialog{border-top:3px solid var(--gold)!important;background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
 dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(360px,90vw)}
 .toast{background:var(--panel);border:1px solid var(--alert);color:var(--text);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
@@ -58,7 +84,7 @@ body.spectator main{grid-template-columns:1fr}
 .tier.won b{color:var(--green)}
 .dim{color:var(--dim);font-size:13px}
 button,input,select,textarea{background:var(--input);color:var(--text);border:1px solid var(--line);padding:6px 8px;font:inherit}
-button{cursor:pointer;color:var(--gold)}button:hover{background:var(--hover)}
+button{cursor:pointer;color:var(--gold)}button:hover{background:var(--hover);box-shadow:0 0 9px rgba(224,159,62,.35)}
 input[type=number]{width:80px}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px solid var(--rule);padding:4px;text-align:left}
@@ -132,6 +158,7 @@ body.mapview .spot{pointer-events:none}
   <div id="who" class="row"></div>
 </header>
 
+<div id="hero"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width=".7" stroke-dasharray="2 3"/><path d="M32 3v10M32 51v10M3 32h10M51 32h10M11.5 11.5l7 7M45.5 45.5l7 7M11.5 52.5l7-7M45.5 18.5l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="32" r="12" fill="#3ddc84" fill-opacity=".85"/><circle cx="32" cy="32" r="12" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M32 24l4 8-4 8-4-8z" fill="#0b0a0d" fill-opacity=".55"/></svg><div class="hero-title">Système Smaragdus</div><div class="orn" aria-hidden="true"></div><p class="hero-sub">Console d’archives de la Flotte d’exploration</p></div>
 <div id="login" class="panel" style="max-width:420px;margin:40px auto">
   <h2>Authentification du cogitateur</h2>
   <p class="dim">Présentez votre sigil d'accès (ou la clef du Maître de Campagne) au cogitateur.</p>
@@ -195,7 +222,7 @@ function announce(s) {
   if (knownInbox) {
     for (const m of s.inbox || []) {
       if (knownInbox.has(key(m))) continue;
-      toast(`Nouvelle transmission : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
+      toast(`✉ Nouvelle transmission : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
       if (m.fx && !m.teaser) glitch();
     }
     for (const l of s.log) if (/^(PALIER|LOT|Premier contact)/.test(l.text) && !knownLog.has(`${l.t}|${l.text}`)) toast(l.text);
@@ -309,7 +336,7 @@ function tierBlocks(t) {
   const L = gaugeOf(t, 'loyalist')?.total ?? 0, R = gaugeOf(t, 'renegade')?.total ?? 0;
   const shown = t.tiers.filter((p) => !p.hidden).sort((a, b) => a.threshold - b.threshold);
   return [...shown.map((p) => h('div', { class: 'tier' + (p.unlocked ? ' won' : '') },
-    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · franchi par les ${SIDE[p.winnerSide]}` : ' · jalon franchi') : null,
+    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · franchi par les ${SIDE[p.winnerSide]}` : ' · ✦ jalon franchi') : null,
     isAdmin && p.title ? h('div', { class: 'dim' }, p.title) : null,
     isAdmin && !p.unlocked ? h('div', { class: 'dim' }, `Loyalistes ${L}/${p.threshold} · Traîtres ${R}/${p.threshold}`) : null,
     isAdmin && p.prize ? h('div', { class: 'dim' }, `Lot : ${p.prize}${p.winnerName ? ` → ${p.winnerName}` : ' (tirage à venir)'}`) : null,
@@ -485,7 +512,7 @@ function openMail(i) {
     m.teaser ? h('p', { class: 'dim' }, 'Allouez des points sur ce monde pour lire la transmission complète.') : null,
     m.images.map((src) => h('a', { href: src, target: '_blank' }, h('img', { src, alt: '' }))),
     m.rules ? h('div', { class: 'box' }, h('b', {}, 'Doctrine acquise'), h('div', {}, m.rules)) : null,
-    m.hasPrize ? h('div', { class: 'box' }, h('b', {}, 'Dotation'), h('div', {}, m.won ? `Attribuée à vous : ${m.prize}` : m.winnerName ? `Tirée au sort : ${m.winnerName}` : 'Tirage à venir')) : null,
+    m.hasPrize ? h('div', { class: 'box' }, h('b', {}, '❖ Dotation'), h('div', {}, m.won ? `Attribuée à vous : ${m.prize}` : m.winnerName ? `Tirée au sort : ${m.winnerName}` : 'Tirage à venir')) : null,
     h('div', { class: 'row', style: 'justify-content:space-between;margin-top:12px' },
       h('div', { class: 'row' },
         Object.assign(h('button', { onclick: () => go(i - 1) }, '‹ Plus récent'), { disabled: i === 0 }),

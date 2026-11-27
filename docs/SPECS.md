@@ -35,6 +35,13 @@ Reached at `/` with no stored session.
 
 Codes are case-insensitive and stored in lower case. A code never equals the admin password.
 
+## 2b. Common frame of the three parts
+
+Once in, whichever part was joined, the page has the same top:
+
+- Left: the logo and the title "Système Smaragdus". Right: the role ("Joueur", "Maître de Campagne" or "Observateur") and the "Quitter la console" button, which goes back to the identification (code or password field). On a narrow screen they sit under the title.
+- On a narrow screen (up to 900 px) the page is one column, and the first card of the right column comes right under the header, before the map: the player card for a player, the configuration for the admin, the "Situation du front" summary for the visitor (who has no right column). [manual]
+
 ## 3. Spectator view
 
 - Entry: 2.8, or `/?view=spectateur` (the choice is kept in the browser until "Quitter").

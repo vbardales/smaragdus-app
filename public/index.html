@@ -56,10 +56,22 @@ footer.foot::before{content:"";display:block;width:92px;height:92px;margin:0 aut
 footer.foot{padding:18px 16px 26px;text-align:center;color:var(--dim);font-size:12px;font-variant:small-caps;letter-spacing:.16em}
 h1,h2,h3{font-family:var(--display);font-weight:600;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
 h2{font-size:1.1em}
-header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
+#who{margin-left:auto;flex:none}
+.role{font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);border:1px solid var(--line);border-left:3px solid var(--gold);padding:4px 10px;background:rgba(201,169,106,.08)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
 body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
-@media(max-width:900px){main,body.isadmin main{grid-template-columns:1fr}}
+@media(max-width:900px){
+  main,body.isadmin main{grid-template-columns:1fr}
+  main>aside{display:contents!important}
+  #me,#admin{order:-2!important}
+  #side{order:-1!important}
+  body.spectator main>section{display:contents!important} /* the visitor has no right column: the front summary comes first */
+  body.spectator #spec{order:-2!important}
+  body.spectator main>aside{display:none!important} /* and no side column for the visitor, whatever the width */
+  main>*,aside>*{margin-top:0!important}
+  header #who{margin-left:0;width:100%}
+}
 body.isadmin #side{margin-top:12px}
 aside{display:flex;flex-direction:column}
 body:not(.isadmin) #me{order:-1;margin-top:0!important}body:not(.isadmin) #side{margin-top:12px}
@@ -265,11 +277,17 @@ function reportBug(e) {
 window.addEventListener('error', (ev) => reportBug(ev.error || ev.message));
 window.addEventListener('unhandledrejection', (ev) => reportBug(ev.reason));
 
+const roleBadge = (label) => h('span', { class: 'role', title: 'Votre rôle' }, label);
+
 function loginError(title, text) { $('#lerr').replaceChildren(...(title ? [h('b', {}, '⚠ ' + title), text] : [])); }
 
+let refreshSeq = 0; // answers can arrive out of order (a tick and an action refresh at once): only the latest request counts
 async function refresh() {
   if (spectator) return refreshSpectator();
-  try { state = await api('GET', '/api/state'); } catch (e) {
+  const seq = ++refreshSeq;
+  let fresh;
+  try { fresh = await api('GET', '/api/state'); if (seq !== refreshSeq) return; state = fresh; } catch (e) {
+    if (seq !== refreshSeq) return;
     if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); loginError(token ? 'Accès refusé' : '', 'Le cogitateur ne reconnaît pas ce sigil.'); }
     else if (!$('#login').classList.contains('hide')) loginError('Liaison interrompue', e.message); // the server could not be reached while logging in
     return;
@@ -293,7 +311,7 @@ async function refreshSpectator() {
   }
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
   document.body.classList.add('spectator'); document.body.classList.remove('isadmin');
-  $('#who').replaceChildren(h('b', {}, 'OBSERVATEUR'), h('button', { onclick: leaveSpectator }, 'Quitter la console'));
+  $('#who').replaceChildren(roleBadge('Observateur'), h('button', { onclick: leaveSpectator }, 'Quitter la console'));
   applyLabels();
   const map = $('#map'); map.replaceChildren();
   for (const p of pub.planets) {
@@ -342,9 +360,7 @@ window.addEventListener('storage', (e) => { if (e.key === 'smg-nolabels') { labe
 
 function render() {
   const s = state, isAdmin = s.role === 'admin';
-  const who = $('#who'); who.replaceChildren();
-  if (isAdmin) who.append(h('b', {}, 'ADMIN'));
-  who.append(h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter la console'));
+  $('#who').replaceChildren(roleBadge(isAdmin ? 'Maître de Campagne' : 'Joueur'), h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter la console'));
 
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {

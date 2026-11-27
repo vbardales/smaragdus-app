@@ -123,7 +123,9 @@ test('the camp that reaches a threshold first wins the tier, the other camp lear
 });
 
 test('players without a fixed camp get the notice of a won tier, not the full report', async () => {
-  const free = byFaction('neutral')[0];
+  const free = byFaction('neutral')[0], lo = byFaction('loyalist')[4];
+  await give(lo, 25);
+  await invest(lo, 'phoenix-loyalist', 22); // a tier is won here, whatever the other tests did
   const s = (await api(free.code, 'GET', '/api/state')).json;
   assert.ok(s.inbox.some((m) => m.teaser), 'a teaser is delivered');
   assert.ok(s.inbox.every((m) => m.teaser), 'and only teasers (the player has not invested)');
@@ -146,6 +148,25 @@ test('importing planets keeps points and won tiers', async () => {
   assert.equal(after.config.targets.find((t) => t.id === 'cancer').x, 12.5);
   assert.equal(after.targets.find((t) => t.id === 'leo').tiers.filter((t) => t.unlocked).length, before.targets.find((t) => t.id === 'leo').tiers.filter((t) => t.unlocked).length);
   assert.match((await admin('POST', '/api/admin/import-planets', { planets: [{ id: 'grus-loyalist', name: 'x', tiers: [] }] })).json.error, /jauge/);
+});
+
+test('importing players keeps the fields the file does not mention', async () => {
+  const p = roster[5];
+  const r = await admin('POST', '/api/admin/import-players', { players: [{ id: p.id, name: p.name, code: p.code }] });
+  assert.deepEqual(r.json, { ok: true, added: 0, updated: 1 });
+  const after = (await admin('GET', '/api/state')).json.players.find((x) => x.id === p.id);
+  assert.equal(after.email, p.email);
+  assert.equal(after.army, p.army);
+  assert.equal(after.fluffName, p.fluffName);
+  assert.equal(after.factionId, p.factionId);
+});
+
+test('a configuration cannot drop a faction that players still use', async () => {
+  const cfg = (await admin('GET', '/api/state')).json.config;
+  cfg.factions = cfg.factions.filter((f) => f.id !== 'loyalist');
+  const r = await admin('PUT', '/api/admin/config', cfg);
+  assert.equal(r.status, 400);
+  assert.match(r.json.error, /encore utilisée/);
 });
 
 test('importing players refuses duplicate codes before changing anything', async () => {
@@ -174,4 +195,13 @@ test('static files: a folder or a data file is never served', async () => {
   assert.equal((await fetch(base + '/seed-players.json')).status, 404);
   assert.equal((await fetch(base + '/../server.js')).status, 404);
   assert.equal((await fetch(base + '/')).status, 200, 'the server is still alive');
+});
+
+// ---------- login throttling (last: it locks the address of the tests for a minute) ----------
+test('too many failed identifications are answered with 429', async () => {
+  let last;
+  for (let i = 0; i < 60 && last !== 429; i++) last = (await api('devine' + i, 'GET', '/api/state')).status;
+  assert.equal(last, 429);
+  assert.equal((await api(ADMIN, 'GET', '/api/state')).status, 429, 'the address stays blocked, even with a good code');
+  assert.equal((await api('', 'GET', '/api/public')).status, 200, 'the spectator view is not throttled');
 });

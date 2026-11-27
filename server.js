@@ -302,6 +302,15 @@ async function sendMail(to, subject, text) {
   await transport.sendMail({ from: MAIL.from, to, subject, text });
 }
 
+// ---------- login throttling ----------
+// Failed identifications are counted per address; past the limit the address gets 429 for a minute. The limit is high on purpose:
+// the players of an event can share one public address.
+const FAILS = new Map(), FAIL_LIMIT = 40, FAIL_WINDOW = 60_000;
+const clientIp = (req) => String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?';
+const blocked = (ip) => { const f = FAILS.get(ip); if (f && Date.now() > f.until) FAILS.delete(ip); return (FAILS.get(ip)?.n ?? 0) >= FAIL_LIMIT; };
+const noteFail = (ip) => { const f = FAILS.get(ip) ?? { n: 0, until: Date.now() + FAIL_WINDOW }; f.n++; FAILS.set(ip, f); };
+setInterval(() => { for (const [ip, f] of FAILS) if (Date.now() > f.until) FAILS.delete(ip); }, FAIL_WINDOW).unref();
+
 // ---------- HTTP ----------
 const clients = new Set();
 const broadcast = () => { for (const c of clients) c.write('data: tick\n\n'); };
@@ -331,6 +340,7 @@ function validateConfig(c) {
   for (const a of c.armies || []) {
     if (!a?.name || (a.bonus?.planetId && (!c.targets.some((x) => x.id === a.bonus.planetId && x.kind === 'planet') || !Number.isFinite(Number(a.bonus.pct))))) throw new Error(`légion invalide (nom, bonus): ${a.name}`);
   }
+  for (const t of c.targets) if (t.multiplier != null && !(Number(t.multiplier) >= 0)) throw new Error(`multiplicateur invalide: ${t.id}`);
   for (const f of c.factions) {
     if (!f.id || ![null, 'loyalist', 'renegade', 'choice'].includes(f.gauge)) throw new Error(`faction invalide: ${f.id}`);
   }
@@ -339,6 +349,9 @@ function validateConfig(c) {
 // Applies a full configuration (planets, gauges, tiers, legions, factions). What the game recorded (unlocked tiers, winners, camps) is kept by tier id.
 function applyConfig(b) {
   validateConfig(b);
+  // a faction in use cannot disappear: its players would silently become free-choice players who can invest in either camp
+  const lost = Object.values(S.players).find((p) => !b.factions.some((f) => f.id === p.factionId));
+  if (lost) throw new Error(`faction « ${lost.factionId} » encore utilisée par ${lost.name}`);
   const old = new Map(S.targets.flatMap((t) => t.tiers.map((pa) => [pa.id, pa])));
   S.factions = b.factions;
   if (b.armies) S.armies = b.armies.map((a) => ({ name: String(a.name), bonus: a.bonus?.planetId ? { planetId: a.bonus.planetId, pct: Number(a.bonus.pct) } : null, wipe: ['loyalist', 'renegade', 'opponent'].includes(a.wipe) ? a.wipe : null }));
@@ -375,13 +388,19 @@ const CODE_RE = /^[A-Za-z0-9_-]{4,32}$/;
 function importPlayers(list) {
   if (!Array.isArray(list) || !list.length) throw new Error('Format attendu : une liste de joueurs');
   const prepared = list.map((x, i) => {
-    const name = String(x?.name || '').trim().slice(0, 40), code = String(x?.code || '').trim().toLowerCase(), factionId = x?.factionId || 'neutral';
+    const name = String(x?.name || '').trim().slice(0, 40), code = String(x?.code || '').trim().toLowerCase(), factionId = x?.factionId;
     if (!name) throw new Error(`Joueur n°${i + 1} : nom requis`);
     if (!CODE_RE.test(code)) throw new Error(`${name} : code invalide (4 à 32 caractères : lettres, chiffres, - ou _)`);
     if (code === ADMIN_PASSWORD.toLowerCase()) throw new Error(`${name} : ce code est réservé`);
-    if (!S.factions.some((f) => f.id === factionId)) throw new Error(`${name} : faction inconnue (${factionId})`);
+    if (factionId && !S.factions.some((f) => f.id === factionId)) throw new Error(`${name} : faction inconnue (${factionId})`);
     const existing = S.players[x.id] || Object.values(S.players).find((p) => p.code.toLowerCase() === code);
-    return { x, name, code, factionId, existing, fields: { name, code, factionId, fluffName: String(x.fluffName || '').trim().slice(0, 200), email: String(x.email || '').trim(), army: String(x.army || '') } };
+    // only the fields present in the file are written: a file with just names and codes keeps the other data of existing players
+    const fields = { name, code };
+    if (factionId) fields.factionId = factionId;
+    if (x.fluffName !== undefined) fields.fluffName = String(x.fluffName).trim().slice(0, 200);
+    if (x.email !== undefined) fields.email = String(x.email).trim();
+    if (x.army !== undefined) fields.army = String(x.army);
+    return { x, code, existing, fields };
   });
   const finalCodes = new Map(Object.values(S.players).map((p) => [p.id, p.code.toLowerCase()])); // every code must stay unique once the import is applied
   prepared.forEach((p, i) => finalCodes.set(p.existing?.id ?? `new-${i}`, p.code));
@@ -391,7 +410,7 @@ function importPlayers(list) {
   for (const { x, existing, fields } of prepared) {
     if (existing) { Object.assign(existing, fields); updated++; continue; }
     const id = x.id && !S.players[x.id] ? String(x.id) : crypto.randomUUID();
-    S.players[id] = { id, ...fields, points: 0, alloc: {}, abilityUsed: false, inbox: [] };
+    S.players[id] = { id, factionId: 'neutral', fluffName: '', email: '', army: '', ...fields, points: 0, alloc: {}, abilityUsed: false, inbox: [] };
     added++;
   }
   logEvt(`Import de joueurs : ${added} ajouté${added > 1 ? 's' : ''}, ${updated} mis à jour`);
@@ -417,8 +436,10 @@ http.createServer(async (req, res) => {
     }
     if (url.pathname === '/api/public') return send(res, 200, publicView());
     if (url.pathname.startsWith('/api/')) {
+      const ip = clientIp(req);
+      if (blocked(ip)) return send(res, 429, { error: 'Trop de tentatives : réessayez dans une minute.' });
       const a = auth(req);
-      if (!a) return send(res, 401, { error: 'Sigil refusé' });
+      if (!a) { noteFail(ip); return send(res, 401, { error: 'Sigil refusé' }); }
       const route = `${req.method} ${url.pathname}`;
       if (route === 'GET /api/state') return send(res, 200, view(a.role, a.me));
       const b = await body(req);
@@ -472,12 +493,11 @@ http.createServer(async (req, res) => {
       } else if (route === 'POST /api/admin/reset') {
         // Reset game: investments, winners, log. Config is kept.
         for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; pa.camps = []; }
-        if (b.deletePlayers) { S.deleted = [...(S.deleted || []), ...Object.keys(S.players)]; S.players = {}; }
+        if (b.deletePlayers) S.players = {};
         else for (const p of Object.values(S.players)) { p.alloc = {}; p.abilityUsed = false; p.inbox = []; }
         S.log = [];
         logEvt(b.deletePlayers ? 'RESET complet (joueurs supprimés)' : 'RESET : investissements et gagnants effacés', 'public');
       } else if (route === 'POST /api/admin/delete-player') {
-        (S.deleted ??= []).push(b.playerId); // keeps the roster refresh from bringing them back
         delete S.players[b.playerId];
       } else if (route === 'POST /api/admin/import-planets') {
         Object.assign(reply, importPlanets(b.planets));
@@ -495,7 +515,7 @@ http.createServer(async (req, res) => {
     const isFile = full.startsWith(path.join(DIR, 'public') + path.sep) && fs.statSync(full, { throwIfNoEntry: false })?.isFile(); // a directory would crash the stream
     if (!isFile) { res.writeHead(404); return res.end('404'); }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(full)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
-    fs.createReadStream(full).pipe(res);
+    fs.createReadStream(full).on('error', () => res.destroy()).pipe(res);
   } catch (e) {
     if (e instanceof SyntaxError) return send(res, 400, { error: 'Requête mal formée' }); // JSON that does not parse
     if (e instanceof TypeError || e instanceof RangeError || e instanceof ReferenceError) { // a bug, not a mistake of the player: log it, do not show internals

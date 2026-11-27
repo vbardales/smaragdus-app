@@ -449,6 +449,43 @@ function openMail(i) {
 // live refreshes do not rebuild the editor, so typing is never overwritten.
 let draft = null, dirty = false;
 const editorEl = h('div'), openEd = new Set();
+// ---------- import / export (admin) ----------
+function downloadJson(filename, data) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  const a = h('a', { href: url, download: filename });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const exportPlanets = () => downloadJson('seed-planets.json', state.config.targets.filter((t) => t.kind === 'planet').map(({ id, name, specialty, nature, fx, lbl, x, y, tiers }) => ({ id, name, specialty, nature, fx, lbl, x, y, tiers })));
+const exportPlayers = () => downloadJson('seed-players.json', state.players.map(({ id, name, fluffName, email, factionId, army, code }) => ({ id, name, fluffName, email, factionId, army, code })));
+// recognizes the file: a list of planets, a list of players, or a full configuration
+async function importFile(file, note) {
+  try {
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data) && data.length ? data : null;
+    let call, ask, done;
+    if (list?.every((p) => p && Array.isArray(p.tiers))) {
+      ask = `Importer ${list.length} planète${list.length > 1 ? 's' : ''} ? Les points, investissements et paliers déjà remportés sont conservés.`;
+      call = () => api('POST', '/api/admin/import-planets', { planets: list });
+      done = (r) => `${r.updated} planète(s) mise(s) à jour, ${r.added} ajoutée(s).`;
+    } else if (list?.every((p) => p && p.code)) {
+      ask = `Importer ${list.length} joueur${list.length > 1 ? 's' : ''} ? Les points et investissements sont conservés.`;
+      call = () => api('POST', '/api/admin/import-players', { players: list });
+      done = (r) => `${r.added} joueur(s) ajouté(s), ${r.updated} mis à jour.`;
+    } else if (data && !Array.isArray(data) && Array.isArray(data.targets)) {
+      ask = 'Importer cette configuration complète (planètes, jauges, paliers, légions, factions) ?';
+      call = () => api('PUT', '/api/admin/config', data);
+      done = () => 'Configuration importée.';
+    } else throw new Error('Fichier non reconnu : une liste de planètes, une liste de joueurs ou une configuration complète est attendue.');
+    if (!confirm(ask)) return void (note.textContent = 'Import annulé.');
+    note.textContent = 'Import…';
+    const r = await call();
+    dirty = false;
+    note.textContent = done(r) + ' ✓';
+    await refresh();
+  } catch (e) { note.textContent = 'Échec : ' + e.message; }
+}
+
 function buildEditor() {
   const live = (tid, pid) => state.targets.find((x) => x.id === tid)?.tiers.find((x) => x.id === pid);
   const touch = () => { dirty = true; save.textContent = 'Enregistrer (modifications non enregistrées)'; };
@@ -497,7 +534,14 @@ function buildEditor() {
   const armies = h('table', {}, (draft.armies || []).map((a) => h('tr', {}, h('td', {}, a.name), h('td', {}, planetSel(a)),
     h('td', {}, wipeSel(a)))));
   const json = h('textarea', { style: 'height:240px;font:12px monospace' }); json.value = JSON.stringify(draft, null, 1);
-  editorEl.replaceChildren(h('h3', { style: 'margin-top:12px' }, 'Seuils des paliers'),
+  const ioNote = h('p', { class: 'dim' }), file = h('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
+  file.onchange = () => { if (file.files[0]) importFile(file.files[0], ioNote); file.value = ''; };
+  const io = h('div', {}, h('h3', {}, 'Import / export'),
+    h('p', { class: 'dim' }, 'Importe un fichier JSON : planètes (comme seed-planets.json), joueurs (comme seed-players.json) ou configuration complète. Les points, investissements et paliers remportés sont conservés.'),
+    h('div', { class: 'row' }, h('button', { onclick: () => file.click() }, 'Importer un fichier JSON…'), file,
+      h('button', { onclick: exportPlanets }, 'Exporter les planètes'), h('button', { onclick: exportPlayers }, 'Exporter les joueurs'),
+      h('button', { onclick: () => downloadJson('config.json', state.config) }, 'Exporter la config')), ioNote);
+  editorEl.replaceChildren(io, h('h3', { style: 'margin-top:12px' }, 'Seuils des paliers'),
     h('p', { class: 'dim' }, 'Points à atteindre par un camp pour remporter chaque palier : le premier camp (loyalistes ou renégats) à atteindre le seuil gagne le palier (✓ = déjà remporté). Un palier débloqué le reste ; baisser un seuil sous le total actuel le remporte à l\'enregistrement.'),
     grid, h('h3', { style: 'margin-top:12px' }, 'Contenu des paliers'), ...details,
     h('h3', { style: 'margin-top:12px' }, 'Bonus des légions'), h('p', { class: 'dim' }, '+25 % sur les points investis par le joueur sur la planète choisie, et pouvoir de destruction (1 fois par joueur).'), armies,

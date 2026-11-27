@@ -20,15 +20,16 @@ Admin: enter that password on the login page. Players: the admin creates them an
 | `ADMIN_PASSWORD` | none (required) | admin login |
 | `PORT` | `3000` | HTTP port |
 | `DATA_FILE` | `./data.json` | persisted state (keep it on a persistent disk) |
-| `RESET_ON_DEPLOY` | on Azure (`WEBSITE_SITE_NAME`), else off | `1` forces the reset below |
+| `RESET_ON_DEPLOY` | off | `1` resets the state on every new deployment (see below) |
 | `KEEP_STATE` | unset | `1` freezes the state: no reset on deployment |
 | `SMTP_USER`, `SMTP_PASS` | unset | mailbox used to send the players' links (enables the "Envoyer par mail" buttons) |
 | `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM` | `mail.infomaniak.com`, `587`, `SMTP_USER` | SMTP server and sender address |
 
-A new deployment (any change to `server.js`, `public/index.html` or the `seed-*.json` files) starts from a clean state
-when running on Azure: the saved state is replaced by the seed, and the old file is kept once as `<DATA_FILE>.prev`.
-A plain restart with the same code keeps the state. **Once the game has started, set `KEEP_STATE=1`** in the app settings,
-or the next deployment erases the points.
+The `seed-*.json` files only give the initial content, used when there is no state file. To change planets, tiers or players on a
+running game, use **Import / export** in the admin configuration panel: it imports a planets file (same format as `seed-planets.json`),
+a players file (`seed-players.json`) or a full configuration, and keeps points, investments and tiers already won.
+With `RESET_ON_DEPLOY=1`, a new deployment (any change to `server.js`, `public/index.html` or the seed files) starts from a clean state
+and the old file is kept once as `<DATA_FILE>.prev`; `KEEP_STATE=1` freezes the state.
 
 Single instance only: state lives in memory and is written to `DATA_FILE`.
 

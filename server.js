@@ -65,12 +65,11 @@ try { S = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); loadedFromFile = true;
   loadFailed = e.code !== 'ENOENT'; // unreadable or corrupt file: it may still hold the real state
   S = seed();
 }
-// A new deployment (any change to the code or to the seed files) starts from a clean state when running on Azure (or with
-// RESET_ON_DEPLOY=1). Set KEEP_STATE=1 to freeze the state, for instance once the game has started. The previous state file is kept as <file>.prev.
+// With RESET_ON_DEPLOY=1, a new deployment (any change to the code or to the seed files) starts from a clean state. Set KEEP_STATE=1 to freeze the state, for instance once the game has started. The previous state file is kept as <file>.prev.
 const BUILD = crypto.createHash('sha1');
 for (const f of ['server.js', 'public/index.html', 'seed-players.json', 'seed-planets.json']) { try { BUILD.update(fs.readFileSync(path.join(DIR, f))); } catch {} }
 const BUILD_ID = BUILD.digest('hex').slice(0, 12);
-const RESET_ON_DEPLOY = (!!process.env.WEBSITE_SITE_NAME || process.env.RESET_ON_DEPLOY === '1') && process.env.KEEP_STATE !== '1';
+const RESET_ON_DEPLOY = process.env.RESET_ON_DEPLOY === '1' && process.env.KEEP_STATE !== '1';
 if (loadedFromFile && RESET_ON_DEPLOY && S.build !== BUILD_ID) {
   console.log(`New deployment (${S.build || 'unknown'} -> ${BUILD_ID}): resetting the state, the old file is kept as ${DATA_FILE}.prev`);
   try { fs.copyFileSync(DATA_FILE, DATA_FILE + '.prev'); } catch (e) { console.error(`Could not keep a copy of the old state: ${e.message}`); }
@@ -79,24 +78,10 @@ if (loadedFromFile && RESET_ON_DEPLOY && S.build !== BUILD_ID) {
 // data saved by an older schema (no tiers, or global gauges without planetId): start fresh
 if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) { S = seed(); loadedFromFile = false; }
 S.build = BUILD_ID;
-// Planet positions are tied to the map image, so the code owns them: refresh saved data from the seed on every start.
-const seedPos = Object.fromEntries(seed().targets.filter((t) => t.kind === 'planet').map((t) => [t.id, { x: t.x, y: t.y, lbl: t.lbl }]));
-for (const t of S.targets) if (seedPos[t.id]) Object.assign(t, seedPos[t.id]);
 // older saves: tiers had a reward and a mode, gauges had tiers of their own, players had no inbox
 const migrateTier = ({ reward, mode, ...pa }) => ({ title: 'À définir', fluff: '', images: [], rules: '', prize: reward && reward !== 'Lot à définir' ? reward : '', nature: '', teaser: '', camps: [], shared: false, unlocked: !!pa.winnerId, winnerSide: null, ...pa });
 for (const t of S.targets) t.tiers = t.kind === 'gauge' ? [] : t.tiers.map(migrateTier);
 for (const p of Object.values(S.players)) p.inbox ??= [];
-// The roster file owns identity data: refresh saved players that come from it (their points and investments are kept).
-for (const sp of seedPlayers) {
-  const p = S.players[sp.id];
-  if (!p) { // a roster player missing from the saved state (added to the roster later), unless the admin deleted them
-    if (!S.deleted?.includes(sp.id)) { S.players[sp.id] = structuredClone(sp); console.log(`Roster player added: ${sp.name}`); }
-    continue;
-  }
-  Object.assign(p, { name: sp.name, fluffName: sp.fluffName, email: sp.email, army: sp.army });
-  if (Object.values(S.players).some((q) => q !== p && q.code.toLowerCase() === sp.code.toLowerCase())) console.error(`Roster code of ${sp.name} is already used by another player: kept ${p.code}`);
-  else p.code = sp.code;
-}
 S.armies ??= seed().armies;
 for (const f of S.factions) delete f.ability; // special powers now belong to the legion (S.armies)
 console.log(`State: ${loadedFromFile ? 'loaded from' : 'fresh seed, nothing usable in'} ${DATA_FILE} (${Object.keys(S.players).length} players)`);
@@ -341,6 +326,68 @@ function validateConfig(c) {
   }
 }
 
+// Applies a full configuration (planets, gauges, tiers, legions, factions). What the game recorded (unlocked tiers, winners, camps) is kept by tier id.
+function applyConfig(b) {
+  validateConfig(b);
+  const old = new Map(S.targets.flatMap((t) => t.tiers.map((pa) => [pa.id, pa])));
+  S.factions = b.factions;
+  if (b.armies) S.armies = b.armies.map((a) => ({ name: String(a.name), bonus: a.bonus?.planetId ? { planetId: a.bonus.planetId, pct: Number(a.bonus.pct) } : null, wipe: ['loyalist', 'renegade', 'opponent'].includes(a.wipe) ? a.wipe : null }));
+  const str = (v) => String(v ?? '');
+  S.targets = b.targets.map((t) => ({ ...t, tiers: t.kind === 'gauge' ? [] : t.tiers.map((pa) => { // unlock state and prize winner are kept by tier id
+    const o = old.get(pa.id);
+    return { id: pa.id, threshold: Number(pa.threshold), label: str(pa.label), title: str(pa.title), fluff: str(pa.fluff), images: (pa.images || []).map(str).filter(Boolean), rules: str(pa.rules), prize: str(pa.prize), nature: str(pa.nature), teaser: str(pa.teaser), shared: !!pa.shared, unlocked: o?.unlocked ?? false, camps: o?.camps ?? [], winnerSide: o?.winnerSide ?? null, winnerId: o?.winnerId ?? null, winnerName: o?.winnerName ?? null };
+  }) }));
+  for (const t of S.targets) if (t.kind === 'planet') settle(t); // new thresholds or prizes can unlock tiers right away
+  logEvt('Configuration mise à jour');
+}
+
+// Import of planets, in the format of seed-planets.json. Planets with a known id are updated, new ones are created with their two gauges,
+// planets missing from the file are kept. Points, investments and tiers already won are kept.
+const PLANET_FIELDS = ['name', 'specialty', 'nature', 'fx', 'lbl', 'x', 'y', 'multiplier'];
+function importPlanets(list) {
+  if (!Array.isArray(list) || !list.length || !list.every((p) => p && p.id && p.name && Array.isArray(p.tiers))) throw new Error('Format attendu : une liste de planètes avec id, name et tiers[]');
+  for (const p of list) {
+    if (S.targets.some((t) => t.id === p.id && t.kind !== 'planet')) throw new Error(`${p.id} : cet identifiant est celui d'une jauge`);
+    for (const k of ['x', 'y']) if (k in p && !(Number(p[k]) >= 0 && Number(p[k]) <= 100)) throw new Error(`${p.id} : ${k} doit être un pourcentage entre 0 et 100`);
+  }
+  const targets = S.targets.map((t) => {
+    const p = t.kind === 'planet' && list.find((x) => x.id === t.id);
+    return p ? { ...t, ...Object.fromEntries(PLANET_FIELDS.filter((k) => k in p).map((k) => [k, p[k]])), tiers: p.tiers } : t;
+  });
+  const added = list.filter((p) => !S.targets.some((t) => t.id === p.id));
+  for (const p of added) targets.push(planetOf(p), ...gaugesOf(p));
+  applyConfig({ factions: S.factions, armies: S.armies, targets });
+  return { updated: list.length - added.length, added: added.length };
+}
+
+// Import of players, in the format of seed-players.json (matched by id, then by code). Points and investments are kept; players missing from the file are kept.
+const CODE_RE = /^[A-Za-z0-9_-]{4,32}$/;
+function importPlayers(list) {
+  if (!Array.isArray(list) || !list.length) throw new Error('Format attendu : une liste de joueurs');
+  const prepared = list.map((x, i) => {
+    const name = String(x?.name || '').trim().slice(0, 40), code = String(x?.code || '').trim().toLowerCase(), factionId = x?.factionId || 'neutral';
+    if (!name) throw new Error(`Joueur n°${i + 1} : nom requis`);
+    if (!CODE_RE.test(code)) throw new Error(`${name} : code invalide (4 à 32 caractères : lettres, chiffres, - ou _)`);
+    if (code === ADMIN_PASSWORD.toLowerCase()) throw new Error(`${name} : ce code est réservé`);
+    if (!S.factions.some((f) => f.id === factionId)) throw new Error(`${name} : faction inconnue (${factionId})`);
+    const existing = S.players[x.id] || Object.values(S.players).find((p) => p.code.toLowerCase() === code);
+    return { x, name, code, factionId, existing, fields: { name, code, factionId, fluffName: String(x.fluffName || '').trim().slice(0, 200), email: String(x.email || '').trim(), army: String(x.army || '') } };
+  });
+  const finalCodes = new Map(Object.values(S.players).map((p) => [p.id, p.code.toLowerCase()])); // every code must stay unique once the import is applied
+  prepared.forEach((p, i) => finalCodes.set(p.existing?.id ?? `new-${i}`, p.code));
+  const seen = new Set();
+  for (const code of finalCodes.values()) { if (seen.has(code)) throw new Error(`Le code « ${code} » serait utilisé par deux joueurs`); seen.add(code); }
+  let added = 0, updated = 0;
+  for (const { x, existing, fields } of prepared) {
+    if (existing) { Object.assign(existing, fields); updated++; continue; }
+    const id = x.id && !S.players[x.id] ? String(x.id) : crypto.randomUUID();
+    S.players[id] = { id, ...fields, points: 0, alloc: {}, abilityUsed: false, inbox: [] };
+    added++;
+  }
+  logEvt(`Import de joueurs : ${added} ajouté${added > 1 ? 's' : ''}, ${updated} mis à jour`);
+  return { added, updated };
+}
+
 async function body(req) {
   let s = '';
   for await (const ch of req) { s += ch; if (s.length > 1e6) throw new Error('Corps trop gros'); }
@@ -364,6 +411,7 @@ http.createServer(async (req, res) => {
       const route = `${req.method} ${url.pathname}`;
       if (route === 'GET /api/state') return send(res, 200, view(a.role, a.me));
       const b = await body(req);
+      const reply = { ok: true };
       if (route === 'POST /api/allocate') {
         let p = a.me;
         if (a.role === 'admin') p = S.players[b.playerId];
@@ -420,21 +468,15 @@ http.createServer(async (req, res) => {
       } else if (route === 'POST /api/admin/delete-player') {
         (S.deleted ??= []).push(b.playerId); // keeps the roster refresh from bringing them back
         delete S.players[b.playerId];
+      } else if (route === 'POST /api/admin/import-planets') {
+        Object.assign(reply, importPlanets(b.planets));
+      } else if (route === 'POST /api/admin/import-players') {
+        Object.assign(reply, importPlayers(b.players));
       } else if (route === 'PUT /api/admin/config') {
-        validateConfig(b);
-        const old = new Map(S.targets.flatMap((t) => t.tiers.map((pa) => [pa.id, pa])));
-        S.factions = b.factions;
-        if (b.armies) S.armies = b.armies.map((a) => ({ name: String(a.name), bonus: a.bonus?.planetId ? { planetId: a.bonus.planetId, pct: Number(a.bonus.pct) } : null, wipe: ['loyalist', 'renegade', 'opponent'].includes(a.wipe) ? a.wipe : null }));
-        const str = (v) => String(v ?? '');
-        S.targets = b.targets.map((t) => ({ ...t, tiers: t.kind === 'gauge' ? [] : t.tiers.map((pa) => { // unlock state and prize winner are kept by tier id
-          const o = old.get(pa.id);
-          return { id: pa.id, threshold: Number(pa.threshold), label: str(pa.label), title: str(pa.title), fluff: str(pa.fluff), images: (pa.images || []).map(str).filter(Boolean), rules: str(pa.rules), prize: str(pa.prize), nature: str(pa.nature), teaser: str(pa.teaser), shared: !!pa.shared, unlocked: o?.unlocked ?? false, camps: o?.camps ?? [], winnerSide: o?.winnerSide ?? null, winnerId: o?.winnerId ?? null, winnerName: o?.winnerName ?? null };
-        }) }));
-        for (const t of S.targets) if (t.kind === 'planet') settle(t); // new thresholds or prizes can unlock tiers right away
-        logEvt('Configuration mise à jour');
+        applyConfig(b);
       } else return send(res, 404, { error: 'Route inconnue' });
       save(); broadcast();
-      return send(res, 200, { ok: true });
+      return send(res, 200, reply);
     }
     // static files
     const file = url.pathname === '/' ? 'index.html' : path.normalize(url.pathname).replace(/^([/\\])+/, '');

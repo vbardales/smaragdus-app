@@ -308,7 +308,7 @@ const broadcast = () => { for (const c of clients) c.write('data: tick\n\n'); };
 // SSE comment every 25 s: proxies (Azure) cut idle connections after about 4 minutes
 setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 25000).unref();
 const send = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
-const MIME = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const newCode = () => crypto.randomBytes(4).toString('hex');
 const int = (v) => { const n = Number(v); if (!Number.isInteger(n)) throw new Error('Entier attendu'); return n; };
 

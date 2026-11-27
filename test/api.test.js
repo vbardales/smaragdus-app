@@ -154,6 +154,18 @@ test('importing players refuses duplicate codes before changing anything', async
   assert.equal((await api('dupcode1', 'GET', '/api/state')).status, 401);
 });
 
+// ---------- unknown errors ----------
+test('a malformed request answers 400 in French, a server bug answers 500 without internals', async () => {
+  const bad = await fetch(base + '/api/admin/config', { method: 'PUT', headers: { 'x-token': ADMIN, 'Content-Type': 'application/json' }, body: '{pas du json' });
+  assert.equal(bad.status, 400);
+  assert.equal((await bad.json()).error, 'Requête mal formée');
+  const bug = await admin('PUT', '/api/admin/config', { factions: [], targets: [null] }); // makes the server code throw a TypeError
+  assert.equal(bug.status, 500);
+  assert.match(bug.json.error, /Anomalie interne/);
+  assert.ok(!/undefined|null|TypeError/.test(bug.json.error), 'no internals');
+  assert.equal((await api('', 'GET', '/api/public')).status, 200, 'the server is still alive');
+});
+
 // ---------- static files ----------
 test('static files: a folder or a data file is never served', async () => {
   assert.equal((await fetch(base + '/')).status, 200);

@@ -308,7 +308,7 @@ const broadcast = () => { for (const c of clients) c.write('data: tick\n\n'); };
 // SSE comment every 25 s: proxies (Azure) cut idle connections after about 4 minutes
 setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 25000).unref();
 const send = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
-const MIME = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2' };
 const newCode = () => crypto.randomBytes(4).toString('hex');
 const int = (v) => { const n = Number(v); if (!Number.isInteger(n)) throw new Error('Entier attendu'); return n; };
 
@@ -466,7 +466,7 @@ http.createServer(async (req, res) => {
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p.email || '')) throw new Error(`Pas d'adresse mail valide pour ${p.name}`);
         const subject = String(b.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200), text = String(b.body || '').slice(0, 20000);
         if (!subject || !text.trim()) throw new Error('Objet et texte requis');
-        await sendMail(p.email, subject, text);
+        try { await sendMail(p.email, subject, text); } catch (e) { console.error(`Mail to ${p.email}:`, e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
         p.mailedAt = Date.now();
         logEvt(`Mail envoyé à ${p.name} (${p.email})`);
       } else if (route === 'POST /api/admin/reset') {
@@ -497,6 +497,11 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': MIME[path.extname(full)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     fs.createReadStream(full).pipe(res);
   } catch (e) {
+    if (e instanceof SyntaxError) return send(res, 400, { error: 'Requête mal formée' }); // JSON that does not parse
+    if (e instanceof TypeError || e instanceof RangeError || e instanceof ReferenceError) { // a bug, not a mistake of the player: log it, do not show internals
+      console.error(`${req.method} ${req.url}:`, e.stack);
+      return send(res, 500, { error: 'Anomalie interne du serveur : l’incident a été consigné.' });
+    }
     send(res, 400, { error: e.message });
   }
 }).listen(PORT, () => console.log(`Smaragdus listening on http://localhost:${PORT}`));

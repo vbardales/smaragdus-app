@@ -14,21 +14,22 @@
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#0b100d">
 <style>
-:root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--cyan:#7AD7F0;--alert:#c9a96a;--input:#0e0c11;--hover:#221c28;--rule:#2a2330;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
+@font-face{font-family:"JetBrains Mono";font-weight:400;font-display:swap;src:url(/fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:700;font-display:swap;src:url(/fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Cinzel";font-weight:600;font-display:swap;src:url(/fonts/cinzel-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Cinzel";font-weight:700;font-display:swap;src:url(/fonts/cinzel-latin-700-normal.woff2) format("woff2")}
+:root{--mono:"JetBrains Mono",Consolas,"Cascadia Mono",Menlo,monospace;--display:"Cinzel",Georgia,serif;--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--cyan:#7AD7F0;--alert:#c9a96a;--input:#0e0c11;--hover:#221c28;--rule:#2a2330;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
 /* ambiance: once a player has opened a message (and for the admin) */
 body.amb{--bg:#14110F;--panel:#1b1612;--gold:#E09F3E;--alert:#7AD7F0;--input:var(--input);--hover:var(--hover);--rule:var(--rule)}
 *{box-sizing:border-box}
-body{margin:0;background-color:var(--bg);background-image:
-  radial-gradient(ellipse at 50% -8%,rgba(40,120,70,.22),transparent 55%),
-  radial-gradient(1px 1px at 12px 24px,rgba(255,255,255,.55),transparent),
-  radial-gradient(1px 1px at 96px 70px,rgba(255,240,210,.40),transparent),
-  radial-gradient(1.5px 1.5px at 41px 133px,rgba(190,225,255,.45),transparent);
-  background-size:100% 100%,170px 170px,233px 233px,311px 311px;background-attachment:fixed;color:var(--text);font:15px/1.4 Georgia,serif}
+body{margin:0;background-color:var(--bg);background-image:radial-gradient(ellipse at 50% -8%,rgba(40,120,70,.22),transparent 55%),url(/img/deco/cartographic-tile.webp);background-size:100% 100%,640px 640px;background-attachment:fixed,scroll;color:var(--text);font:15px/1.4 Georgia,serif}
 /* login: the small header gives way to the hero */
 body:has(#login:not(.hide)) header{display:none}
 body:not(:has(#login:not(.hide))) #hero{display:none}
+.mono,#code{font-family:var(--mono);letter-spacing:.04em;font-variant-ligatures:none}
+#code{font-size:15px}
 #hero{text-align:center;margin:34px 16px 0}#hero .logo{width:190px;height:190px;filter:drop-shadow(0 0 22px rgba(61,220,132,.35))}
-.hero-title{font:600 32px Georgia,serif;font-variant:small-caps;letter-spacing:.14em;color:var(--gold);margin-top:6px}
+.hero-title{font:600 30px var(--display);letter-spacing:.1em;color:var(--gold);margin-top:6px}
 .hero-sub{margin:0;color:var(--dim);font-size:13px;letter-spacing:.08em}
 .orn{height:16px;margin:8px auto;max-width:340px;position:relative;background:linear-gradient(90deg,transparent,var(--gold),transparent) center/100% 1px no-repeat}
 .orn::after{content:"◆";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg);padding:0 9px;color:var(--gold);font-size:11px}
@@ -44,11 +45,17 @@ header{box-shadow:0 1px 0 #000,0 2px 0 var(--line)}
   background:url(/img/deco/frame-tl.webp) top left/clamp(64px,13%,130px) no-repeat,url(/img/deco/frame-tr.webp) top right/clamp(64px,13%,130px) no-repeat,
     url(/img/deco/frame-bl.webp) bottom left/clamp(64px,13%,130px) no-repeat,url(/img/deco/frame-br.webp) bottom right/clamp(64px,13%,130px) no-repeat}
 button{letter-spacing:.02em}
+#lerr{display:none;margin:12px 0 0;padding:8px 11px;border:1px solid var(--red);border-left-width:4px;background:rgba(224,96,95,.10);color:#f2c4c3;font-size:13.5px;line-height:1.35}
+#lerr:not(:empty){display:block;animation:shake .38s}
+#lerr b{display:block;font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:2px}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@media(prefers-reduced-motion:reduce){#lerr{animation:none!important}}
 .motto{margin:14px 0 0;text-align:center;font-variant:small-caps;letter-spacing:.18em;color:var(--dim);font-size:12px}
 .motto i{font-style:normal;color:var(--gold);margin:0 .6em}
 footer.foot::before{content:"";display:block;width:92px;height:92px;margin:0 auto 10px;opacity:.85;background:url(/img/deco/seal.webp) center/contain no-repeat}
 footer.foot{padding:18px 16px 26px;text-align:center;color:var(--dim);font-size:12px;font-variant:small-caps;letter-spacing:.16em}
-h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
+h1,h2,h3{font-family:var(--display);font-weight:600;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
+h2{font-size:1.1em}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
 body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
@@ -96,6 +103,7 @@ textarea{width:100%;height:340px;font:12px monospace}
 .hide{display:none}
 .ly{color:#e0c040}.rn{color:#e0605f}
 .gauge.loy .bar i{background:#e0c040}.gauge.ren .bar i{background:#e0605f}
+.gl b,.spot .mine,#me b{font-family:var(--mono);font-weight:700}
 .gl{font-size:15px;display:flex;align-items:center;gap:4px;justify-content:center}
 .sb{display:inline-block;width:44px;height:6px;background:#e0605f;border-radius:3px;overflow:hidden}
 .sb u{display:block;height:100%;background:#e0c040}
@@ -164,7 +172,7 @@ body.mapview .spot{pointer-events:none}
   <h2>Authentification du cogitateur</h2>
   <p class="dim">Présentez votre sigil d'accès (ou la clef du Maître de Campagne) au cogitateur.</p>
   <div class="row"><div class="pw"><input id="code" type="password" placeholder="Sigil d'accès" autocomplete="off"><button id="peek" type="button" aria-label="Révéler le sigil" aria-pressed="false" title="Révéler le sigil"></button></div><button id="go">Accéder</button></div>
-  <p id="lerr" style="color:var(--red)"></p>
+  <div id="lerr" role="alert"></div>
   <p class="motto">Omnia videre<i>◆</i>Omnia notare<i>◆</i>Omnia servire</p>
 </div>
 <p id="spec-wrap"><button id="spec-btn" type="button">Accès observateur</button></p>
@@ -200,10 +208,18 @@ if (new URLSearchParams(location.search).get('view') === 'map') document.body.cl
 let token = localStorage.getItem('smg-token') || new URLSearchParams(location.search).get('code') || '';
 let state = null, selected = null, adminOpen = false;
 
-async function api(method, p, body) {
-  const r = await fetch(p, { method, headers: { 'X-Token': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+let apiTimeout = 20000; // ms
+async function api(method, p, body, timeout = apiTimeout) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeout);
+  let r;
+  try {
+    r = await fetch(p, { method, signal: ctl.signal, headers: { 'X-Token': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  } catch {
+    // no answer at all: the browser's own message is in English, so say it in French
+    throw Object.assign(new Error(ctl.signal.aborted ? 'Le cogitateur tarde à répondre : réessayez dans un instant.' : 'Liaison impossible avec le cogitateur : vérifiez votre connexion et réessayez.'), { status: 0 });
+  } finally { clearTimeout(timer); }
   const j = await r.json().catch(() => null); // a restarting server or the proxy answers with an HTML page
-  if (!r.ok || !j) throw Object.assign(new Error(j?.error || `Serveur indisponible (HTTP ${r.status}), réessaie dans un instant`), { status: r.status });
+  if (!r.ok || !j) throw Object.assign(new Error(j?.error || `Le cogitateur ne répond pas (HTTP ${r.status}). Réessayez dans un instant.`), { status: r.status });
   return j;
 }
 // on failure also resync: a stale list (deleted player, restarted server) would otherwise keep failing
@@ -237,16 +253,31 @@ function updateTitle() {
   document.title = (fresh ? `(${fresh}) ` : '') + 'Système Smaragdus';
 }
 
+// anything unexpected (a bug in the page, an error nobody caught) is said in French, once every few seconds, and kept in the console
+let lastBug = 0;
+function reportBug(e) {
+  console.error(e);
+  if (Date.now() - lastBug < 5000) return;
+  lastBug = Date.now();
+  const known = e && typeof e === 'object' && e.status !== undefined; // an error of api(): its message is already in French
+  toast(known ? '⚠ ' + e.message : '⚠ Anomalie du cogitateur : une opération a échoué. Rechargez la page si le problème persiste.');
+}
+window.addEventListener('error', (ev) => reportBug(ev.error || ev.message));
+window.addEventListener('unhandledrejection', (ev) => reportBug(ev.reason));
+
+function loginError(title, text) { $('#lerr').replaceChildren(...(title ? [h('b', {}, '⚠ ' + title), text] : [])); }
+
 async function refresh() {
   if (spectator) return refreshSpectator();
   try { state = await api('GET', '/api/state'); } catch (e) {
-    if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#lerr').textContent = token ? 'Sigil refusé : accès non autorisé.' : ''; }
+    if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); loginError(token ? 'Accès refusé' : '', 'Le cogitateur ne reconnaît pas ce sigil.'); }
+    else if (!$('#login').classList.contains('hide')) loginError('Liaison interrompue', e.message); // the server could not be reached while logging in
     return;
   }
   localStorage.setItem('smg-token', token);
-  announce(state);
+  try { announce(state); } catch (e) { reportBug(e); }
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
-  render();
+  try { render(); } catch (e) { reportBug(e); }
 }
 
 // ---------- spectator (no code): read-only view of the two camps ----------
@@ -256,7 +287,10 @@ const fmt = (n) => +Number(n).toFixed(1);
 const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
 async function refreshSpectator() {
   let pub;
-  try { const r = await fetch('/api/public'); if (!r.ok) throw new Error('HTTP ' + r.status); pub = await r.json(); } catch { return; }
+  try { pub = await api('GET', '/api/public'); } catch (e) { // the visitor view needs no code, but the server can still be down
+    if (!$('#login').classList.contains('hide')) loginError('Liaison interrompue', e.message); else reportBug(e);
+    return;
+  }
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
   document.body.classList.add('spectator'); document.body.classList.remove('isadmin');
   $('#who').replaceChildren(h('b', {}, 'OBSERVATEUR'), h('button', { onclick: leaveSpectator }, 'Quitter la console'));
@@ -565,7 +599,7 @@ async function importFile(file, note) {
     dirty = false;
     note.textContent = done(r) + ' ✓';
     await refresh();
-  } catch (e) { note.textContent = 'Échec : ' + e.message; }
+  } catch (e) { note.textContent = 'Échec : ' + (e instanceof SyntaxError ? 'ce fichier n’est pas un JSON valide.' : e.message); }
 }
 
 function buildEditor() {
@@ -666,7 +700,7 @@ function showMail(p) {
     h('div', { class: 'row' },
       state.mailEnabled && m.to ? btn('Envoyer par mail', async (e) => {
         const b = e.target; b.disabled = true; note.textContent = 'Envoi…';
-        try { await api('POST', '/api/admin/mail', { playerId: p.id, subject: subject.value, body: body.value }); note.textContent = 'Mail envoyé ✓'; await refresh(); }
+        try { await api('POST', '/api/admin/mail', { playerId: p.id, subject: subject.value, body: body.value }, 60000); note.textContent = 'Mail envoyé ✓'; await refresh(); }
         catch (err) { note.textContent = 'Échec : ' + err.message; }
         b.disabled = false;
       }) : null,
@@ -698,7 +732,7 @@ async function sendMailToAll(e) {
   for (const p of todo) {
     btn.textContent = `Envoi… ${sent + failed.length + 1} / ${todo.length}`;
     const m = mailOf(p);
-    try { await api('POST', '/api/admin/mail', { playerId: p.id, subject: m.subject, body: m.body }); sent++; } catch (err) { failed.push(`${p.name} : ${err.message}`); }
+    try { await api('POST', '/api/admin/mail', { playerId: p.id, subject: m.subject, body: m.body }, 60000); sent++; } catch (err) { failed.push(`${p.name} : ${err.message}`); }
   }
   btn.disabled = false; btn.textContent = 'Envoyer le mail à tous';
   alert(`${sent} mail${sent > 1 ? 's' : ''} envoyé${sent > 1 ? 's' : ''}.${failed.length ? `\n\nÉchecs :\n${failed.join('\n')}` : ''}`);
@@ -769,7 +803,7 @@ function fillPlayers() {
     const a = h('input', { type: 'number', value: 5 });
     const link = `${PUBLIC_URL}/?code=${p.code}`;
     return h('tr', {},
-      h('td', {}, h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army, p.code].filter(Boolean).join(' · '))),
+      h('td', {}, h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army].filter(Boolean).join(' · '), ' · ', h('span', { class: 'mono' }, p.code))),
       h('td', {}, `${p.left}/${p.points}`),
       h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'), ' ',
         h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ',
@@ -820,7 +854,16 @@ $('#peek').onclick = () => {
   $('#peek').title = label; $('#peek').setAttribute('aria-label', label); $('#peek').setAttribute('aria-pressed', String(show));
   $('#code').focus();
 };
-$('#go').onclick = () => { token = $('#code').value.trim(); spectator = false; try { localStorage.removeItem('smg-spectator'); } catch {} refresh(); };
+const go = $('#go');
+go.onclick = () => {
+  token = $('#code').value.trim(); // blanks around the code are ignored
+  spectator = false; try { localStorage.removeItem('smg-spectator'); } catch {}
+  if (!token) return loginError('Sigil manquant', 'Présentez votre sigil d’accès au cogitateur.');
+  loginError();
+  go.disabled = true; go.textContent = 'Vérification…';
+  refresh().catch((e) => { reportBug(e); loginError('Erreur inconnue', 'Une erreur inattendue est survenue. Réessayez, ou rechargez la page.'); }).finally(() => { go.disabled = false; go.textContent = 'Accéder'; }); // blocked until the answer (or the timeout)
+};
+$('#code').addEventListener('input', () => loginError()); // the alert goes away as soon as the player types again
 // braces matter: an arrow returning false from onkeydown cancels the keystroke
 $('#code').onkeydown = (e) => { if (e.key === 'Enter') $('#go').click(); };
 if (token || spectator) refresh();

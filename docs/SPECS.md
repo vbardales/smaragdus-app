@@ -26,7 +26,7 @@ Reached at `/` with no stored session.
 | 2.3 | An eye icon at the end of the field shows the code, then hides it again | [manual] |
 | 2.4 | "Accéder" validates the code (also the Enter key) | [manual] |
 | 2.5 | Blanks around the code are ignored (`trim`) | [manual] |
-| 2.6 | An invalid code shows a red message under the box ("Sigil refusé : accès non autorisé.") | [manual] server side `[test]` (401) |
+| 2.6 | An invalid code shows an alert under the box ("Accès refusé : le cogitateur ne reconnaît pas ce sigil."); an empty field says "Sigil manquant", an unreachable server "Liaison interrompue"; a request with no answer after 20 s is cut ("Le cogitateur tarde à répondre"); the button shows "Vérification…" while the code is checked; an unexpected error says "Erreur inconnue" and is kept in the console; while a code is being checked the button stays blocked (one request, whatever the number of clicks or Enter presses); the alert goes away as soon as the player types again | [manual] server side `[test]` (401) |
 | 2.7 | A valid code leads to the player view or the admin view, according to the role | `[test]` role returned by `GET /api/state` |
 | 2.8 | Under the box, an "Accès observateur" button leads to the spectator view, whether a code was typed or not | [manual] |
 | 2.9 | Decoration: logo, framed panels, diamond headings, motto, footer | [manual] first pass done, more can be added |
@@ -74,6 +74,7 @@ Codes are case-insensitive and stored in lower case. A code never equals the adm
 
 - Node, one dependency (`nodemailer`, loaded on the first mail). State in memory, saved to `DATA_FILE`. Single instance.
 - Live refresh: SSE stream `/api/events` (a tick after every change, a ping every 25 s).
+- Errors: a mistake of the player answers 400 with a French message; malformed JSON answers 400 "Requête mal formée"; a server bug answers 500 "Anomalie interne du serveur" without internals and is logged. `[test]`
 - Static files: only files under `public/`; a folder or any file outside is a 404. `[test]`
 - A new deployment keeps the state unless `RESET_ON_DEPLOY=1`. `KEEP_STATE=1` freezes it.
 

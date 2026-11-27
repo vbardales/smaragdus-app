@@ -89,21 +89,21 @@ test('investments are bounded by the available points', async () => {
   const p = byFaction('loyalist')[0];
   await give(p, 5);
   const bad = async (amount) => (await invest(p, 'grus-loyalist', amount)).json.error;
-  assert.match(await bad(6), /Points insuffisants/);
+  assert.match(await bad(6), /Réserve insuffisante/);
   assert.match(await bad(0), /Montant invalide/);
   assert.match(await bad(2.5), /Entier attendu|Montant invalide/);
   assert.match(await bad(-3), /Montant invalide/);
   const ok = await invest(p, 'grus-loyalist', 5);
   assert.equal(ok.json.ok, true);
   assert.equal((await api(p.code, 'GET', '/api/state')).json.me.points, 0);
-  assert.match((await invest(p, 'grus-loyalist', 1)).json.error, /Points insuffisants/);
+  assert.match((await invest(p, 'grus-loyalist', 1)).json.error, /Réserve insuffisante/);
 });
 
 test('a player tied to a camp cannot invest in the other camp, nor on a planet directly', async () => {
   const p = byFaction('loyalist')[1];
   await give(p, 5);
-  assert.match((await invest(p, 'grus-renegade', 1)).json.error, /Camp non autorisé/);
-  assert.match((await invest(p, 'grus', 1)).json.error, /Choisis un camp/);
+  assert.match((await invest(p, 'grus-renegade', 1)).json.error, /Allégeance incompatible/);
+  assert.match((await invest(p, 'grus', 1)).json.error, /Choisissez un camp/);
 });
 
 // ---------- tiers: who learns what ----------

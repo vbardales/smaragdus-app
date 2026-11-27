@@ -38,7 +38,7 @@ const armyRow = ([name, planetId = null, wipe = null]) => ({ name, bonus: planet
 const planetOf = (p) => ({ ...p, kind: 'planet', multiplier: 1, tiers: p.tiers.map(tier) });
 // every planet owns one loyalist and one renegade gauge: the camp's total on the planet (no tiers of their own)
 const gaugesOf = (p) => ['loyalist', 'renegade'].map((side) => ({
-  id: `${p.id}-${side}`, kind: 'gauge', planetId: p.id, side, name: `${p.name} · ${side === 'loyalist' ? 'Loyaliste' : 'Renégat'}`, specialty: '', multiplier: 1,
+  id: `${p.id}-${side}`, kind: 'gauge', planetId: p.id, side, name: `${p.name} · ${side === 'loyalist' ? 'Loyaliste' : 'Traître'}`, specialty: '', multiplier: 1,
   tiers: [],
 }));
 // Default roster (registered players), kept next to the code so a fresh state starts with them.
@@ -48,7 +48,7 @@ const seed = () => ({
   factions: [
     { id: 'alpha', name: 'Alpha Légion', gauge: 'choice' },
     { id: 'loyalist', name: 'Loyaliste', gauge: 'loyalist' },
-    { id: 'renegade', name: 'Renégat', gauge: 'renegade' },
+    { id: 'renegade', name: 'Traître', gauge: 'renegade' },
     { id: 'worldeaters', name: 'World Eaters', gauge: 'renegade' },
     { id: 'neutral', name: 'Sans faction', gauge: null },
   ],
@@ -105,7 +105,7 @@ const logEvt = (text, scope) => { S.log.unshift({ t: Date.now(), text, scope });
 // ---------- logic ----------
 // Players invest on a planet's loyalist or renegade gauge (their camp). Neutral players and the Alpha Legion pick the camp
 // at each investment; the other factions are tied to theirs.
-const SIDE_NAME = { loyalist: 'Loyalistes', renegade: 'Renégats' };
+const SIDE_NAME = { loyalist: 'Loyalistes', renegade: 'Traîtres' };
 const spent = (p) => S.targets.reduce((n, t) => n + (p.alloc[t.id] || 0), 0);
 const planetOfGauge = (g) => S.targets.find((x) => x.id === g.planetId);
 const gaugeOf = (planet, side) => S.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
@@ -130,10 +130,10 @@ const wipeSide = (p) => { // the camp whose points the player's legion can destr
 
 function allocate(p, target, amount) {
   if (!Number.isInteger(amount) || amount <= 0) throw new Error('Montant invalide');
-  if (target.kind !== 'gauge') throw new Error('Choisis un camp (loyaliste ou renégat)');
+  if (target.kind !== 'gauge') throw new Error('Choisissez un camp (loyaliste ou traître)');
   const avail = p.points - spent(p);
-  if (amount > avail) throw new Error(`Points insuffisants (${avail} dispo)`);
-  if (!allowedGauges(p).includes(target.side)) throw new Error('Camp non autorisé pour cette faction');
+  if (amount > avail) throw new Error(`Réserve insuffisante (${avail} point${avail > 1 ? 's' : ''} disponible${avail > 1 ? 's' : ''})`);
+  if (!allowedGauges(p).includes(target.side)) throw new Error('Allégeance incompatible : ce camp vous est fermé');
   p.alloc[target.id] = (p.alloc[target.id] || 0) + amount;
   logEvt(`${p.name} → ${target.name} : +${amount}`, p.id);
   settle(planetOfGauge(target));
@@ -164,7 +164,7 @@ function settle(planet) {
       const best = Math.max(...reached.map((c) => c.total)), top = reached.filter((c) => c.total === best); // a tie only happens after a config edit
       pa.winnerSide = top[crypto.randomInt(top.length)].side;
       pa.unlocked = true;
-      logEvt(`PALIER ${planet.name} « ${pa.label} » (${pa.threshold}) remporté par les ${SIDE_NAME[pa.winnerSide]}`, campScope([pa.winnerSide]));
+      logEvt(`PALIER ${planet.name} « ${pa.label} » (${pa.threshold}) franchi par les ${SIDE_NAME[pa.winnerSide]}`, campScope([pa.winnerSide]));
     }
     const g = pa.winnerSide && gaugeOf(planet, pa.winnerSide);
     if (!g) continue; // tier won before camps existed (old save): nothing to deliver
@@ -185,7 +185,7 @@ function deliver(planet, pa, players) {
     const had = q.inbox.find((m) => m.tierId === pa.id);
     if (had && !had.teaser) continue;
     if (had) { delete had.teaser; had.t = Date.now(); } else q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now() });
-    logEvt(`Nouveau rapport : ${planet.name} « ${pa.label} »`, q.id);
+    logEvt(`Transmission reçue : ${planet.name} « ${pa.label} »`, q.id);
   }
 }
 // short notice for the players tied to a served camp (the winner of a race tier, the camps of the contributors of a shared tier) who have not contributed.
@@ -196,7 +196,7 @@ function deliverTeasers(planet, pa, contributors) {
   for (const q of Object.values(S.players)) {
     if (contributors.includes(q) || (fixedSide(q) && !served.has(fixedSide(q))) || q.inbox.some((m) => m.tierId === pa.id)) continue;
     q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now(), teaser: true });
-    logEvt(`Nouvelle transmission : ${planet.name}`, q.id);
+    logEvt(`Extrait intercepté : ${planet.name}`, q.id);
   }
 }
 // what the planet is taken to be: the nature of the highest unlocked tier that sets one, else its starting nature
@@ -418,7 +418,7 @@ http.createServer(async (req, res) => {
     if (url.pathname === '/api/public') return send(res, 200, publicView());
     if (url.pathname.startsWith('/api/')) {
       const a = auth(req);
-      if (!a) return send(res, 401, { error: 'Code invalide' });
+      if (!a) return send(res, 401, { error: 'Sigil refusé' });
       const route = `${req.method} ${url.pathname}`;
       if (route === 'GET /api/state') return send(res, 200, view(a.role, a.me));
       const b = await body(req);

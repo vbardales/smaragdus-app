@@ -9,7 +9,7 @@ Hosted at `https://smaragdus.antredudragon.fr` (Azure App Service `smaragdus-ant
 
 | Part | Who | How they get in | What they can do |
 |---|---|---|---|
-| **Visitor** (spectator) | anyone | "Accès spectateur" button, or `/?view=spectateur` | watch both camps, read-only |
+| **Visitor** (spectator) | anyone | "Accès observateur" button, or `/?view=spectateur` | watch both camps, read-only |
 | **User** (player) | registered player | personal code | invest points, read reports, see their camp's news |
 | **Admin** | game master | admin password | everything: players, points, content, mails, imports |
 
@@ -21,16 +21,17 @@ Reached at `/` with no stored session.
 
 | # | Requirement | Status |
 |---|---|---|
-| 2.1 | Title "Système Smaragdus", Warhammer 30K look | [manual] look done, see 2.9 |
+| 2.1 | Title "Système Smaragdus" with a logo, Warhammer 30K look | [manual] |
 | 2.2 | An identification box with a code field, the code is masked | [manual] |
 | 2.3 | An eye icon at the end of the field shows the code, then hides it again | [manual] |
-| 2.4 | "Entrer" validates the code (also the Enter key) | [manual] |
+| 2.4 | "Accéder" validates the code (also the Enter key) | [manual] |
 | 2.5 | Blanks around the code are ignored (`trim`) | [manual] |
-| 2.6 | An invalid code shows a red message under the box ("Code invalide") | [manual] server side `[test]` (401) |
+| 2.6 | An invalid code shows a red message under the box ("Sigil refusé : accès non autorisé.") | [manual] server side `[test]` (401) |
 | 2.7 | A valid code leads to the player view or the admin view, according to the role | `[test]` role returned by `GET /api/state` |
-| 2.8 | Under the box, an "Accès spectateur" button leads to the spectator view, whether a code was typed or not | [manual] |
-| 2.9 | Logo for the title, more decoration | [todo] |
+| 2.8 | Under the box, an "Accès observateur" button leads to the spectator view, whether a code was typed or not | [manual] |
+| 2.9 | Decoration: logo, framed panels, diamond headings, motto, footer | [manual] first pass done, more can be added |
 | 2.10 | Easter egg | [todo] |
+| 2.11 | A "Code perdu" link under the identification box opens an email field. The address is checked for a valid format. Whether the address exists or not, the page answers the same: "si votre email est connu du système, vous recevrez un mail avec votre code en clair". If a player has this address, the code is mailed to them in clear. | [todo] |
 
 Codes are case-insensitive and stored in lower case. A code never equals the admin password.
 
@@ -78,7 +79,8 @@ Codes are case-insensitive and stored in lower case. A code never equals the adm
 
 ## 8. Backlog
 
-1. Logo, decoration, easter egg (2.9, 2.10).
+1. Easter egg (2.10); more decoration if wanted.
+1. "Code perdu" (2.11). Points to settle when building it: the same answer and the same response time whether the address is known or not (no way to probe which addresses exist), a limit on requests per address and per IP so nobody can flood a player with mails, a minimal log, and it needs the SMTP settings (see README). Several players may share an address (it happens in the roster): the mail then lists each code.
 2. Lottery at the end (section 5).
 3. One ship added on the map for each tier unlocked.
 4. Wire the `public/*_ambiance.wav` files (one ambiance per planet).

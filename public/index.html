@@ -4,13 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Système Smaragdus</title>
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 :root{--bg:#0b0a0d;--panel:#16131a;--line:#4a3d2a;--gold:#c9a96a;--cyan:#7AD7F0;--alert:#c9a96a;--input:#0e0c11;--hover:#221c28;--rule:#2a2330;--text:#e8dfcf;--dim:#9a8f7c;--green:#5fe08a;--red:#e0605f}
 /* ambiance: once a player has opened a message (and for the admin) */
 body.amb{--bg:#14110F;--panel:#1b1612;--gold:#E09F3E;--alert:#7AD7F0;--input:var(--input);--hover:var(--hover);--rule:var(--rule)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Georgia,serif}
+h1{display:flex;align-items:center;gap:10px}.logo{color:var(--gold);flex:none;filter:drop-shadow(0 0 5px #3ddc8466)}
+/* decoration: framed panels, diamond headings, motto, footer */
+.panel{position:relative}
+.panel::before,.panel::after{content:"";position:absolute;width:12px;height:12px;pointer-events:none;border:0 solid var(--gold);opacity:.75}
+.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+h2::before{content:"◆";font-size:.55em;margin-right:.55em;vertical-align:middle;opacity:.7}
+header{box-shadow:0 1px 0 #000,0 2px 0 var(--line)}
+#map{box-shadow:inset 0 0 50px #000c}
+button{letter-spacing:.02em}
+.motto{margin:14px 0 0;text-align:center;font-variant:small-caps;letter-spacing:.18em;color:var(--dim);font-size:12px}
+.motto i{font-style:normal;color:var(--gold);margin:0 .6em}
+footer.foot{padding:18px 16px 26px;text-align:center;color:var(--dim);font-size:12px;font-variant:small-caps;letter-spacing:.16em}
 h1,h2,h3{font-variant:small-caps;color:var(--gold);margin:0 0 .4em;letter-spacing:.05em}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
@@ -116,17 +128,18 @@ body.mapview .spot{pointer-events:none}
 </head>
 <body>
 <header>
-  <h1>Système Smaragdus</h1>
+  <h1><svg class="logo" viewBox="0 0 64 64" width="38" height="38" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width=".8" stroke-dasharray="2 3"/><path d="M32 3v10M32 51v10M3 32h10M51 32h10M11.5 11.5l7 7M45.5 45.5l7 7M11.5 52.5l7-7M45.5 18.5l7-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="32" cy="32" r="12" fill="#3ddc84" fill-opacity=".85"/><circle cx="32" cy="32" r="12" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M32 24l4 8-4 8-4-8z" fill="#0b0a0d" fill-opacity=".55"/></svg><span>Système Smaragdus</span></h1>
   <div id="who" class="row"></div>
 </header>
 
 <div id="login" class="panel" style="max-width:420px;margin:40px auto">
-  <h2>Identification</h2>
-  <p class="dim">Entre ton code joueur (ou le mot de passe admin).</p>
-  <div class="row"><div class="pw"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="peek" type="button" aria-label="Afficher le code" aria-pressed="false" title="Afficher le code"></button></div><button id="go">Entrer</button></div>
+  <h2>Authentification du cogitateur</h2>
+  <p class="dim">Présentez votre sigil d'accès (ou la clef du Maître de Campagne) au cogitateur.</p>
+  <div class="row"><div class="pw"><input id="code" type="password" placeholder="Sigil d'accès" autocomplete="off"><button id="peek" type="button" aria-label="Révéler le sigil" aria-pressed="false" title="Révéler le sigil"></button></div><button id="go">Accéder</button></div>
   <p id="lerr" style="color:var(--red)"></p>
+  <p class="motto">Omnia videre<i>◆</i>Omnia notare<i>◆</i>Omnia servire</p>
 </div>
-<p id="spec-wrap"><button id="spec-btn" type="button">Accès spectateur</button></p>
+<p id="spec-wrap"><button id="spec-btn" type="button">Accès observateur</button></p>
 
 <main id="app" class="hide">
   <section>
@@ -134,16 +147,17 @@ body.mapview .spot{pointer-events:none}
     <div id="map"></div>
     <div class="panel hide" id="spec" style="margin-top:12px"></div>
     <div class="panel hide" id="players" style="margin-top:12px"></div>
-    <div class="panel" id="journal" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
+    <div class="panel" id="journal" style="margin-top:12px"><h2>Registre de campagne</h2><div id="log"></div></div>
   </section>
   <aside>
-    <div class="panel" id="side"><p class="dim">Clique sur une planète de la carte pour l'explorer.</p></div>
+    <div class="panel" id="side"><p class="dim">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</p></div>
     <div class="panel hide" id="me" style="margin-top:12px"></div>
     <div class="panel hide" id="inbox" style="margin-top:12px"></div>
     <div class="panel hide" id="admin" style="margin-top:12px"></div>
   </aside>
 </main>
 <p id="err" style="padding:0 16px"></p>
+<footer class="foot">Ordo Astronomica <span>◆</span> Archives du Segmentum Pacificus <span>◆</span> M31</footer>
 <div id="toasts"></div>
 
 <script>
@@ -181,7 +195,7 @@ function announce(s) {
   if (knownInbox) {
     for (const m of s.inbox || []) {
       if (knownInbox.has(key(m))) continue;
-      toast(`Nouveau rapport : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
+      toast(`Nouvelle transmission : ${m.targetName} · ${m.title || m.label}`, () => $('#inbox').scrollIntoView({ behavior: 'smooth' }));
       if (m.fx && !m.teaser) glitch();
     }
     for (const l of s.log) if (/^(PALIER|LOT|Premier contact)/.test(l.text) && !knownLog.has(`${l.t}|${l.text}`)) toast(l.text);
@@ -198,7 +212,7 @@ function updateTitle() {
 async function refresh() {
   if (spectator) return refreshSpectator();
   try { state = await api('GET', '/api/state'); } catch (e) {
-    if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#lerr').textContent = token ? 'Code invalide' : ''; }
+    if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#lerr').textContent = token ? 'Sigil refusé : accès non autorisé.' : ''; }
     return;
   }
   localStorage.setItem('smg-token', token);
@@ -217,7 +231,7 @@ async function refreshSpectator() {
   try { const r = await fetch('/api/public'); if (!r.ok) throw new Error('HTTP ' + r.status); pub = await r.json(); } catch { return; }
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
   document.body.classList.add('spectator'); document.body.classList.remove('isadmin');
-  $('#who').replaceChildren(h('b', {}, 'SPECTATEUR'), h('button', { onclick: leaveSpectator }, 'Quitter'));
+  $('#who').replaceChildren(h('b', {}, 'OBSERVATEUR'), h('button', { onclick: leaveSpectator }, 'Quitter la console'));
   applyLabels();
   const map = $('#map'); map.replaceChildren();
   for (const p of pub.planets) {
@@ -228,19 +242,19 @@ async function refreshSpectator() {
   }
   const t = pub.totals, tot = t.loyalist + t.renegade;
   $('#spec').classList.remove('hide');
-  $('#spec').replaceChildren(h('h2', {}, 'Le front'),
+  $('#spec').replaceChildren(h('h2', {}, 'Situation du front'),
     h('div', { class: 'row', style: 'justify-content:space-between' },
       h('b', { class: 'ly' }, `Loyalistes : ${fmt(t.loyalist)} pts · ${plural(t.tiersLoyalist, 'palier')}`),
-      h('b', { class: 'rn' }, `Renégats : ${fmt(t.renegade)} pts · ${plural(t.tiersRenegade, 'palier')}`)),
+      h('b', { class: 'rn' }, `Traîtres : ${fmt(t.renegade)} pts · ${plural(t.tiersRenegade, 'palier')}`)),
     h('div', { class: 'tug' }, h('i', { style: `width:${tot ? t.loyalist / tot * 100 : 50}%` })),
-    h('p', { class: 'dim' }, 'Vue en lecture seule : scores cumulés de chaque camp et paliers remportés.'));
+    h('p', { class: 'dim' }, 'Console d’observation : relevés cumulés de chaque camp et jalons franchis.'));
 }
 function leaveSpectator() { try { localStorage.removeItem('smg-spectator'); } catch {} location.href = location.pathname; }
 $('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('smg-spectator', '1'); } catch {} refreshSpectator(); };
 
 // base of the player links: the live site, even when the admin page is opened from a local server
 const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https://smaragdus.antredudragon.fr' : location.origin;
-const SIDE = { loyalist: 'Loyalistes', renegade: 'Renégats' };
+const SIDE = { loyalist: 'Loyalistes', renegade: 'Traîtres' };
 const gaugeOf = (planet, side) => state.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
 
 // the gauges have no known maximum: show the loyalist share against the renegade one
@@ -254,7 +268,7 @@ let labelsOff = false;
 try { labelsOff = localStorage.getItem('smg-nolabels') === '1'; } catch {}
 function applyLabels() {
   $('#map').classList.toggle('nolabels', labelsOff);
-  $('#lbl-toggle').textContent = labelsOff ? 'Afficher les libellés' : 'Masquer les libellés';
+  $('#lbl-toggle').textContent = labelsOff ? 'Afficher les annotations' : 'Masquer les annotations';
   $('#lbl-toggle').setAttribute('aria-pressed', String(labelsOff));
 }
 $('#lbl-toggle').onclick = () => {
@@ -268,7 +282,7 @@ function render() {
   const s = state, isAdmin = s.role === 'admin';
   const who = $('#who'); who.replaceChildren();
   if (isAdmin) who.append(h('b', {}, 'ADMIN'));
-  who.append(h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter'));
+  who.append(h('button', { onclick: () => { localStorage.removeItem('smg-token'); token = ''; location.href = location.pathname; } }, 'Quitter la console'));
 
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
@@ -276,7 +290,7 @@ function render() {
     map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : '') + (t.lbl === 'up' ? ' up' : ''), style: `left:${t.x}%;top:${t.y}%`, title: t.name, onclick: () => openPlanet(t.id) },
       h('span', {}, t.name),
       t.natureKnown ? h('span', { class: 'nat' }, t.nature) : null, // the subtitle only appears once it has been discovered
-      s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet
+      s.me && t.mine ? h('span', { class: 'mine' }, `vous : ${t.mine}`) : null, // a player's own points on the planet
       h('span', { class: 'gl' }, h('b', { class: 'ly' }, l), splitBar(l, r), h('b', { class: 'rn' }, r))));
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
@@ -295,12 +309,12 @@ function tierBlocks(t) {
   const L = gaugeOf(t, 'loyalist')?.total ?? 0, R = gaugeOf(t, 'renegade')?.total ?? 0;
   const shown = t.tiers.filter((p) => !p.hidden).sort((a, b) => a.threshold - b.threshold);
   return [...shown.map((p) => h('div', { class: 'tier' + (p.unlocked ? ' won' : '') },
-    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · remporté par les ${SIDE[p.winnerSide]}` : ' · débloqué') : null,
+    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · franchi par les ${SIDE[p.winnerSide]}` : ' · jalon franchi') : null,
     isAdmin && p.title ? h('div', { class: 'dim' }, p.title) : null,
-    isAdmin && !p.unlocked ? h('div', { class: 'dim' }, `Loyalistes ${L}/${p.threshold} · Renégats ${R}/${p.threshold}`) : null,
+    isAdmin && !p.unlocked ? h('div', { class: 'dim' }, `Loyalistes ${L}/${p.threshold} · Traîtres ${R}/${p.threshold}`) : null,
     isAdmin && p.prize ? h('div', { class: 'dim' }, `Lot : ${p.prize}${p.winnerName ? ` → ${p.winnerName}` : ' (tirage à venir)'}`) : null,
-    !isAdmin && p.hasPrize ? h('div', { class: 'dim' }, p.winnerName ? `Lot tiré au sort : ${p.winnerName}` : 'Un lot est en jeu') : null,
-    !isAdmin && state.inbox?.some((m) => m.tierId === p.id) ? h('div', { class: 'dim' }, 'Rapport reçu dans ta messagerie') : null)),
+    !isAdmin && p.hasPrize ? h('div', { class: 'dim' }, p.winnerName ? `Dotation tirée au sort : ${p.winnerName}` : 'Une dotation est en jeu') : null,
+    !isAdmin && state.inbox?.some((m) => m.tierId === p.id) ? h('div', { class: 'dim' }, 'Transmission reçue dans vos vox-transmissions') : null)),
   ];
 }
 
@@ -313,15 +327,15 @@ function investRow(t, sel) {
   const avail = () => (isAdmin ? state.players.find((p) => p.id === sel?.value)?.left : state.me.points) ?? 0;
   const amt = h('input', { type: 'number', min: 1, step: 1, value: lastAmount });
   const info = h('p', { class: 'dim' }), warn = h('p', { class: 'warn' });
-  const btn = h('button', {}, 'Investir');
+  const btn = h('button', {}, 'Allouer');
   const check = () => { // blocks the button and says why, instead of waiting for the server to refuse
     const n = Number(amt.value), max = avail();
     lastAmount = amt.value;
     amt.max = max;
-    info.textContent = `Disponible : ${max} point${max > 1 ? 's' : ''}`;
-    warn.textContent = max <= 0 ? 'Tu n\'as plus de points à investir.'
-      : amt.value === '' ? '' : !Number.isInteger(n) || n < 1 ? 'Saisis un nombre entier, au moins 1.'
-      : n > max ? `Tu ne peux pas investir plus que tes ${max} point${max > 1 ? 's' : ''} disponibles.` : '';
+    info.textContent = `Réserve allouable : ${max} point${max > 1 ? 's' : ''}`;
+    warn.textContent = max <= 0 ? 'Vos réserves sont épuisées.'
+      : amt.value === '' ? '' : !Number.isInteger(n) || n < 1 ? 'Indiquez un nombre entier, au moins 1.'
+      : n > max ? `Réserve insuffisante : vous ne disposez que de ${max} point${max > 1 ? 's' : ''}.` : '';
     btn.disabled = !!warn.textContent || amt.value === '';
     return !btn.disabled;
   };
@@ -334,7 +348,7 @@ function investRow(t, sel) {
     catch (e) { warn.textContent = e.message; btn.disabled = false; }
   };
   check();
-  return [camp ? null : h('p', { class: 'dim' }, 'Ton camp : ', h('b', { class: sides[0] === 'loyalist' ? 'ly' : 'rn' }, SIDE[sides[0]])),
+  return [camp ? null : h('p', { class: 'dim' }, 'Votre camp : ', h('b', { class: sides[0] === 'loyalist' ? 'ly' : 'rn' }, SIDE[sides[0]])),
     h('div', { class: 'row', style: 'margin-top:6px' }, camp, amt, btn), warn, info].filter(Boolean);
 }
 
@@ -342,12 +356,12 @@ function investRow(t, sel) {
 function planetNodes(t, sel) {
   const s = state, isAdmin = s.role === 'admin';
   const out = [];
-  if (t.nature) out.push(h('p', {}, h('b', {}, 'Nature : '), t.nature));
-  if (t.specialty) out.push(h('p', {}, h('b', {}, 'Spécialité : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
-  out.push(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont toi : ${t.mine}` : ''),
+  if (t.nature) out.push(h('p', {}, h('b', {}, 'Nature du monde : '), t.nature));
+  if (t.specialty) out.push(h('p', {}, h('b', {}, 'Vocation : '), t.specialty, t.multiplier !== 1 ? ` (×${t.multiplier})` : ''));
+  out.push(h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Traîtres : ${gaugeOf(t, 'renegade')?.total ?? 0}`), s.me ? ` · dont vos allocations : ${t.mine}` : ''),
     sel, tierBlocks(t), investRow(t, sel));
   if (isAdmin || s.me?.wipe) {
-    out.push(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Détruire les points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (une seule fois)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Détruire les points des ${SIDE[s.me.wipe]} (1 fois)`));
+    out.push(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Ordonner la purge des points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (usage unique)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Ordonner la purge des ${SIDE[s.me.wipe]} (usage unique)`));
   }
   return out.flat().filter(Boolean);
 }
@@ -396,10 +410,10 @@ function renderMe() {
   box.classList.remove('hide');
   const f = state.factions.find((x) => x.id === m.factionId)?.name;
   box.replaceChildren(...[h('h2', { style: 'font-size:1.05em;line-height:1.3' }, m.fluffName || m.name),
-    h('p', {}, h('b', {}, `${m.points} points`), ' à investir'),
-    f ? h('p', {}, h('b', {}, 'Faction : '), f) : null,
+    h('p', {}, h('b', {}, `${m.points} points`), ' à allouer'),
+    f ? h('p', {}, h('b', {}, 'Allégeance : '), f) : null,
     m.army ? h('p', {}, h('b', {}, 'Légion : '), m.army) : null,
-    m.wipe ? h('p', { class: 'dim' }, `Pouvoir disponible : détruire les points des ${SIDE[m.wipe]} sur une planète (1 fois).`) : null].filter(Boolean));
+    m.wipe ? h('p', { class: 'dim' }, `Directive de légion disponible : purger les points des ${SIDE[m.wipe]} sur un monde (usage unique).`) : null].filter(Boolean));
 }
 
 // ---------- ambiance ----------
@@ -442,10 +456,10 @@ function renderInbox() {
   const read = readKeys(), fresh = state.inbox.filter((m) => !read.has(mailKey(m))).length;
   updateTitle();
   box.replaceChildren(...[
-    h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, 'Messagerie'),
-      fresh ? h('button', { onclick: () => { markRead(state.inbox); renderInbox(); } }, `Tout marquer comme lu (${fresh})`) : null),
-    h('p', { class: 'dim' }, state.inbox.length ? `${state.inbox.length} message${state.inbox.length > 1 ? 's' : ''}${fresh ? ` · ${fresh} non lu${fresh > 1 ? 's' : ''}` : ''}`
-      : 'Aucun message pour le moment. Investis des points sur une planète pour recevoir les comptes-rendus des équipes de reconnaissance.'),
+    h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, 'Vox-transmissions'),
+      fresh ? h('button', { onclick: () => { markRead(state.inbox); renderInbox(); } }, `Tout marquer comme déchiffré (${fresh})`) : null),
+    h('p', { class: 'dim' }, state.inbox.length ? `${state.inbox.length} transmission${state.inbox.length > 1 ? 's' : ''}${fresh ? ` · ${fresh} non lu${fresh > 1 ? 's' : ''}` : ''}`
+      : 'Aucune transmission pour le moment. Allouez des points sur un monde pour recevoir les comptes-rendus des équipes de reconnaissance.'),
     state.inbox.length ? h('div', { class: 'list' }, state.inbox.map((m, i) => h('div', {
       class: 'mail' + (read.has(mailKey(m)) ? '' : ' new') + (m.fx ? ' fx-' + m.fx : ''), role: 'button', tabindex: '0', onclick: () => openMail(i),
       onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMail(i); } },
@@ -465,13 +479,13 @@ function openMail(i) {
   dlg.append(...[
     h('div', { class: 'head' },
       h('h2', { style: 'margin-top:0' }, m.title || m.label),
-      m.teaser ? h('span', { class: 'pill gold' }, 'aperçu')
-        : h('div', { class: 'meta ' + (m.side ? 'camp-' + m.side : '') }, m.label + (m.side ? ` · remporté par les ${SIDE[m.side]}` : ''))),
+      m.teaser ? h('span', { class: 'pill gold' }, 'extrait')
+        : h('div', { class: 'meta ' + (m.side ? 'camp-' + m.side : '') }, m.label + (m.side ? ` · franchi par les ${SIDE[m.side]}` : ''))),
     h('div', { class: 'fluff' }, m.fluff ? fluffNodes(m.fluff) : 'Transmission en cours de déchiffrement…'),
-    m.teaser ? h('p', { class: 'dim' }, 'Investis des points sur cette planète pour lire le rapport complet.') : null,
+    m.teaser ? h('p', { class: 'dim' }, 'Allouez des points sur ce monde pour lire la transmission complète.') : null,
     m.images.map((src) => h('a', { href: src, target: '_blank' }, h('img', { src, alt: '' }))),
-    m.rules ? h('div', { class: 'box' }, h('b', {}, 'Règle débloquée'), h('div', {}, m.rules)) : null,
-    m.hasPrize ? h('div', { class: 'box' }, h('b', {}, 'Lot'), h('div', {}, m.won ? `Remporté par toi : ${m.prize}` : m.winnerName ? `Tiré au sort : ${m.winnerName}` : 'Tirage à venir')) : null,
+    m.rules ? h('div', { class: 'box' }, h('b', {}, 'Doctrine acquise'), h('div', {}, m.rules)) : null,
+    m.hasPrize ? h('div', { class: 'box' }, h('b', {}, 'Dotation'), h('div', {}, m.won ? `Attribuée à vous : ${m.prize}` : m.winnerName ? `Tirée au sort : ${m.winnerName}` : 'Tirage à venir')) : null,
     h('div', { class: 'row', style: 'justify-content:space-between;margin-top:12px' },
       h('div', { class: 'row' },
         Object.assign(h('button', { onclick: () => go(i - 1) }, '‹ Plus récent'), { disabled: i === 0 }),
@@ -566,7 +580,7 @@ function buildEditor() {
     return e;
   };
   const wipeSel = (a) => {
-    const e = h('select', {}, [['', 'pas de pouvoir'], ['loyalist', 'détruit les Loyalistes'], ['renegade', 'détruit les Renégats'], ['opponent', 'détruit le camp adverse']].map(([v, l]) => h('option', { value: v }, l)));
+    const e = h('select', {}, [['', 'pas de pouvoir'], ['loyalist', 'détruit les Loyalistes'], ['renegade', 'détruit les Traîtres'], ['opponent', 'détruit le camp adverse']].map(([v, l]) => h('option', { value: v }, l)));
     e.value = a.wipe || '';
     e.onchange = () => { a.wipe = e.value || null; touch(); };
     return e;
@@ -774,7 +788,7 @@ $('#peek').onclick = () => {
   const show = $('#code').type === 'password';
   $('#code').type = show ? 'text' : 'password';
   $('#peek').innerHTML = show ? EYE_OFF : EYE;
-  const label = show ? 'Masquer le code' : 'Afficher le code';
+  const label = show ? 'Dissimuler le sigil' : 'Révéler le sigil';
   $('#peek').title = label; $('#peek').setAttribute('aria-label', label); $('#peek').setAttribute('aria-pressed', String(show));
   $('#code').focus();
 };

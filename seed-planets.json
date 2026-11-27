@@ -266,7 +266,8 @@
     "nature": "Faille Warp (type Ω)",
     "teaser": "CANCER : LA FAILLE S'EST OUVERTE !\nUne seconde détonation Warp a déchiré le ciel de Cancer. La Tempête de la Ruine se déverse sur le secteur !"
    }
-  ]
+  ],
+  "lbl": "up"
  },
  {
   "id": "unicornis",

@@ -271,6 +271,16 @@ function view(role, me) {
   return out;
 }
 
+// What a spectator may see, without any code: the planets and each camp's score and number of tiers won. Nothing about players, reports, rules or prizes.
+function publicView() {
+  const planets = S.targets.filter((t) => t.kind === 'planet').map((t) => {
+    const won = (side) => t.tiers.filter((pa) => pa.unlocked && pa.winnerSide === side).length;
+    return { id: t.id, name: t.name, x: t.x, y: t.y, lbl: t.lbl, loyalist: sideTotal(t, 'loyalist'), renegade: sideTotal(t, 'renegade'), tiersLoyalist: won('loyalist'), tiersRenegade: won('renegade') };
+  });
+  const sum = (k) => planets.reduce((n, p) => n + p[k], 0);
+  return { planets, totals: { loyalist: sum('loyalist'), renegade: sum('renegade'), tiersLoyalist: sum('tiersLoyalist'), tiersRenegade: sum('tiersRenegade') } };
+}
+
 function auth(req) {
   const tok = String(req.headers['x-token'] || '');
   const a = Buffer.from(tok), b = Buffer.from(ADMIN_PASSWORD);
@@ -405,6 +415,7 @@ http.createServer(async (req, res) => {
       clients.add(res); req.on('close', () => clients.delete(res));
       return;
     }
+    if (url.pathname === '/api/public') return send(res, 200, publicView());
     if (url.pathname.startsWith('/api/')) {
       const a = auth(req);
       if (!a) return send(res, 401, { error: 'Code invalide' });

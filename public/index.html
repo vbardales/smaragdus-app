@@ -29,6 +29,11 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
 #map{position:relative;aspect-ratio:1448/1086;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
 .spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:bold 16px Georgia}
+#spec-wrap{text-align:center;margin:-16px 0 40px}#login.hide + #spec-wrap{display:none}
+body.spectator aside,body.spectator #players,body.spectator #journal{display:none}
+body.spectator main{grid-template-columns:1fr}
+.spot.spec{pointer-events:none}
+.tug{height:14px;background:#e0605f;border:1px solid var(--line);margin:8px 0}.tug i{display:block;height:100%;background:#e0c040}
 .maptools{display:flex;justify-content:flex-end;margin-bottom:6px}body.mapview .maptools{display:none}
 /* labels off: only the map and the clickable planets remain (the name shows as a tooltip) */
 #map.nolabels .spot span{visibility:hidden}
@@ -121,11 +126,13 @@ body.mapview .spot{pointer-events:none}
   <div class="row"><div class="pw"><input id="code" type="password" placeholder="Code" autocomplete="off"><button id="peek" type="button" aria-label="Afficher le code" aria-pressed="false" title="Afficher le code"></button></div><button id="go">Entrer</button></div>
   <p id="lerr" style="color:var(--red)"></p>
 </div>
+<p id="spec-wrap"><button id="spec-btn" type="button">Accès spectateur</button></p>
 
 <main id="app" class="hide">
   <section>
     <div class="maptools"><button id="lbl-toggle" type="button"></button></div>
     <div id="map"></div>
+    <div class="panel hide" id="spec" style="margin-top:12px"></div>
     <div class="panel hide" id="players" style="margin-top:12px"></div>
     <div class="panel" id="journal" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
   </section>
@@ -189,6 +196,7 @@ function updateTitle() {
 }
 
 async function refresh() {
+  if (spectator) return refreshSpectator();
   try { state = await api('GET', '/api/state'); } catch (e) {
     if (e.status === 401) { localStorage.removeItem('smg-token'); $('#login').classList.remove('hide'); $('#app').classList.add('hide'); $('#lerr').textContent = token ? 'Code invalide' : ''; }
     return;
@@ -198,6 +206,37 @@ async function refresh() {
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
   render();
 }
+
+// ---------- spectator (no code): read-only view of the two camps ----------
+let spectator = false;
+try { spectator = new URLSearchParams(location.search).get('view') === 'spectateur' || localStorage.getItem('smg-spectator') === '1'; } catch {}
+const fmt = (n) => +Number(n).toFixed(1);
+const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+async function refreshSpectator() {
+  let pub;
+  try { const r = await fetch('/api/public'); if (!r.ok) throw new Error('HTTP ' + r.status); pub = await r.json(); } catch { return; }
+  $('#login').classList.add('hide'); $('#app').classList.remove('hide');
+  document.body.classList.add('spectator'); document.body.classList.remove('isadmin');
+  $('#who').replaceChildren(h('b', {}, 'SPECTATEUR'), h('button', { onclick: leaveSpectator }, 'Quitter'));
+  applyLabels();
+  const map = $('#map'); map.replaceChildren();
+  for (const p of pub.planets) {
+    map.append(h('div', { class: 'spot spec' + (p.lbl === 'up' ? ' up' : ''), style: `left:${p.x}%;top:${p.y}%`, title: p.name },
+      h('span', {}, p.name),
+      p.tiersLoyalist || p.tiersRenegade ? h('span', { class: 'nat' }, `Paliers : ${p.tiersLoyalist} · ${p.tiersRenegade}`) : null,
+      h('span', { class: 'gl' }, h('b', { class: 'ly' }, fmt(p.loyalist)), splitBar(p.loyalist, p.renegade), h('b', { class: 'rn' }, fmt(p.renegade)))));
+  }
+  const t = pub.totals, tot = t.loyalist + t.renegade;
+  $('#spec').classList.remove('hide');
+  $('#spec').replaceChildren(h('h2', {}, 'Le front'),
+    h('div', { class: 'row', style: 'justify-content:space-between' },
+      h('b', { class: 'ly' }, `Loyalistes : ${fmt(t.loyalist)} pts · ${plural(t.tiersLoyalist, 'palier')}`),
+      h('b', { class: 'rn' }, `Renégats : ${fmt(t.renegade)} pts · ${plural(t.tiersRenegade, 'palier')}`)),
+    h('div', { class: 'tug' }, h('i', { style: `width:${tot ? t.loyalist / tot * 100 : 50}%` })),
+    h('p', { class: 'dim' }, 'Vue en lecture seule : scores cumulés de chaque camp et paliers remportés.'));
+}
+function leaveSpectator() { try { localStorage.removeItem('smg-spectator'); } catch {} location.href = location.pathname; }
+$('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('smg-spectator', '1'); } catch {} refreshSpectator(); };
 
 // base of the player links: the live site, even when the admin page is opened from a local server
 const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https://smaragdus.antredudragon.fr' : location.origin;
@@ -242,6 +281,7 @@ function render() {
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
   document.body.classList.toggle('isadmin', isAdmin);
+  document.body.classList.remove('spectator'); $('#spec').classList.add('hide');
   applyLabels();
   applyAmbiance();
   $('#side').classList.toggle('hide', isAdmin); // players: the hint under their card; the planet details are in a pop-in for everyone
@@ -738,12 +778,12 @@ $('#peek').onclick = () => {
   $('#peek').title = label; $('#peek').setAttribute('aria-label', label); $('#peek').setAttribute('aria-pressed', String(show));
   $('#code').focus();
 };
-$('#go').onclick = () => { token = $('#code').value.trim(); refresh(); };
+$('#go').onclick = () => { token = $('#code').value.trim(); spectator = false; try { localStorage.removeItem('smg-spectator'); } catch {} refresh(); };
 // braces matter: an arrow returning false from onkeydown cancels the keystroke
 $('#code').onkeydown = (e) => { if (e.key === 'Enter') $('#go').click(); };
-if (token) refresh();
-const es = new EventSource('/api/events'); es.onmessage = () => token && refresh();
-es.onopen = () => token && refresh(); // resync after a dropped connection (proxy)
+if (token || spectator) refresh();
+const es = new EventSource('/api/events'); es.onmessage = () => (token || spectator) && refresh();
+es.onopen = () => (token || spectator) && refresh(); // resync after a dropped connection (proxy)
 </script>
 </body>
 </html>

@@ -80,7 +80,7 @@ if (loadedFromFile && RESET_ON_DEPLOY && S.build !== BUILD_ID) {
 if (!Array.isArray(S.targets) || !S.targets.every((t) => Array.isArray(t.tiers) && (t.kind !== 'gauge' || t.planetId))) { S = seed(); loadedFromFile = false; }
 S.build = BUILD_ID;
 // Planet positions are tied to the map image, so the code owns them: refresh saved data from the seed on every start.
-const seedPos = Object.fromEntries(seed().targets.filter((t) => t.kind === 'planet').map((t) => [t.id, { x: t.x, y: t.y }]));
+const seedPos = Object.fromEntries(seed().targets.filter((t) => t.kind === 'planet').map((t) => [t.id, { x: t.x, y: t.y, lbl: t.lbl }]));
 for (const t of S.targets) if (seedPos[t.id]) Object.assign(t, seedPos[t.id]);
 // older saves: tiers had a reward and a mode, gauges had tiers of their own, players had no inbox
 const migrateTier = ({ reward, mode, ...pa }) => ({ title: 'À définir', fluff: '', images: [], rules: '', prize: reward && reward !== 'Lot à définir' ? reward : '', nature: '', teaser: '', camps: [], shared: false, unlocked: !!pa.winnerId, winnerSide: null, ...pa });
@@ -252,7 +252,7 @@ function wipe(p, planet) {
 function view(role, me) {
   const isAdmin = role === 'admin';
   const targets = S.targets.map((t) => ({
-    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t, isAdmin ? null : me) : '', natureKnown: t.kind === 'planet' && !!revealedNature(t, isAdmin ? null : me), multiplier: t.multiplier, x: t.x, y: t.y, planetId: t.planetId, side: t.side,
+    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t, isAdmin ? null : me) : '', natureKnown: t.kind === 'planet' && !!revealedNature(t, isAdmin ? null : me), multiplier: t.multiplier, x: t.x, y: t.y, lbl: t.lbl, planetId: t.planetId, side: t.side,
     total: t.kind === 'planet' ? sideTotal(t, 'loyalist') + sideTotal(t, 'renegade') : sideTotal(planetOfGauge(t), t.side),
     mine: me ? (t.kind === 'planet' ? ['loyalist', 'renegade'].reduce((n, side) => n + (me.alloc[gaugeOf(t, side)?.id] || 0), 0) : me.alloc[t.id] || 0) : 0,
     // players never learn the tiers nobody has unlocked yet, not even how many there are; unlocked ones show only threshold, public label and prize winner
@@ -281,7 +281,7 @@ function view(role, me) {
   if (isAdmin) {
     out.mailEnabled = mailEnabled;
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
-    out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, planetId, side, tiers: tiers.map(({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared }) => ({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared })) })) };
+    out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers: tiers.map(({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared }) => ({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared })) })) };
   }
   return out;
 }

@@ -27,8 +27,9 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 .toast{background:var(--panel);border:1px solid var(--alert);color:var(--text);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
 #players td:last-child{white-space:nowrap}#players input[type=number]{width:64px}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
-#map{position:relative;aspect-ratio:3/2;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
+#map{position:relative;aspect-ratio:1448/1086;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
 .spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:bold 16px Georgia}
+.spot.up{justify-content:flex-start;padding:2px 0 0}
 .spot:hover,.spot.sel{background:transparent;border-color:var(--gold);box-shadow:0 0 14px var(--gold)}
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
@@ -101,7 +102,7 @@ details.ed{border-top:1px solid var(--rule);padding:4px 0}details.ed summary{cur
 /* map-only window (projector view): ?view=map */
 body.mapview header,body.mapview aside,body.mapview .gauges,body.mapview #log,body.mapview #err,body.mapview section>.panel{display:none}
 body.mapview main{display:block;padding:0}
-body.mapview #map{border:0;width:min(100vw,calc(100vh * 1.5));margin:0 auto}
+body.mapview #map{border:0;width:min(100vw,calc(100vh * 1.3333));margin:0 auto}
 body.mapview .spot{pointer-events:none}
 </style>
 </head>
@@ -214,7 +215,7 @@ function render() {
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
-    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => openPlanet(t.id) },
+    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : '') + (t.lbl === 'up' ? ' up' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => openPlanet(t.id) },
       h('span', {}, t.name),
       t.natureKnown ? h('span', { class: 'nat' }, t.nature) : null, // the subtitle only appears once it has been discovered
       s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet

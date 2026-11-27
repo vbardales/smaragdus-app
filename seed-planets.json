@@ -3,8 +3,8 @@
   "id": "grus",
   "name": "Grus",
   "specialty": "Arts",
-  "x": 32.7,
-  "y": 24.9,
+  "x": 39,
+  "y": 57.6,
   "nature": "Capitale administrative",
   "tiers": [
    {
@@ -73,8 +73,8 @@
   "id": "phoenix",
   "name": "Phoenix",
   "specialty": "Ésotérique",
-  "x": 59.7,
-  "y": 27.8,
+  "x": 51.7,
+  "y": 56,
   "nature": "Centre de recherche génétique",
   "tiers": [
    {
@@ -145,8 +145,8 @@
   "id": "scorpius",
   "name": "Scorpius IV",
   "specialty": "Espionnage",
-  "x": 76.5,
-  "y": 38.6,
+  "x": 66.6,
+  "y": 47.1,
   "nature": "Monde mort (type δ)",
   "tiers": [
    {
@@ -202,8 +202,8 @@
   "id": "cancer",
   "name": "Cancer",
   "specialty": "Démonologie / Fortifications",
-  "x": 73.2,
-  "y": 65,
+  "x": 80.8,
+  "y": 31.3,
   "nature": "Chantiers navals",
   "tiers": [
    {
@@ -272,8 +272,8 @@
   "id": "unicornis",
   "name": "Unicornis",
   "specialty": "Véhicule",
-  "x": 46.9,
-  "y": 67.8,
+  "x": 74,
+  "y": 42.5,
   "nature": "Arsenal",
   "tiers": [
    {
@@ -340,14 +340,15 @@
     "nature": "",
     "teaser": "UNICORNIS : ESCADRILLE TEMPEST RÉACTIVÉE\nLe onzième complexe renfermait des Land Speeder Tempest complets en stase, prêts au déploiement !"
    }
-  ]
+  ],
+  "lbl": "up"
  },
  {
   "id": "draco",
   "name": "Draco",
   "specialty": "Mystique / Illumination",
-  "x": 15.8,
-  "y": 60.3,
+  "x": 70,
+  "y": 74.7,
   "nature": "Station de recherche (type ρ)",
   "tiers": [
    {
@@ -412,8 +413,8 @@
   "id": "leo",
   "name": "Leo I",
   "specialty": "Arsenal",
-  "x": 36.8,
-  "y": 38.6,
+  "x": 30,
+  "y": 52.6,
   "nature": "Monde-forteresse",
   "tiers": [
    {
@@ -494,6 +495,7 @@
     "teaser": "LEO I : LA FORTERESSE-MONASTÈRE\nUne forteresse-monastère Astartes intacte et lourdement défendue vient d'être localisée au cœur des canyons solaires !"
    }
   ],
-  "fx": "solar"
+  "fx": "solar",
+  "lbl": "up"
  }
 ]

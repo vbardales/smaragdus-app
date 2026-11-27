@@ -29,6 +29,9 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 .panel{background:var(--panel);border:1px solid var(--line);padding:12px}
 #map{position:relative;aspect-ratio:1448/1086;background:#000 url(map.webp) center/cover;border:1px solid var(--line);overflow:hidden}
 .spot{position:absolute;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:50%;border:2px solid transparent;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font:bold 16px Georgia}
+.maptools{display:flex;justify-content:flex-end;margin-bottom:6px}body.mapview .maptools{display:none}
+/* labels off: only the map and the clickable planets remain (the name shows as a tooltip) */
+#map.nolabels .spot span{visibility:hidden}
 .spot.up{justify-content:flex-start;padding:2px 0 0}
 .spot:hover,.spot.sel{background:transparent;border-color:var(--gold);box-shadow:0 0 14px var(--gold)}
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
@@ -121,6 +124,7 @@ body.mapview .spot{pointer-events:none}
 
 <main id="app" class="hide">
   <section>
+    <div class="maptools"><button id="lbl-toggle" type="button"></button></div>
     <div id="map"></div>
     <div class="panel hide" id="players" style="margin-top:12px"></div>
     <div class="panel" id="journal" style="margin-top:12px"><h2>Journal</h2><div id="log"></div></div>
@@ -206,6 +210,21 @@ function splitBar(l, r) {
   return h('i', { class: 'sb' + (tot ? '' : ' zero') }, h('u', { style: `width:${tot ? l / tot * 100 : 0}%` }));
 }
 
+// show / hide the labels on the map; the choice is kept in the browser and shared with the other windows (projector view)
+let labelsOff = false;
+try { labelsOff = localStorage.getItem('smg-nolabels') === '1'; } catch {}
+function applyLabels() {
+  $('#map').classList.toggle('nolabels', labelsOff);
+  $('#lbl-toggle').textContent = labelsOff ? 'Afficher les libellés' : 'Masquer les libellés';
+  $('#lbl-toggle').setAttribute('aria-pressed', String(labelsOff));
+}
+$('#lbl-toggle').onclick = () => {
+  labelsOff = !labelsOff;
+  try { localStorage.setItem('smg-nolabels', labelsOff ? '1' : '0'); } catch {}
+  applyLabels();
+};
+window.addEventListener('storage', (e) => { if (e.key === 'smg-nolabels') { labelsOff = e.newValue === '1'; applyLabels(); } });
+
 function render() {
   const s = state, isAdmin = s.role === 'admin';
   const who = $('#who'); who.replaceChildren();
@@ -215,7 +234,7 @@ function render() {
   const map = $('#map'); map.replaceChildren();
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
-    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : '') + (t.lbl === 'up' ? ' up' : ''), style: `left:${t.x}%;top:${t.y}%`, onclick: () => openPlanet(t.id) },
+    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : '') + (t.lbl === 'up' ? ' up' : ''), style: `left:${t.x}%;top:${t.y}%`, title: t.name, onclick: () => openPlanet(t.id) },
       h('span', {}, t.name),
       t.natureKnown ? h('span', { class: 'nat' }, t.nature) : null, // the subtitle only appears once it has been discovered
       s.me && t.mine ? h('span', { class: 'mine' }, `toi : ${t.mine}`) : null, // a player's own points on the planet
@@ -223,6 +242,7 @@ function render() {
   }
   const lg = $('#log'); lg.replaceChildren(...s.log.map((l) => h('div', {}, h('span', { class: 'dim' }, new Date(l.t).toLocaleTimeString() + ' '), l.text)));
   document.body.classList.toggle('isadmin', isAdmin);
+  applyLabels();
   applyAmbiance();
   $('#side').classList.toggle('hide', isAdmin); // players: the hint under their card; the planet details are in a pop-in for everyone
   renderSide(); renderMe(); renderInbox(); renderPlayers(); renderAdmin();

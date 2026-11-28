@@ -36,6 +36,10 @@ const BANK = {
     loyalist: ['Un feu purificateur s’est abattu sur {p}. Je prie pour que le prix n’en soit pas trop lourd.', '{p} a vu la colère de l’Imperium. Le fracas résonne encore dans mes archives.'],
     renegade: ['{p} a brûlé. Il faut savoir sacrifier pour gagner : voilà ce que le trône n’a jamais compris.', 'Les bombes ont chanté sur {p}. Quelle belle musique pour une Fosse.'],
   },
+  tier: {
+    loyalist: ['Une étape est franchie sur {p} : nos équipes ont percé quelque chose. L’Empereur protège ceux qui cherchent.', 'Les archives de {p} s’entrouvrent pour nous. Je note, je prie, je poursuis.'],
+    renegade: ['{p} nous a livré un secret. Que les loyalistes se demandent ce que nous savons déjà.', 'Un pas de plus sur {p}. La Fosse sourit : les vérités sont à qui les prend.'],
+  },
   idle: {
     loyalist: ['La frontière est calme, mais les vigies ne dorment pas. Omnia videre.', 'Je relis mes notes : l’histoire se joue ici, planète après planète.'],
     renegade: ['Le silence est une arme comme une autre. Nous attendons.', 'Qu’ils s’endorment dans leur certitude : la Fosse veille.'],
@@ -80,7 +84,7 @@ ${LORE}` : ''}`;
 // returns { camp, author, text, planetId, source, error }; never throws (an API failure falls back on the phrase banks, and says why)
 export async function comment({ kind, camp, planet, situation, events = [] }, env = process.env) {
   const side = camp === 'loyalist' ? 'loyaliste' : 'renégat';
-  const event = { invest: `des renforts du camp ${side} arrivent sur ${planet?.name}`, grant: 'de nouveaux moyens parviennent aux combattants', power: `un pouvoir de légion a détruit des forces sur ${planet?.name}`, idle: 'rien de notable, une pause dans les combats' }[kind] || 'rien de notable';
+  const event = { invest: `des renforts du camp ${side} arrivent sur ${planet?.name}`, grant: 'de nouveaux moyens parviennent aux combattants', tier: `le camp ${side} vient de franchir une étape de ses recherches sur ${planet?.name}, sans qu'on sache ce qu'il a trouvé`, power: `un pouvoir de légion a détruit des forces sur ${planet?.name}`, idle: 'rien de notable, une pause dans les combats' }[kind] || 'rien de notable';
   let text = null, error = null;
   try { text = await askLlm(camp, { event, situation, events }, env); } catch (e) { error = e.name === 'TimeoutError' ? 'délai dépassé' : e.message; console.error('Commentary:', error); }
   text = String(text || '').replace(/\s+/g, ' ').trim().replace(/^["«]\s*|\s*["»]$/g, '');

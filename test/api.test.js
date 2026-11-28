@@ -264,6 +264,14 @@ test('admin corrections: player total and planet score can be set, never below w
   assert.equal(after.total, 0, 'a reset also drops the score corrections');
 });
 
+test('the visitor view carries the scribes\' opinion of each planet, without figures', async () => {
+  const pub = (await api('', 'GET', '/api/public')).json;
+  for (const p of pub.planets) {
+    assert.ok(Array.isArray(p.opinions));
+    for (const o of p.opinions) assert.ok(!/[0-9]/.test(o.text), 'an opinion has no figure');
+  }
+});
+
 test('the visitor view only shows the excerpts of shared tiers, and image links are limited to http(s) or site paths', async () => {
   const pub = (await api('', 'GET', '/api/public')).json;
   assert.ok(pub.planets.every((p) => Array.isArray(p.excerpts)));

@@ -111,6 +111,7 @@ main{--mapw:100%}
 body.zoomable #map{cursor:grab}
 #map.nofx .orbit,#map.nofx .roam,#map.nofx .flags,#map.nofx .smoke,#map.nofx .bomb,#map.nofx .scorch,#map.nofx .bubble,#map.nofx #daylight{display:none}
 #map .spot{scale:calc(var(--k,1) / var(--z,1))}
+#map .bubble{scale:calc(var(--k,1) / var(--z,1));transform-origin:50% 100%}
 body.spectator main{grid-template-columns:1fr}
 body.spectator main>section{display:contents}
 body.spectator .panel{margin-top:0!important}
@@ -580,7 +581,9 @@ function fillSpecPlanet() {
   box.classList.remove('hide');
   box.replaceChildren(planetBg(p.id), h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, p.name), h('button', { onclick: resetZoom }, 'Vue complète')),
     h('p', {}, h('b', {}, 'Nature du monde : '), p.nature || 'inconnue'),
-    ...(p.excerpts.length ? p.excerpts.map((x) => h('blockquote', {}, h('b', {}, x.label + ' — '), x.text)) : [h('p', { class: 'dim' }, 'Aucun secret de ce monde n’a encore été percé.')]));
+    ...(p.excerpts.length ? p.excerpts.map((x) => h('blockquote', {}, h('b', {}, x.label + ' — '), x.text)) : [h('p', { class: 'dim' }, 'Aucun secret de ce monde n’a encore été percé.')]),
+    h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'),
+    ...((p.opinions || []).length ? p.opinions.map((o) => h('blockquote', { class: 'chron ' + (o.camp === 'loyalist' ? 'ly' : 'rn') }, ico(o.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, o.text), h('footer', {}, '— ' + o.author))) : [h('p', { class: 'dim' }, 'Les chroniqueurs ne se sont pas encore exprimés sur ce monde.')]));
 }
 // strip of the seven worlds for the visitor: a portrait each, ringed in the colour of the camp that leads there; a click zooms on it
 function renderWorlds(planets) {

@@ -166,6 +166,7 @@ function settle(planet) {
       const best = Math.max(...reached.map((c) => c.total)), top = reached.filter((c) => c.total === best); // a tie only happens after a config edit
       pa.winnerSide = top[crypto.randomInt(top.length)].side;
       pa.unlocked = true;
+      stimulate('tier', { planet, side: pa.winnerSide, force: true });
       logEvt(`PALIER ${planet.name} « ${pa.label} » (${pa.threshold}) franchi par les ${SIDE_NAME[pa.winnerSide]}`, campScope([pa.winnerSide]));
     }
     const g = pa.winnerSide && gaugeOf(planet, pa.winnerSide);
@@ -315,7 +316,7 @@ function frontOf() {
     const won = (side) => t.tiers.filter((pa) => pa.unlocked && pa.winnerSide === side).length;
     const l = sideTotal(t, 'loyalist'), r = sideTotal(t, 'renegade'), sum = l + r, share = sum ? l / sum : null, top = Math.max(1, ...t.tiers.map((pa) => pa.threshold));
     return { id: t.id, name: t.name, x: t.x, y: t.y, lbl: t.lbl, share, lead: share === null ? 'none' : share > 0.6 ? 'loyalist' : share < 0.4 ? 'renegade' : 'even',
-      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature({ tiers: t.tiers.filter((pa) => pa.shared) }, null), excerpts: excerptsOf(t), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
+      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature({ tiers: t.tiers.filter((pa) => pa.shared) }, null), excerpts: excerptsOf(t), opinions: opinionsOf(t.id), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
   });
   const sum = (k) => planets.reduce((n, p) => n + p[k], 0);
   const tot = { loyalist: sum('_l'), renegade: sum('_r'), tiersLoyalist: sum('_tl'), tiersRenegade: sum('_tr') };
@@ -338,6 +339,8 @@ function excerptsOf(t) {
 }
 
 // ---------- effects and commentators ----------
+// The visitor's card of a planet shows what each scribe last said about it (stored comments only: a click never calls the API).
+const opinionsOf = (planetId) => ['loyalist', 'renegade'].map((camp) => (S.comments || []).filter((c) => c.planetId === planetId && c.camp === camp).pop()).filter(Boolean).map((c) => ({ camp: c.camp, author: c.author, text: c.text, age: Math.floor((Date.now() - c.t) / 1000) }));
 // fx: short-lived visual events (a bomb where a legion power hit). comments: what the two scribes said, shown as bubbles on the visitor's map.
 const FX_KEEP = 60_000, BUBBLE_KEEP = 30_000, COMMENT_GAP = 30_000;
 const recentFx = () => (S.fx || []).filter((f) => Date.now() - f.t < FX_KEEP).map((f) => ({ id: f.t, type: f.type, planetId: f.planetId, age: Math.floor((Date.now() - f.t) / 1000) }));
@@ -360,18 +363,27 @@ function recentEvents() {
 let lastComment = 0, commenting = false, lastStatus = null; // lastStatus: what the last comment came from, for the admin
 // A stimulus (points invested, points given, power used, or a timer) may make a scribe speak: at most one comment every 30 seconds,
 // and only some stimuli trigger one (a power always does). The text only carries public facts.
+let commentQueue = Promise.resolve();
 function stimulate(kind, { planet = null, side = null, force = false } = {}) {
   const now = Date.now();
-  if (commenting || now - lastComment < COMMENT_GAP || (!force && Math.random() > 0.45)) return;
-  commenting = true; lastComment = now;
-  const f = frontOf(), lead = (side) => names(f.planets.filter((p) => p.lead === side).map((p) => p.name));
-  const situation = f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde'
-    : `les loyalistes dominent ${lead('loyalist') || 'aucun monde'} ; les renégats dominent ${lead('renegade') || 'aucun monde'}`;
-  const camp = side || (Math.random() < 0.5 ? 'loyalist' : 'renegade');
-  comment({ kind, camp, planet: planet && { id: planet.id, name: planet.name }, situation, events: recentEvents() })
-    .then(({ source, error, ...c }) => { lastStatus = { at: Date.now(), source, error }; (S.comments ??= []).push({ ...c, t: Date.now() }); S.comments.splice(0, Math.max(0, S.comments.length - 30)); save(); broadcast(); })
-    .catch((e) => console.error('Commentary failed:', e.message))
-    .finally(() => { commenting = false; });
+  if (!force && (commenting || now - lastComment < COMMENT_GAP || Math.random() > 0.45)) return; // a power or a tier won always speaks, the rest is throttled
+  lastComment = now;
+  const f = frontOf(), lead = (s) => names(f.planets.filter((p) => p.lead === s).map((p) => p.name));
+  const args = {
+    kind, camp: side || (Math.random() < 0.5 ? 'loyalist' : 'renegade'), planet: planet && { id: planet.id, name: planet.name }, events: recentEvents(),
+    situation: f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde'
+      : `les loyalistes dominent ${lead('loyalist') || 'aucun monde'} ; les renégats dominent ${lead('renegade') || 'aucun monde'}`,
+  };
+  // one comment at a time: a forced one waits for the one in progress instead of being dropped
+  commentQueue = commentQueue.then(async () => {
+    commenting = true;
+    try {
+      const { source, error, ...c } = await comment(args);
+      lastStatus = { at: Date.now(), source, error };
+      (S.comments ??= []).push({ ...c, t: Date.now() }); S.comments.splice(0, Math.max(0, S.comments.length - 30));
+      save(); broadcast();
+    } catch (e) { console.error('Commentary failed:', e.message); } finally { commenting = false; }
+  });
 }
 setInterval(() => { if (Object.values(S.players).some((p) => spent(p) > 0)) stimulate('idle'); }, 4 * 60_000).unref();
 

@@ -54,7 +54,7 @@ async function askLlm(camp, facts, env) {
   const user = `Événement : ${facts.event}\nSituation du front : ${facts.situation}${recent}`;
   const signal = AbortSignal.timeout(15000);
   if (env.ANTHROPIC_API_KEY) {
-    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: env.COMMENT_MODEL || 'claude-haiku-5-5', max_tokens: 200, system, messages: [{ role: 'user', content: user }] }) });
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', ...(env.ANTHROPIC_WORKSPACE_ID ? { 'anthropic-workspace-id': env.ANTHROPIC_WORKSPACE_ID } : {}) }, body: JSON.stringify({ model: env.COMMENT_MODEL || 'claude-haiku-5-5', max_tokens: 200, system, messages: [{ role: 'user', content: user }] }) });
     if (!r.ok) throw new Error(await apiError('Anthropic API', r));
     return (await r.json()).content?.find((c) => c.type === 'text')?.text;
   }

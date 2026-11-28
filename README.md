@@ -24,6 +24,7 @@ Admin: enter that password on the login page. Players: the admin creates them an
 | `KEEP_STATE` | unset | `1` freezes the state: no reset on deployment |
 | `SMTP_USER`, `SMTP_PASS` | unset | mailbox used to send the players' links (enables the "Envoyer par mail" buttons) |
 | `PUBLIC_URL` | `https://smaragdus.antredudragon.fr` | base of the links in the "lost code" mail |
+| `ANTHROPIC_WORKSPACE_ID` | unset | workspace id (`wrkspc_…`), only for an API key that is not scoped to a workspace |
 | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, `COMMENT_MODEL` | unset | LLM for the two scribes' bubbles on the visitor's map (without a key, phrase banks are used) |
 | `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM` | `mail.infomaniak.com`, `587`, `SMTP_USER` | SMTP server and sender address |
 

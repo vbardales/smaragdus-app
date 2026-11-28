@@ -3,7 +3,15 @@
 // otherwise from the phrase banks below. The prompt only carries public facts (which camp acts, on which planet, who leads where): never a
 // player, a score or the content of a tier, and a text with a digit is refused.
 
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 // which API the keys select, and its model (nothing secret)
+// Background of the campaign given to the model: only public facts, written in lore.txt (editable without touching the code)
+const LORE = (() => {
+  try { return fs.readFileSync(fileURLToPath(new URL('./lore.txt', import.meta.url)), 'utf8').trim(); } catch { return ''; }
+})();
+
 export function provider(env = process.env) {
   if (env.ANTHROPIC_API_KEY) return { name: 'anthropic', model: env.COMMENT_MODEL || 'claude-haiku-5-5' };
   if (env.OPENAI_API_KEY) return { name: 'openai', model: env.COMMENT_MODEL || 'gpt-4o-mini' };
@@ -49,7 +57,10 @@ async function apiError(name, r) {
 }
 
 async function askLlm(camp, facts, env) {
-  const system = `Tu es ${SCRIBES[camp].author}, chroniqueur de la campagne de Smaragdus dans l'univers Warhammer 30 000 (Hérésie d'Horus). Ton : ${SCRIBES[camp].tone}. Écris UN commentaire de 1 à 2 phrases courtes (240 caractères maximum), en français, comme une note dans ton journal. Tu peux t'appuyer sur les événements récents pour réagir à ce qui vient de se passer. Interdits : tout chiffre, nom de joueur, nombre de points, révélation de contenu secret. Réponds uniquement par le texte du commentaire.`;
+  const system = `Tu es ${SCRIBES[camp].author}, chroniqueur de la campagne de Smaragdus dans l'univers Warhammer 30 000 (Hérésie d'Horus). Ton : ${SCRIBES[camp].tone}. Écris UN commentaire de 1 à 2 phrases courtes (240 caractères maximum), en français, comme une note dans ton journal. Tu peux t'appuyer sur les événements récents pour réagir à ce qui vient de se passer. Interdits : tout chiffre, nom de joueur, nombre de points, révélation de contenu secret. Réponds uniquement par le texte du commentaire.${LORE ? `
+
+Contexte (ne pas citer tel quel) :
+${LORE}` : ''}`;
   const recent = facts.events?.length ? `\nÉvénements récents (du plus récent au plus ancien) :\n- ${facts.events.join('\n- ')}` : '';
   const user = `Événement : ${facts.event}\nSituation du front : ${facts.situation}${recent}`;
   const signal = AbortSignal.timeout(15000);

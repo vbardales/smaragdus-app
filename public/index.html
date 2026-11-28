@@ -509,6 +509,8 @@ $('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('s
 const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https://smaragdus.antredudragon.fr' : location.origin;
 // position of the label of a planet (field lbl): under it by default, 'up' above it, 'middle' on it
 const lblClass = (l) => (l === 'up' ? ' up' : l === 'middle' ? ' mid' : '');
+// a title without its leading article ("Le Maréchal-Prétorien…" becomes "Maréchal-Prétorien…"), for display only
+const noArticle = (t) => String(t).trim().replace(/^(les|le|la|l['’])s*/i, '').replace(/^./, (c) => c.toUpperCase());
 const SIDE = { loyalist: 'Loyalistes', renegade: 'Renégats' };
 // the name of a camp with its emblem: the simple one inside a sentence, the fine one (big) on its own line
 const campName = (side, big) => h('span', { class: 'camptag ' + (side === 'loyalist' ? 'ly' : 'rn') + (big ? ' big' : '') }, ico(side === 'loyalist' ? 'loyalist' : 'renegade', !big), ' ', SIDE[side]);
@@ -871,7 +873,7 @@ function renderMe() {
   box.classList.remove('hide');
   const f = state.factions.find((x) => x.id === m.factionId)?.name;
   // the hero name loses size at each comma: the more titles, the less each one weighs
-  const parts = (m.fluffName || m.name).split(',').map((x) => x.trim()).filter(Boolean);
+  const parts = noArticle(m.fluffName || m.name).split(',').map((x) => x.trim()).filter(Boolean);
   const title = parts.map((x, i) => h('span', { class: 'hn hn' + Math.min(i, 3), style: `font-size:${Math.max(0.74, 1.25 * 0.84 ** i).toFixed(2)}em` }, x.replace(/-/g, '‑'))); // non-breaking hyphens: "L'Archimagos-Domina" stays on one line
   const d = h('details', { class: 'ed' }, h('summary', { class: 'hero' }, h('span', { class: 'emblem' }, ...(m.gauges || []).map((g) => h('span', { class: g === 'loyalist' ? 'ly' : 'rn' }, ico(g === 'loyalist' ? 'loyalist' : 'renegade', true)))), h('div', { class: 'names' }, ...title), h('span', { class: 'pts' + (m.points > 0 ? ' some' : ''), title: 'Points à allouer' }, h('b', {}, m.points), ' pt' + (m.points > 1 ? 's' : ''))), ...[
     [m.army, f].filter(Boolean).length ? h('p', {}, [m.army, f].filter(Boolean).join(' - ')) : null,
@@ -1222,7 +1224,7 @@ const norm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').t
 function mentionItems() {
   const seen = new Set(), out = [];
   const add = (label, sub) => { const k = norm(label); if (label && !seen.has(k)) { seen.add(k); out.push({ label, sub }); } };
-  for (const p of state.players || []) add((p.fluffName || p.name).split(',')[0].trim(), 'Joueur · ' + (p.army || p.name));
+  for (const p of state.players || []) add(noArticle((p.fluffName || p.name).split(',')[0]), 'Joueur · ' + (p.army || p.name));
   for (const a of state.config?.armies || []) add(a.name, 'Légion');
   for (const f of state.factions || []) add(f.name, 'Faction');
   add('Loyalistes', 'Camp'); add('Renégats', 'Camp');
@@ -1341,7 +1343,7 @@ function fillPlayers() {
     const a = h('input', { type: 'number', value: 5 });
     const link = `${PUBLIC_URL}/?code=${p.code}`;
     return h('tr', {},
-      h('td', {}, h('span', { class: 'ptsbadge', title: 'Points disponibles / total' }, `${p.left}/${p.points}`), h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army].filter(Boolean).join(' · '), ' · ', h('span', { class: 'mono' }, p.code))),
+      h('td', {}, h('span', { class: 'ptsbadge', title: 'Points disponibles / total' }, `${p.left}/${p.points}`), h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, noArticle(p.fluffName)) : null, h('div', { class: 'dim' }, [fname(p), p.army].filter(Boolean).join(' · '), ' · ', h('span', { class: 'mono' }, p.code))),
       h('td', {}, `${p.left}/${p.points}`),
       h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'), ' ',
         h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ',

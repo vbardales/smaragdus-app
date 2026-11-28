@@ -321,6 +321,19 @@ test('notes can be edited, and a comment of the scribes can be deleted', async (
   assert.equal((await admin('POST', '/api/admin/comment-delete', { t: 1 })).status, 200);
 });
 
+test('the visitor history of a subject: plain sentences, no player, no figure', async () => {
+  const p = byFaction('renegade')[3];
+  await give(p, 5);
+  await invest(p, 'draco-renegade', 2);
+  const pub = (await api('', 'GET', '/api/public')).json;
+  const all = [...pub.planets, ...pub.camps, ...pub.legions].flatMap((x) => x.history || []);
+  assert.ok(all.length > 0, 'an investment makes an event');
+  assert.ok(pub.planets.find((x) => x.id === 'draco').history.some((e) => /Draco/.test(e.text)), 'the history of the planet');
+  for (const h of all) assert.ok(!/[0-9]/.test(h.text), 'no figure: ' + h.text);
+  const txt = JSON.stringify(all);
+  for (const p of roster) assert.ok(!txt.includes(p.name), 'a player name leaks: ' + p.name);
+});
+
 test('visitor subjects: camps and legions without any figure or player, and a limited ask for an opinion', async () => {
   const pub = (await api('', 'GET', '/api/public')).json;
   assert.equal(pub.camps.length, 2);

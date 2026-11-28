@@ -119,6 +119,12 @@ body.spectator #spec{order:-3}
 body.spectator main>aside{display:none!important}
 body:not(.spectator) #worlds{display:none!important}
 #worlds{padding:10px 12px}
+.thinking{display:flex;align-items:center;gap:8px;color:var(--dim);font-style:italic;padding:6px 0}
+.thinking .tb{display:inline-flex;animation:pulse 1.6s ease-in-out infinite}.thinking .tb.b{animation-delay:.8s}
+@keyframes pulse{0%,100%{opacity:.2;transform:scale(.88)}50%{opacity:1;transform:scale(1.08)}}
+.dots i{display:inline-block;width:5px;height:5px;margin:0 2px;border-radius:50%;background:currentColor;animation:blink 1.2s infinite both}.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.15}40%{opacity:1}}
+.hist{font-size:13px;padding:2px 0;border-top:1px solid rgba(74,61,42,.5)}
 .subjects-sec{margin:0 0 8px}.subjects-sec h3{margin:0 0 4px;font-size:.8em;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
 .subjects-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 button.camp-btn{display:flex;align-items:center;gap:8px;padding:6px 14px;font-weight:700}
@@ -598,7 +604,18 @@ window.addEventListener('resize', () => applyZoom(false));
 let specPlanetId = null, specPlanets = [], specOther = null, specCamps = [], specLegions = [];
 const askNotes = {};
 const LEVEL_WORD = { 1: 'faible', 2: 'notable', 3: 'forte' };
-const opinionNodes = (list) => (list || []).length ? list.map((o) => h('blockquote', { class: 'chron ' + (o.camp === 'loyalist' ? 'ly' : 'rn') }, ico(o.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, o.text), h('footer', {}, '— ' + o.author))) : [h('p', { class: 'dim' }, 'Les chroniqueurs ne se sont pas encore exprimés sur ce sujet.')];
+const pendingAsk = {}, autoAsked = new Set();
+const ageText = (sec) => (sec < 60 ? 'à l’instant' : sec < 3600 ? `il y a ${Math.floor(sec / 60)} min` : `il y a ${Math.floor(sec / 3600)} h`);
+// two emblems that light up in turn, and three dots: the scribes are writing
+const throbber = () => h('div', { class: 'thinking', role: 'status' }, h('span', { class: 'tb' }, ico('loyalist', true)), h('span', { class: 'tb b' }, ico('renegade', true)), h('span', {}, 'Les chroniqueurs réfléchissent'), h('span', { class: 'dots' }, h('i'), h('i'), h('i')));
+const historyNodes = (list) => [h('h3', { style: 'margin:10px 0 4px' }, 'Registre de campagne'), ...((list || []).length ? list.map((e) => h('div', { class: 'hist' }, h('span', { class: 'dim' }, ageText(e.age) + ' '), e.text)) : [h('p', { class: 'dim' }, 'Rien à signaler pour le moment.')])];
+// the first time a card is opened without any opinion, the scribes are asked (the server limits the calls)
+function autoAsk(key, opinions) {
+  if ((opinions || []).length || autoAsked.has(key)) return;
+  autoAsked.add(key); pendingAsk[key] = Date.now();
+  api('POST', '/api/public/ask', { key }).then((r) => { if (!r.pending) delete pendingAsk[key]; fillSpecPlanet(); }).catch(() => { delete pendingAsk[key]; fillSpecPlanet(); });
+}
+const opinionNodes = (list, key) => (list || []).length ? (delete pendingAsk[key], list).map((o) => h('blockquote', { class: 'chron ' + (o.camp === 'loyalist' ? 'ly' : 'rn') }, ico(o.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, o.text), h('footer', {}, '— ' + o.author))) : [Date.now() - (pendingAsk[key] || 0) < 45_000 ? throbber() : h('p', { class: 'dim' }, 'Les chroniqueurs ne se sont pas encore exprimés sur ce sujet.')];
 // asks the scribes for an opinion (the server decides: one per subject every ten minutes, a limit for the whole site)
 function askButton(key) {
   const note = h('p', { class: 'dim' }, askNotes[key] || '');
@@ -606,9 +623,10 @@ function askButton(key) {
     e.target.disabled = true;
     try {
       const r = await api('POST', '/api/public/ask', { key });
-      askNotes[key] = r.busy ? 'Les chroniqueurs sont très sollicités : réessayez dans un moment.' : r.fresh ? 'Les chroniqueurs ont été sollicités il y a peu : leur avis arrive.' : 'Les chroniqueurs réfléchissent… leur avis apparaîtra ici.';
+      if (r.busy) askNotes[key] = 'Les chroniqueurs sont très sollicités : réessayez dans un moment.';
+      else { askNotes[key] = ''; pendingAsk[key] = Date.now(); }
     } catch (err) { askNotes[key] = err.message; }
-    note.textContent = askNotes[key]; e.target.disabled = false;
+    note.textContent = askNotes[key]; e.target.disabled = false; fillSpecPlanet();
   } }, 'Demander l’avis des chroniqueurs');
   return [btn, note];
 }
@@ -623,12 +641,12 @@ function fillSpecPlanet() {
       box.replaceChildren(h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, campName(camp.id, true)), close),
         h('p', {}, h('b', {}, 'Mondes dominés : '), camp.led.length ? camp.led.join(', ') : 'aucun pour l’instant'),
         h('p', {}, h('b', {}, 'Étapes franchies : '), { none: 'aucune', some: 'quelques-unes', many: 'nombreuses' }[camp.tiers]),
-        h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(camp.opinions), ...askButton('camp:' + camp.id));
+        h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(camp.opinions, 'camp:' + camp.id), ...askButton('camp:' + camp.id), ...historyNodes(camp.history));
     } else {
       box.replaceChildren(h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, leg.name), close),
         leg.side ? h('p', {}, h('b', {}, 'Camp : '), campName(leg.side)) : null,
         h('p', {}, h('b', {}, 'Présence : '), leg.planets.length ? leg.planets.map((p) => `${p.name} (${LEVEL_WORD[p.level]})`).join(', ') : 'aucune pour l’instant'),
-        h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(leg.opinions), ...askButton('legion:' + leg.id));
+        h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(leg.opinions, 'legion:' + leg.id), ...askButton('legion:' + leg.id), ...historyNodes(leg.history));
     }
     return;
   }
@@ -638,7 +656,7 @@ function fillSpecPlanet() {
   box.replaceChildren(planetBg(p.id), h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, p.name), close),
     h('p', {}, h('b', {}, 'Nature du monde : '), p.nature || 'inconnue'),
     ...(p.excerpts.length ? p.excerpts.map((x) => h('blockquote', {}, h('b', {}, x.label + ' — '), x.text)) : [h('p', { class: 'dim' }, 'Aucun secret de ce monde n’a encore été percé.')]),
-    h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(p.opinions), ...askButton('planet:' + p.id));
+    h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(p.opinions, 'planet:' + p.id), ...askButton('planet:' + p.id), ...historyNodes(p.history));
 }
 // strip of the seven worlds for the visitor: a portrait each, ringed in the colour of the camp that leads there; a click zooms on it
 function renderSubjects(pub) {
@@ -647,7 +665,7 @@ function renderSubjects(pub) {
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const show = () => $('#mapwrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const open = (kind, item) => () => { if (kind === 'planet') openSpecPlanet(item); else { specPlanetId = null; specOther = { kind, id: item.id }; Z = { z: 1, x: 0, y: 0 }; applyZoom(true); fillSpecPlanet(); } show(); };
+  const open = (kind, item) => () => { if (kind === 'planet') openSpecPlanet(item); else { specPlanetId = null; specOther = { kind, id: item.id }; Z = { z: 1, x: 0, y: 0 }; applyZoom(true); autoAsk(kind + ':' + item.id, item.opinions); fillSpecPlanet(); } show(); };
   const section = (title, nodes) => h('div', { class: 'subjects-sec' }, h('h3', {}, title), h('div', { class: 'subjects-row' }, ...nodes));
   box.replaceChildren(
     section('Mondes', pub.planets.map((p) => h('button', { type: 'button', class: 'world ' + (p.lead === 'loyalist' ? 'ly' : p.lead === 'renegade' ? 'rn' : ''), title: p.name, onclick: open('planet', p) },
@@ -657,7 +675,7 @@ function renderSubjects(pub) {
 }
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (specPlanetId || specOther) && !document.querySelector('dialog[open]')) resetZoom(); });
 function openSpecPlanet(p) {
-  specPlanetId = p.id; fillSpecPlanet();
+  specPlanetId = p.id; autoAsk('planet:' + p.id, p.opinions); fillSpecPlanet();
   const W = wrap.clientWidth, H = wrap.clientHeight;
   Z.z = 3; Z.x = W / 2 - (p.x / 100) * W * 3; Z.y = H / 2 - (p.y / 100) * H * 3; applyZoom(true);
 }

@@ -321,17 +321,18 @@ function chronicle(planets, tot) {
 // What the map shows to everyone, without any score: the share of each camp, a fleet level (0..6) per camp and planet that grows with the points
 // against the highest tier of the planet, the tiers won (flags), and how many players still hold points to invest (ships on the move).
 function frontOf() {
+  const events = publicEvents();
   const lvl = (n, top) => (n > 0 ? Math.min(6, Math.max(1, Math.ceil((6 * n) / top))) : 0);
   const planets = S.targets.filter((t) => t.kind === 'planet').map((t) => {
     const won = (side) => t.tiers.filter((pa) => pa.unlocked && pa.winnerSide === side).length;
     const l = sideTotal(t, 'loyalist'), r = sideTotal(t, 'renegade'), sum = l + r, share = sum ? l / sum : null, top = Math.max(1, ...t.tiers.map((pa) => pa.threshold));
     return { id: t.id, name: t.name, x: t.x, y: t.y, lbl: t.lbl, share, lead: share === null ? 'none' : share > 0.6 ? 'loyalist' : share < 0.4 ? 'renegade' : 'even',
-      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature({ tiers: t.tiers.filter((pa) => pa.shared) }, null), excerpts: excerptsOf(t), opinions: opinionsOf(t.id), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
+      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature({ tiers: t.tiers.filter((pa) => pa.shared) }, null), excerpts: excerptsOf(t), opinions: opinionsOf(t.id), history: historyFor(events, (e) => e.planet === t.name), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
   });
   const sum = (k) => planets.reduce((n, p) => n + p[k], 0);
   const tot = { loyalist: sum('_l'), renegade: sum('_r'), tiersLoyalist: sum('_tl'), tiersRenegade: sum('_tr') };
   return { planets: planets.map(({ _l, _r, _tl, _tr, ...p }) => p), share: tot.loyalist + tot.renegade ? tot.loyalist / (tot.loyalist + tot.renegade) : null,
-    idle: Object.values(S.players).filter((p) => p.points - spent(p) > 0).length, chronicle: chronicle(planets, tot), camps: campsOf(planets), legions: legionsOf(planets),
+    idle: Object.values(S.players).filter((p) => p.points - spent(p) > 0).length, chronicle: chronicle(planets, tot), camps: campsOf(planets, events), legions: legionsOf(planets, events),
     fx: recentFx(), bubbles: recentBubbles() };
 }
 const publicView = frontOf;
@@ -353,7 +354,7 @@ function excerptsOf(t) {
 // Subject keys: 'planet:<id>', 'camp:<side>', 'legion:<slug>'.
 const slug = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const opinionsOfSubject = (key) => ['loyalist', 'renegade'].map((camp) => (S.comments || []).filter((c) => c.subject === key && c.camp === camp).pop()).filter(Boolean).map((c) => ({ camp: c.camp, author: c.author, text: c.text, age: Math.floor((Date.now() - c.t) / 1000) }));
-function legionsOf(planets) {
+function legionsOf(planets, events = []) {
   return (S.armies || []).map((a) => {
     const players = Object.values(S.players).filter((p) => p.army === a.name);
     if (!players.length) return null;
@@ -363,16 +364,37 @@ function legionsOf(planets) {
       const pts = players.reduce((n, p) => n + ['loyalist', 'renegade'].reduce((m, side) => m + (p.alloc[gaugeOf(t, side)?.id] || 0), 0), 0);
       return pts > 0 ? { id: t.id, name: t.name, level: Math.min(3, Math.max(1, Math.ceil((3 * pts) / top))) } : null;
     }).filter(Boolean);
-    return { id: slug(a.name), name: a.name, side: sides.size === 1 ? [...sides][0] : null, planets: present, opinions: opinionsOfSubject('legion:' + slug(a.name)) };
+    return { id: slug(a.name), name: a.name, side: sides.size === 1 ? [...sides][0] : null, planets: present, opinions: opinionsOfSubject('legion:' + slug(a.name)), history: historyFor(events, (e) => e.army === a.name) };
   }).filter(Boolean);
 }
-function campsOf(planets) {
+function campsOf(planets, events = []) {
   return ['loyalist', 'renegade'].map((side) => ({
     id: side, name: SIDE_NAME[side], led: planets.filter((p) => p.lead === side).map((p) => p.name),
     tiers: planets.reduce((n, p) => n + p.flags[side], 0) ? (planets.reduce((n, p) => n + p.flags[side], 0) > 4 ? 'many' : 'some') : 'none',
-    opinions: opinionsOfSubject('camp:' + side),
+    opinions: opinionsOfSubject('camp:' + side), history: historyFor(events, (e) => e.side === side),
   }));
 }
+// The campaign log as the visitor may read it: events turned into plain sentences (no player, no amount, no tier name), newest first,
+// the same sentence repeated within two minutes counted once. Each event knows its planet, camp and legion, to filter the card of a subject.
+function publicEvents() {
+  const armyOf = new Map(Object.values(S.players).map((p) => [p.name, p.army]));
+  const out = [];
+  for (const l of S.log) {
+    let m, e = null;
+    if ((m = /^PALIER (.+?) « .* » \(\d+\) franchi par les (Loyalistes|Renégats)/.exec(l.text))) e = { planet: m[1], side: m[2] === 'Loyalistes' ? 'loyalist' : 'renegade', text: `Une étape est franchie sur ${m[1]} par les ${m[2].toLowerCase()}` };
+    else if ((m = /^Premier contact établi sur (.+)$/.exec(l.text))) e = { planet: m[1], text: `Premier contact établi sur ${m[1]}` };
+    else if ((m = /^(.+?) → (.+?) · (Loyaliste|Renégat|Traître) : \+/.exec(l.text))) {
+      const army = armyOf.get(m[1]) || null, side = m[3] === 'Loyaliste' ? 'loyalist' : 'renegade';
+      e = { planet: m[2], side, army, text: army ? `Les ${army} envoient des renforts sur ${m[2]}` : `Des renforts ${side === 'loyalist' ? 'loyalistes' : 'renégats'} arrivent sur ${m[2]}` };
+    } else if ((m = /^(.+?) \((.+?)\) détruit les points des (Loyalistes|Renégats) sur (.+?) :/.exec(l.text))) e = { planet: m[4], side: m[3] === 'Loyalistes' ? 'loyalist' : 'renegade', army: m[2], text: `Les ${m[2]} détruisent les points des ${m[3].toLowerCase()} sur ${m[4]}` };
+    if (!e) continue;
+    if (out.some((o) => o.text === e.text && Math.abs(o.t - l.t) < 120_000)) continue;
+    out.push({ ...e, t: l.t });
+  }
+  return out;
+}
+const historyFor = (events, pick) => events.filter(pick).slice(0, 8).map((e) => ({ age: Math.floor((Date.now() - e.t) / 1000), text: e.text }));
+
 // the label of a subject and the scribe that should speak, from a key or from a name typed by the admin
 function subjectFor(input) {
   const raw = String(input || '').replace(/^@/, '').trim(), key = raw.includes(':') ? raw : null, n = slug(raw);

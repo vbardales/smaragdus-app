@@ -9,6 +9,13 @@ import { comment, provider } from './commentary.js';
 import { renderMail } from './mailTheme.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
+// Local convenience: a .env file next to the server (ignored by git) may hold KEY=VALUE lines, e.g. ANTHROPIC_API_KEY. A variable already set wins.
+try {
+  for (const line of fs.readFileSync(path.join(DIR, '.env'), 'utf8').split(/\r?\n/)) {
+    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
+    if (m && !line.trim().startsWith('#') && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+} catch {}
 const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE = process.env.DATA_FILE || path.join(DIR, 'data.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;

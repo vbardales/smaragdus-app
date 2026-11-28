@@ -272,6 +272,7 @@ function view(role, me) {
     out.mailEnabled = mailEnabled;
     out.mailInfo = mailEnabled ? { user: MAIL.user, from: MAIL.from, host: MAIL.host, port: MAIL.port, passLength: MAIL.pass.length } : null; // to spot a wrong paste, never the password itself
     out.commentary = { provider: provider(), last: lastStatus };
+    out.notes = S.notes || [];
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
     out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers: tiers.map((pa) => ({ id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, docs: docsOf(pa), teaser: pa.teaser, shared: pa.shared })) })) };
   }
@@ -364,6 +365,10 @@ function recentEvents() {
 let lastComment = 0, commenting = false, lastStatus = null; // lastStatus: what the last comment came from, for the admin
 // A stimulus (points invested, points given, power used, or a timer) may make a scribe speak: at most one comment every 30 seconds,
 // and only some stimuli trigger one (a power always does). The text only carries public facts.
+// Notes of the organizer, typed in the admin page: real-time news about the battles. They only feed the prompt of the scribes (never shown as such,
+// never in the public payload), and the oldest ones fade out: only the last six hours count.
+const NOTE_KEEP = 6 * 3600_000;
+const recentNotes = () => (S.notes || []).filter((n) => Date.now() - n.t < NOTE_KEEP).slice(-8).map((n) => (n.planetId ? `[${S.targets.find((t) => t.id === n.planetId)?.name || n.planetId}] ` : '') + n.text);
 let commentQueue = Promise.resolve();
 function stimulate(kind, { planet = null, side = null, force = false } = {}) {
   const now = Date.now();
@@ -371,7 +376,7 @@ function stimulate(kind, { planet = null, side = null, force = false } = {}) {
   lastComment = now;
   const f = frontOf(), lead = (s) => names(f.planets.filter((p) => p.lead === s).map((p) => p.name));
   const args = {
-    kind, camp: side || (Math.random() < 0.5 ? 'loyalist' : 'renegade'), planet: planet && { id: planet.id, name: planet.name }, events: recentEvents(),
+    kind, camp: side || (Math.random() < 0.5 ? 'loyalist' : 'renegade'), planet: planet && { id: planet.id, name: planet.name }, events: recentEvents(), notes: recentNotes(),
     situation: f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde'
       : `les loyalistes dominent ${lead('loyalist') || 'aucun monde'} ; les renégats dominent ${lead('renegade') || 'aucun monde'}`,
   };
@@ -585,7 +590,7 @@ async function body(req) {
   return s ? JSON.parse(s) : {};
 }
 
-S.comments ??= []; S.fx ??= [];
+S.comments ??= []; S.fx ??= []; S.notes ??= [];
 for (const t of S.targets) if (t.kind === 'gauge') t.name = t.name.replace(/Traître$/, 'Renégat'); // names saved before the rename
 for (const f of S.factions) if (f.name === 'Traître') f.name = 'Renégat';
 for (const t of S.targets) if (t.kind === 'planet') settle(t); // delivers reports missing after a migration
@@ -688,15 +693,26 @@ http.createServer(async (req, res) => {
       } else if (route === 'POST /api/admin/mail-preview') {
         const p = S.players[b.playerId];
         reply.html = renderMail({ title: String(b.subject || ''), text: String(b.body || '').slice(0, 20000), siteUrl: SITE_URL, camp: p ? fixedSide(p) : null });
+      } else if (route === 'POST /api/admin/note') {
+        const text = String(b.text || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+        if (!text) throw new Error('Texte requis');
+        const planet = b.planetId ? S.targets.find((t) => t.id === b.planetId && t.kind === 'planet') : null;
+        if (b.planetId && !planet) throw new Error('Planète inconnue');
+        (S.notes ??= []).push({ id: crypto.randomUUID(), t: Date.now(), text, planetId: planet?.id || null });
+        S.notes.splice(0, Math.max(0, S.notes.length - 30));
+        logEvt(`Note aux chroniqueurs${planet ? ` (${planet.name})` : ''} : ${text}`);
+        if (b.speak) stimulate('note', { planet, force: true });
+      } else if (route === 'POST /api/admin/note-delete') {
+        S.notes = (S.notes || []).filter((n) => n.id !== b.id);
       } else if (route === 'POST /api/admin/mail-test') {
         const to = String(b.to || '').trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) throw new Error('Adresse invalide');
-        try { await sendMail(to, 'Système Smaragdus : test d\'envoi', 'Si vous lisez ce message, l\'envoi de mail du Système Smaragdus fonctionne.'); } catch (e) { console.error('Mail test:', e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
+        try { await sendMail(to, 'Système Smaragdus : test d\'envoi', 'Si vous lisez ce message, l\'envoi de mail du Système Smaragdus fonctionne.', renderMail({ title: 'Test d\'envoi', siteUrl: SITE_URL, text: 'Salutations,\n\nSi vous lisez ce message, l\'envoi de mail du Système Smaragdus fonctionne.\n\n' + SITE_URL + '\n\nGloire à l\'Empereur... ou à qui vous savez.' })); } catch (e) { console.error('Mail test:', e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
         reply.sent = true;
       } else if (route === 'POST /api/admin/commentary-test') {
         // one comment on demand, not shown on the map: tells whether the API answers or the phrase banks are used
         const f = frontOf();
-        const c = await comment({ kind: 'idle', camp: Math.random() < 0.5 ? 'loyalist' : 'renegade', planet: null, situation: f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde' : 'la bataille fait rage', events: recentEvents() });
+        const c = await comment({ kind: 'idle', camp: Math.random() < 0.5 ? 'loyalist' : 'renegade', planet: null, situation: f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde' : 'la bataille fait rage', events: recentEvents(), notes: recentNotes() });
         lastStatus = { at: Date.now(), source: c.source, error: c.error };
         Object.assign(reply, { text: c.text, author: c.author, source: c.source, error: c.error });
       } else if (route === 'POST /api/admin/reset') {
@@ -704,7 +720,7 @@ http.createServer(async (req, res) => {
         for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; pa.camps = []; }
         if (b.deletePlayers) S.players = {};
         else for (const p of Object.values(S.players)) { p.alloc = {}; p.abilityUsed = false; p.inbox = []; }
-        S.log = []; S.fx = []; S.comments = [];
+        S.log = []; S.fx = []; S.comments = []; S.notes = [];
         for (const t of S.targets) if (t.kind === 'gauge') t.adjust = 0; // score corrections of the admin go too
         logEvt(b.deletePlayers ? 'RESET complet (joueurs supprimés)' : 'RESET : investissements et gagnants effacés', 'public');
       } else if (route === 'POST /api/admin/delete-player') {

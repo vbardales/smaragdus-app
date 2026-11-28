@@ -292,6 +292,22 @@ test('the configuration JSON may carry players: imported with the configuration,
   assert.ok((await admin('GET', '/api/state')).json.players.some((p) => p.code === 'json-player-1'));
 });
 
+// ---------- notes for the scribes ----------
+test('notes of the organizer: admin only, shown to the admin, never in the public payload', async () => {
+  const secret = 'Rumeur secrète sur le terrain de la table trois';
+  assert.equal((await api(roster[0].code, 'POST', '/api/admin/note', { text: secret })).status, 403);
+  assert.equal((await admin('POST', '/api/admin/note', { text: '' })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/note', { text: secret, planetId: 'nulle-part' })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/note', { text: secret, planetId: 'grus' })).status, 200);
+  const notes = (await admin('GET', '/api/state')).json.notes;
+  assert.ok(notes.some((n) => n.text === secret && n.planetId === 'grus'));
+  assert.ok(!JSON.stringify((await api('', 'GET', '/api/public')).json).includes('secrète'), 'a note never reaches the public view');
+  assert.ok(!JSON.stringify((await api(roster[0].code, 'GET', '/api/state')).json).includes('secrète'), 'nor a player');
+  const id = notes.find((n) => n.text === secret).id;
+  assert.equal((await admin('POST', '/api/admin/note-delete', { id })).status, 200);
+  assert.ok(!(await admin('GET', '/api/state')).json.notes.some((n) => n.id === id));
+});
+
 // ---------- themed mail ----------
 test('the mail preview is a themed HTML page with a button for the link and the emblem of the camp', async () => {
   const p = byFaction('renegade')[0];

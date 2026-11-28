@@ -1246,6 +1246,19 @@ function buildPlayersUi() {
     } catch (err) { comNote.textContent = 'Échec : ' + err.message; }
     e.target.disabled = false;
   } }, 'Tester un commentaire');
+  // news of the front for the scribes: free text, optionally about a planet; it only feeds their prompt
+  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
+  const notePlanet = h('select', {}), noteSpeak = h('input', { type: 'checkbox' }); noteSpeak.checked = true;
+  const noteList = h('div'), noteNote = h('p', { class: 'dim' });
+  const noteSend = h('button', { onclick: async (e) => {
+    if (!noteText.value.trim()) return;
+    e.target.disabled = true;
+    try { await api('POST', '/api/admin/note', { text: noteText.value, planetId: notePlanet.value || null, speak: noteSpeak.checked }); noteText.value = ''; noteNote.textContent = 'Note transmise aux chroniqueurs ✓'; await refresh(); }
+    catch (err) { noteNote.textContent = 'Échec : ' + err.message; }
+    e.target.disabled = false;
+  } }, 'Envoyer aux chroniqueurs');
+  const notesBox = h('div', {}, h('p', { class: 'dim' }, 'Écris ici ce que tu vois sur le terrain : les chroniqueurs l\'ajoutent à leur contexte (les six dernières heures). Rien n\'est affiché tel quel aux observateurs.'),
+    noteText, h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList);
   const servicesBox = h('div', {}, h('b', {}, 'Mail'), mailState, h('div', { class: 'row' }, mailTo, mailTest), mailNote,
     h('b', { style: 'display:block;margin-top:8px' }, 'Commentateurs'), comState, h('div', { class: 'row' }, comTest), comNote);
   let jsonDirty = false;
@@ -1272,6 +1285,7 @@ function buildPlayersUi() {
       h('button', { onclick: () => window.open('/?view=spectateur', '_blank') }, 'Ouvrir la vue observateur')),
     h('details', { class: 'ed' }, h('summary', {}, 'Créer un joueur'), h('div', { class: 'row' }, nm, fn, cd, fs, ar, create), hint),
     h('table', {}, h('thead', {}, h('tr', {}, ['Joueur', 'Pts', 'Actions'].map((x) => h('th', {}, x)))), rows),
+    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', {}, 'Nouvelles du front (pour les chroniqueurs)'), notesBox),
     h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', {}, 'Services (mail, commentateurs)'), servicesBox),
     h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', { style: 'color:var(--red)' }, 'Zone dangereuse'),
       sendAll,
@@ -1283,7 +1297,7 @@ function buildPlayersUi() {
       h('div', { class: 'row' },
         h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
         h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs'))));
-  return { count, rows, fs, ar, sendAll, json, isJsonDirty: () => jsonDirty, mailState, comState };
+  return { count, rows, fs, ar, sendAll, json, isJsonDirty: () => jsonDirty, mailState, comState, notePlanet, noteList };
 }
 function fillPlayers() {
   const s = state, q = playerFilter.trim().toLowerCase();
@@ -1308,6 +1322,10 @@ function renderPlayers() {
   playersEl.classList.remove('hide');
   playersUi ??= buildPlayersUi();
   playersUi.sendAll.classList.toggle('hide', !state.mailEnabled);
+  setOptions(playersUi.notePlanet, state.targets.filter((t) => t.kind === 'planet').map((t) => [t.id, t.name]), 'Tout le front');
+  playersUi.noteList.replaceChildren(...(state.notes || []).slice().reverse().map((n) => h('div', { class: 'row', style: 'justify-content:space-between;align-items:flex-start;border-top:1px solid var(--line);padding:4px 0' },
+    h('span', {}, h('span', { class: 'dim' }, when(n.t) + ' '), n.planetId ? h('b', {}, (state.targets.find((t) => t.id === n.planetId)?.name || '') + ' : ') : null, n.text),
+    h('button', { title: 'Retirer cette note', onclick: () => act('POST', '/api/admin/note-delete', { id: n.id }) }, '✕'))));
   playersUi.mailState.textContent = state.mailEnabled ? `Envoi configuré : compte « ${state.mailInfo?.user} » sur ${state.mailInfo?.host}:${state.mailInfo?.port}, mot de passe de ${state.mailInfo?.passLength} caractères (vérifie qu'il n'y a pas d'espace ni de guillemet en trop).` : 'Non configuré : définir SMTP_USER et SMTP_PASS dans les paramètres du serveur.';
   const cm = state.commentary;
   playersUi.comState.textContent = (cm?.provider ? `API ${cm.provider.name === 'anthropic' ? 'Claude' : 'OpenAI'} (modèle ${cm.provider.model})` :'Aucune clé API : phrases préécrites.')

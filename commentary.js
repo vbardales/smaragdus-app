@@ -40,6 +40,10 @@ const BANK = {
     loyalist: ['Une étape est franchie sur {p} : nos équipes ont percé quelque chose. L’Empereur protège ceux qui cherchent.', 'Les archives de {p} s’entrouvrent pour nous. Je note, je prie, je poursuis.'],
     renegade: ['{p} nous a livré un secret. Que les loyalistes se demandent ce que nous savons déjà.', 'Un pas de plus sur {p}. La Fosse sourit : les vérités sont à qui les prend.'],
   },
+  note: {
+    loyalist: ['Les échos du front se précisent du côté de {p}. Je les consigne, et je prie pour ceux qui y combattent.', 'On me rapporte du mouvement sur {p}. La Garde ne dort pas.'],
+    renegade: ['Du bruit sur {p}, et la Fosse tend l’oreille. Les loyalistes n’y verront rien venir.', 'Les nouvelles de {p} sont bonnes pour qui sait lire entre les lignes.'],
+  },
   idle: {
     loyalist: ['La frontière est calme, mais les vigies ne dorment pas. Omnia videre.', 'Je relis mes notes : l’histoire se joue ici, planète après planète.'],
     renegade: ['Le silence est une arme comme une autre. Nous attendons.', 'Qu’ils s’endorment dans leur certitude : la Fosse veille.'],
@@ -66,7 +70,8 @@ async function askLlm(camp, facts, env) {
 Contexte (ne pas citer tel quel) :
 ${LORE}` : ''}`;
   const recent = facts.events?.length ? `\nÉvénements récents (du plus récent au plus ancien) :\n- ${facts.events.join('\n- ')}` : '';
-  const user = `Événement : ${facts.event}\nSituation du front : ${facts.situation}${recent}`;
+  const info = facts.notes?.length ? `\nInformations de l'organisateur de la campagne (exactes, à intégrer dans ton récit avec tes propres mots, sans les recopier ni citer de chiffre) :\n- ${facts.notes.join('\n- ')}` : '';
+  const user = `Événement : ${facts.event}\nSituation du front : ${facts.situation}${recent}${info}`;
   const signal = AbortSignal.timeout(15000);
   if (env.ANTHROPIC_API_KEY) {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', ...(env.ANTHROPIC_WORKSPACE_ID ? { 'anthropic-workspace-id': env.ANTHROPIC_WORKSPACE_ID } : {}) }, body: JSON.stringify({ model: env.COMMENT_MODEL || 'claude-haiku-5-5', max_tokens: 200, system, messages: [{ role: 'user', content: user }] }) });
@@ -82,11 +87,11 @@ ${LORE}` : ''}`;
 }
 
 // returns { camp, author, text, planetId, source, error }; never throws (an API failure falls back on the phrase banks, and says why)
-export async function comment({ kind, camp, planet, situation, events = [] }, env = process.env) {
+export async function comment({ kind, camp, planet, situation, events = [], notes = [] }, env = process.env) {
   const side = camp === 'loyalist' ? 'loyaliste' : 'renégat';
-  const event = { invest: `des renforts du camp ${side} arrivent sur ${planet?.name}`, grant: 'de nouveaux moyens parviennent aux combattants', tier: `le camp ${side} vient de franchir une étape de ses recherches sur ${planet?.name}, sans qu'on sache ce qu'il a trouvé`, power: `un pouvoir de légion a détruit des forces sur ${planet?.name}`, idle: 'rien de notable, une pause dans les combats' }[kind] || 'rien de notable';
+  const event = { invest: `des renforts du camp ${side} arrivent sur ${planet?.name}`, grant: 'de nouveaux moyens parviennent aux combattants', note: `des nouvelles du front viennent d'arriver à propos de ${planet?.name || 'la campagne'}`, tier: `le camp ${side} vient de franchir une étape de ses recherches sur ${planet?.name}, sans qu'on sache ce qu'il a trouvé`, power: `un pouvoir de légion a détruit des forces sur ${planet?.name}`, idle: 'rien de notable, une pause dans les combats' }[kind] || 'rien de notable';
   let text = null, error = null;
-  try { text = await askLlm(camp, { event, situation, events }, env); } catch (e) { error = e.name === 'TimeoutError' ? 'délai dépassé' : e.message; console.error('Commentary:', error); }
+  try { text = await askLlm(camp, { event, situation, events, notes }, env); } catch (e) { error = e.name === 'TimeoutError' ? 'délai dépassé' : e.message; console.error('Commentary:', error); }
   text = String(text || '').replace(/\s+/g, ' ').trim().replace(/^["«]\s*|\s*["»]$/g, '');
   let source = 'api';
   if (!text || /\d/.test(text) || text.length > 300) {

@@ -61,6 +61,17 @@ header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-conte
 .role{font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);border:1px solid var(--line);border-left:3px solid var(--gold);padding:4px 10px;background:rgba(201,169,106,.08)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
 body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
+@media(max-width:640px){
+  .maptools{flex-wrap:wrap;gap:6px}
+  #maphint{order:5;flex-basis:100%}
+  .maptools button:not(.iconbtn){font-size:12px;padding:6px 8px}
+  .maptools #fx-toggle{margin-left:0!important}
+  #front{display:grid!important;grid-template-columns:1fr 1fr;gap:6px 8px;padding:8px}
+  #front .bar{grid-column:1/-1;grid-row:2;margin-top:22px!important}
+  #front .camp.rn{justify-self:end}
+  #front .camp .ico{width:28px;height:28px}#front .camp .ico.wide{width:auto;height:22px}
+  #front .camp span{font-size:9px;letter-spacing:.08em}
+}
 @media(max-width:900px){
   main,body.isadmin main{grid-template-columns:1fr}
   main>aside{display:contents!important}
@@ -91,7 +102,7 @@ main{--mapw:100%}
 #daylight{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;transition:background 2s}
 body.zoomable #map{cursor:grab}
 #map.nofx .orbit,#map.nofx .roam,#map.nofx .flags,#map.nofx .smoke,#map.nofx .bomb,#map.nofx .scorch,#map.nofx .bubble,#map.nofx #daylight{display:none}
-#map .spot{scale:calc(1 / var(--z,1))}
+#map .spot{scale:calc(var(--k,1) / var(--z,1))}
 body.spectator main{grid-template-columns:1fr}
 body.spectator main>section{display:contents}
 body.spectator .panel{margin-top:0!important}
@@ -558,7 +569,10 @@ let sunN = 0;
 const fleetEl = $('#fleet');
 fleetEl.append(h('button', { id: 'sun', type: 'button', tabindex: '-1', 'aria-hidden': 'true', onclick: () => toast('✦ ' + SUN_LINES[sunN++ % SUN_LINES.length]) }));
 // ships and their orbits grow with the map: the same speed on a wide screen looks much slower
-const fitFleet = () => fleetEl.style.setProperty('--u', Math.max(1, wrap.clientWidth / 900).toFixed(2));
+const fitFleet = () => {
+  fleetEl.style.setProperty('--u', Math.max(1, wrap.clientWidth / 900).toFixed(2));
+  mapEl.style.setProperty('--k', Math.min(1, Math.max(0.6, wrap.clientWidth / 760)).toFixed(2)); // labels shrink on a small screen, down to 60 %
+};
 fitFleet(); window.addEventListener('resize', fitFleet);
 let fleetSig = '';
 // tiny ships orbit the planets (more of them as a camp's points grow), flags mark the tiers won, and ships cross the map for the players who still hold points

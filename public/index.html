@@ -200,6 +200,9 @@ details:not([open])>.hero .hn0{border-bottom:0;margin-bottom:0;padding-bottom:0;
 .hero .hn2{font-style:italic;color:#b9b19c;letter-spacing:.02em}
 .hero .hn3{font-style:italic;color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:.7em!important}
 .stepper{display:inline-flex;align-items:stretch;gap:4px}.stepper input{width:64px;text-align:center;-moz-appearance:textfield}.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stepper .step{min-width:34px;font-size:18px;line-height:1;padding:0 8px}
+.camptag{white-space:nowrap;font-weight:700}.camptag.ly{color:#e6c36a}.camptag.rn{color:#e0452f}
+.camptag .ico{vertical-align:-.3em}
+.camptag.big img.ico.wide{height:1.6em}.camptag.big img.ico:not(.wide){width:1.8em;height:1.8em}
 .mlogo svg,.mlogo img{width:20px;height:20px;display:block;filter:drop-shadow(0 0 2px #000)}
 img.ico{object-fit:contain}
 img.ico.wide{width:auto;height:1.15em}
@@ -455,6 +458,8 @@ $('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('s
 // base of the player links: the live site, even when the admin page is opened from a local server
 const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https://smaragdus.antredudragon.fr' : location.origin;
 const SIDE = { loyalist: 'Loyalistes', renegade: 'Renégats' };
+// the name of a camp with its emblem: the simple one inside a sentence, the fine one (big) on its own line
+const campName = (side, big) => h('span', { class: 'camptag ' + (side === 'loyalist' ? 'ly' : 'rn') + (big ? ' big' : '') }, ico(side === 'loyalist' ? 'loyalist' : 'renegade', !big), ' ', SIDE[side]);
 const gaugeOf = (planet, side) => state.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
 
 // the gauges have no known maximum: show the loyalist share against the renegade one
@@ -665,9 +670,9 @@ function tierBlocks(t) {
   const L = gaugeOf(t, 'loyalist')?.total ?? 0, R = gaugeOf(t, 'renegade')?.total ?? 0;
   const shown = t.tiers.filter((p) => !p.hidden).sort((a, b) => a.threshold - b.threshold);
   return [...shown.map((p) => h('div', { class: 'tier' + (p.unlocked ? ' won' : '') },
-    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? ` · franchi par les ${SIDE[p.winnerSide]}` : ' · ✦ jalon franchi') : null,
+    h('b', {}, `${p.threshold} — ${p.label}`), p.unlocked ? h('span', { class: 'dim' }, p.winnerSide ? [' · franchi par les ', campName(p.winnerSide)] : ' · ✦ jalon franchi') : null,
     isAdmin && p.title ? h('div', { class: 'dim' }, p.title) : null,
-    isAdmin && !p.unlocked ? h('div', { class: 'dim' }, `Loyalistes ${L}/${p.threshold} · Renégats ${R}/${p.threshold}`) : null,
+    isAdmin && !p.unlocked ? h('div', { class: 'dim' }, campName('loyalist'), ` ${L}/${p.threshold} · `, campName('renegade'), ` ${R}/${p.threshold}`) : null,
     isAdmin && p.prize ? h('div', { class: 'dim' }, `Lot : ${p.prize}${p.winnerName ? ` → ${p.winnerName}` : ' (tirage à venir)'}`) : null,
     !isAdmin && p.hasPrize ? h('div', { class: 'dim' }, p.winnerName ? `Dotation tirée au sort : ${p.winnerName}` : 'Une dotation est en jeu') : null,
     !isAdmin && state.inbox?.some((m) => m.tierId === p.id) ? h('div', { class: 'dim' }, 'Transmission reçue dans vos vox-transmissions') : null)),
@@ -710,7 +715,7 @@ function investRow(t, sel) {
     catch (e) { warn.textContent = e.message; btn.disabled = false; }
   };
   check();
-  return [camp ? null : h('p', { class: 'dim' }, 'Votre camp : ', h('b', { class: sides[0] === 'loyalist' ? 'ly' : 'rn' }, SIDE[sides[0]])),
+  return [camp ? null : h('p', { class: 'dim' }, 'Votre camp : ', campName(sides[0], true)),
     h('div', { class: 'row', style: 'margin-top:6px' }, camp, h('span', { class: 'stepper' }, step('−', -1), amt, step('+', 1)), btn), warn, info].filter(Boolean);
 }
 
@@ -722,17 +727,17 @@ function planetNodes(t, sel) {
   if (isAdmin && t.specialty) out.push(h('p', {}, h('b', {}, 'Mot clé : '), t.specialty));
   if (t.multiplier !== 1) out.push(h('p', {}, h('b', {}, 'Multiplicateur : '), `×${t.multiplier}`));
   out.push(s.me ? h('p', {}, h('b', {}, `Vos allocations : ${t.mine}`)) // a player sees only their own points; the admin keeps the score of each camp
-      : h('p', {}, h('b', { class: 'ly' }, `Loyalistes : ${gaugeOf(t, 'loyalist')?.total ?? 0}`), ' · ', h('b', { class: 'rn' }, `Renégats : ${gaugeOf(t, 'renegade')?.total ?? 0}`)),
+      : h('p', {}, campName('loyalist', true), ` : ${gaugeOf(t, 'loyalist')?.total ?? 0}`, '   ', campName('renegade', true), ` : ${gaugeOf(t, 'renegade')?.total ?? 0}`),
     sel, isAdmin ? null : tierBlocks(t), investRow(t, sel));
   if (isAdmin || s.me?.wipe) {
-    out.push(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Ordonner la purge des points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (usage unique)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : `Ordonner la purge des ${SIDE[s.me.wipe]} (usage unique)`));
+    out.push(h('button', { style: 'margin-top:10px;color:var(--red)', onclick: () => confirm(`Ordonner la purge des points ${isAdmin ? 'adverses' : `des ${SIDE[s.me.wipe]}`} sur ${t.name} ? (usage unique)`) && act('POST', '/api/ability', { targetId: t.id, playerId: sel?.value }) }, isAdmin ? 'Pouvoir de destruction du joueur choisi (1 fois)' : ['Ordonner la purge des ', campName(s.me.wipe), ' (usage unique)']));
   }
   if (isAdmin) {
     const gl = gaugeOf(t, 'loyalist'), gr = gaugeOf(t, 'renegade');
     const lIn = h('input', { type: 'number', min: 0, step: 'any', value: gl?.total ?? 0, style: 'width:90px' }), rIn = h('input', { type: 'number', min: 0, step: 'any', value: gr?.total ?? 0, style: 'width:90px' });
     out.push(h('details', { class: 'ed', style: 'margin-top:10px' }, h('summary', { style: 'color:var(--red)' }, 'Zone dangereuse : scores'),
       h('p', { class: 'dim' }, 'Fixe le score final de chaque camp sur cette planète (correction d\'une erreur). Les paliers déjà remportés le restent ; un score relevé peut en remporter.'),
-      h('div', { class: 'row' }, h('label', {}, 'Loyalistes ', lIn), h('label', {}, 'Renégats ', rIn)),
+      h('div', { class: 'row' }, h('label', {}, campName('loyalist'), ' ', lIn), h('label', {}, campName('renegade'), ' ', rIn)),
       h('button', { style: 'margin-top:6px', onclick: async () => {
         if (!confirm(`Fixer les scores de ${t.name} à ${lIn.value} (loyalistes) et ${rIn.value} (renégats) ?`) || !confirm('Confirmer : la modification est immédiate.')) return;
         await act('POST', '/api/admin/set-gauge', { targetId: gl.id, value: Number(lIn.value) });
@@ -801,7 +806,7 @@ function renderMe() {
   const d = h('details', { class: 'ed' }, h('summary', { class: 'hero' }, h('span', { class: 'emblem' }, ...(m.gauges || []).map((g) => h('span', { class: g === 'loyalist' ? 'ly' : 'rn' }, ico(g === 'loyalist' ? 'loyalist' : 'renegade', true)))), h('div', { class: 'names' }, ...title), h('span', { class: 'pts' + (m.points > 0 ? ' some' : ''), title: 'Points à allouer' }, h('b', {}, m.points), ' pt' + (m.points > 1 ? 's' : ''))), ...[
     [m.army, f].filter(Boolean).length ? h('p', {}, [m.army, f].filter(Boolean).join(' - ')) : null,
     h('p', { style: m.points > 0 ? 'font-size:1.5em' : '' }, h('b', {}, `${m.points} point${m.points > 1 ? 's' : ''}`), ' à allouer'),
-    m.wipe ? h('p', { class: 'dim' }, `Directive de légion disponible : purger les points des ${SIDE[m.wipe]} sur un monde (usage unique).`) : null].filter(Boolean));
+    m.wipe ? h('p', { class: 'dim' }, 'Directive de légion disponible : purger les points des ', campName(m.wipe), ' sur un monde (usage unique).') : null].filter(Boolean));
   try { d.open = localStorage.getItem('smg-me-open') !== '0'; } catch { d.open = true; }
   d.ontoggle = () => { try { localStorage.setItem('smg-me-open', d.open ? '1' : '0'); } catch {} };
   box.replaceChildren(d);
@@ -883,7 +888,7 @@ function openMail(i) {
     h('div', { class: 'head' },
       h('h2', { style: 'margin-top:0' }, m.title || m.label),
       m.teaser ? h('span', { class: 'pill gold' }, 'extrait')
-        : h('div', { class: 'meta ' + (m.side ? 'camp-' + m.side : '') }, m.label + (m.side ? ` · franchi par les ${SIDE[m.side]}` : ''))),
+        : h('div', { class: 'meta ' + (m.side ? 'camp-' + m.side : '') }, m.label, m.side ? [' · franchi par les ', campName(m.side)] : null)),
     h('div', { class: 'fluff' + cls(firstFluff), ...{} }, m.fluff ? fluffNodes(m.fluff, firstFluff?.template === 'vox') : 'Transmission en cours de déchiffrement…'),
     m.teaser ? h('p', { class: 'dim' }, 'Allouez des points sur ce monde pour lire la transmission complète.') : null,
     docs.map((d) => docNode(d, m)),

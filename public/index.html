@@ -99,18 +99,23 @@ body.spectator #spec{order:-3}
 body.spectator main>aside{display:none!important}
 body:not(.spectator) #front{display:none!important} /* the big slider is for the visitor only */
 #front{display:flex;align-items:center;gap:12px;padding:8px 12px}
-#front .logo{display:flex;align-items:center;gap:6px;font:600 13px var(--mono);white-space:nowrap}
+#front .camp{display:flex;align-items:center;gap:10px;white-space:nowrap}#front .camp.rn{flex-direction:row-reverse;text-align:right}
+#front .camp .ico{width:38px;height:38px}#front .camp b{display:block;font:700 15px var(--mono)}#front .camp span{font:600 11px var(--display);letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+#front .camp.ly{color:#e6c36a}#front .camp.rn{color:#e0452f}#front .camp.rest{opacity:.75}
+#front.rest .camp b{display:none}#front .bar{margin-top:14px}#front.rest .bar::after{content:'La campagne n’a pas encore commencé';position:absolute;left:50%;top:-22px;transform:translateX(-50%);white-space:nowrap;font:600 11px var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+#front .bar.zero{background:repeating-linear-gradient(90deg,#3a3a3a 0 8px,#2a2a2a 8px 16px)}#front.rest .bar i{display:none}
 #front .bar{flex:1;height:10px;background:var(--red,#b3362b);position:relative;border:1px solid var(--line)}
 #front .bar i{display:block;height:100%;background:var(--gold)}
-#front .bar b{position:absolute;top:-5px;width:4px;height:18px;background:var(--text);transform:translateX(-50%)}
+#front .bar b{position:absolute;top:50%;width:14px;height:14px;background:var(--text);transform:translate(-50%,-50%) rotate(45deg);box-shadow:0 0 6px #000}
 #fleet{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .orbit{position:absolute;width:0;height:0;animation:spin var(--t,12s) linear infinite}
-.orbit i,.roam{position:absolute;width:calc(7px*var(--u,1));height:calc(6px*var(--u,1));background:currentColor;clip-path:polygon(0 0,100% 50%,0 100%)}
+.orbit i,.roam{position:absolute;width:calc(7px*var(--u,1));height:calc(6px*var(--u,1));background:currentColor;clip-path:polygon(100% 50%,10% 0,35% 50%,10% 100%)}
 .orbit i{left:calc(var(--r,50px)*var(--u,1));top:calc(-3px*var(--u,1))}
 @keyframes spin{to{transform:rotate(360deg)}}
 .roam{color:#cfe8ff;opacity:.8;animation:fly var(--t,14s) ease-in-out infinite alternate;left:var(--x0);top:var(--y0)}
 @keyframes fly{to{left:var(--x1);top:var(--y1)}}
 .fleet-ly{color:#e6c36a}.fleet-rn{color:#e0452f}
+.flags .ico{width:13px;height:13px;filter:drop-shadow(0 0 2px #000)}
 .flags{position:absolute;transform:translate(-50%,-100%);display:flex;gap:1px;font-size:11px;line-height:1;text-shadow:0 0 3px #000}
 #sun{position:absolute;left:38%;top:49%;width:9%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:none;border:0;padding:0;cursor:default;pointer-events:auto}
 @media(prefers-reduced-motion:reduce){.orbit,.roam{animation:none}}
@@ -143,7 +148,8 @@ dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #spec-wrap{text-align:center;margin:-16px 0 40px}#login.hide + #spec-wrap{display:none}
 body.spectator aside,body.spectator #players,body.spectator #journal{display:none}
 body.spectator main{grid-template-columns:1fr}
-.chron{margin:8px 0;padding:6px 12px;border-left:3px solid currentColor;font-style:italic;line-height:1.55}.chron p{margin:0 0 4px;color:var(--ink,inherit)}.chron footer{font-size:12px;opacity:.8;font-style:normal}
+.chron .ico{float:left;width:30px;height:30px;margin:2px 12px 0 0;opacity:.9}
+.chron{overflow:hidden;margin:8px 0;padding:6px 12px;border-left:3px solid currentColor;font-style:italic;line-height:1.55}.chron p{margin:0 0 4px;color:var(--ink,inherit)}.chron footer{font-size:12px;opacity:.8;font-style:normal}
 .spot.spec{pointer-events:none}
 .tug{height:14px;background:#e0605f;border:1px solid var(--line);margin:8px 0}.tug i{display:block;height:100%;background:#e0c040}
 .maptools{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-bottom:6px}#maphint{font-size:13px}body.mapview .maptools{display:none}
@@ -190,7 +196,11 @@ details:not([open])>.hero .hn0{border-bottom:0;margin-bottom:0;padding-bottom:0;
 .hero .hn2{font-style:italic;color:#b9b19c;letter-spacing:.02em}
 .hero .hn3{font-style:italic;color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:.7em!important}
 .stepper{display:inline-flex;align-items:stretch;gap:4px}.stepper input{width:64px;text-align:center;-moz-appearance:textfield}.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stepper .step{min-width:34px;font-size:18px;line-height:1;padding:0 8px}
-.mlogo svg{width:15px;height:15px;display:block}
+.mlogo svg{width:20px;height:20px;display:block;filter:drop-shadow(0 0 2px #000)}
+.gl.idle .mlogo{opacity:.5}
+.ico{width:1.15em;height:1.15em;vertical-align:-.22em;flex:none}
+button .ico{margin-right:2px}.iconbtn{padding:6px 9px;line-height:0}.iconbtn .ico{width:18px;height:18px;margin:0;vertical-align:middle}
+.maptools button[aria-pressed=true]{opacity:.7;border-style:dashed}
 .bonus{color:var(--gold)}
 .warn{color:var(--red);font-size:13px;margin:4px 0;min-height:1.2em}
 /* ambiance: CRT scanlines and grain, interference accents */
@@ -245,6 +255,16 @@ body.mapview .spot{pointer-events:none}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="ico-loyalist" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="12" cy="5" r="1.7"/><path d="M13.4 4.7l2.1.9-2.1.7z"/><path d="M10.8 8.2C8 8.8 4.6 7.2 2 2.8c-.2 3.6.8 6.6 3 8.6 1.8 1.5 4 1.7 5.8 1z"/><path d="M13.2 8.2C16 8.8 19.4 7.2 22 2.8c.2 3.6-.8 6.6-3 8.6-1.8 1.5-4 1.7-5.8 1z"/><path d="M12 7.2c1.5.6 2.2 2.4 2 4.4l-.6 3.4h-2.8l-.6-3.4c-.2-2 .5-3.8 2-4.4z"/><path d="M9.6 15h4.8l1.6 6.2L12 19l-4 2.2z"/></g></symbol>
+<symbol id="ico-renegade" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11.2C5 6.8 8.5 5.4 12 5.4s7 1.4 10 5.8c-3 4.4-6.5 5.8-10 5.8s-7-1.4-10-5.8z"/><circle cx="12" cy="11.2" r="3.1"/><path d="M12 17.2v4.2M8.9 16.4L7.3 20.2M15.1 16.4l1.6 3.8"/></g><circle cx="12" cy="11.2" r="1.3" fill="currentColor"/></symbol>
+<symbol id="ico-flag" viewBox="0 0 24 24"><path d="M6 3v18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6.5 4h12l-3 3.6 3 3.6h-12z" fill="currentColor"/></symbol>
+<symbol id="ico-zoom-in" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></g></symbol>
+<symbol id="ico-zoom-out" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M7.5 10.5h6"/></g></symbol>
+<symbol id="ico-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ico-label" viewBox="0 0 24 24"><path d="M4 7h16M4 12h11M4 17h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+<symbol id="ico-orbit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-28 12 12)"/></g><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19.2" cy="8" r="1.4" fill="currentColor"/></symbol>
+</defs></svg>
 <header>
   <h1><img class="logo" src="/img/deco/emblem-sm.webp" width="40" height="40" alt=""><span>Système Smaragdus</span></h1>
   <div id="who" class="row"></div>
@@ -268,7 +288,7 @@ body.mapview .spot{pointer-events:none}
 
 <main id="app" class="hide">
   <section>
-    <div class="maptools"><span id="zoomtools" class="hide"><button id="zin" type="button" title="Zoom avant">+</button> <button id="zout" type="button" title="Zoom arrière">−</button> <button id="zreset" type="button" title="Vue complète">⟲</button></span> <span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span> <button id="fx-toggle" type="button" style="margin-left:auto"></button> <button id="lbl-toggle" type="button"></button></div>
+    <div class="maptools"><span id="zoomtools" class="hide"><button id="zin" type="button" class="iconbtn" title="Zoom avant (ou Ctrl + molette)" aria-label="Zoom avant"><svg class="ico" aria-hidden="true"><use href="#ico-zoom-in"/></svg></button> <button id="zout" type="button" class="iconbtn" title="Zoom arrière" aria-label="Zoom arrière"><svg class="ico" aria-hidden="true"><use href="#ico-zoom-out"/></svg></button> <button id="zreset" type="button" class="iconbtn" title="Vue complète" aria-label="Vue complète"><svg class="ico" aria-hidden="true"><use href="#ico-fit"/></svg></button></span> <span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span> <button id="fx-toggle" type="button" style="margin-left:auto"></button> <button id="lbl-toggle" type="button"></button></div>
     <div id="mapwrap"><div id="map"><div id="fleet"></div></div><div id="pzoom" class="panel hide"></div></div>
     <div class="panel" id="front"></div>
     <div class="panel hide" id="spec" style="margin-top:12px"></div>
@@ -292,6 +312,13 @@ const h = (tag, attrs = {}, ...kids) => {
   for (const [k, v] of Object.entries(attrs)) k.startsWith('on') ? (e[k] = v) : k === 'class' ? (e.className = v) : e.setAttribute(k, v);
   for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
   return e;
+};
+// pictogram from the sprite
+const ico = (name) => {
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
+  svg.setAttribute('class', 'ico'); svg.setAttribute('aria-hidden', 'true');
+  use.setAttribute('href', '#ico-' + name); svg.append(use);
+  return svg;
 };
 if (new URLSearchParams(location.search).get('view') === 'map') document.body.classList.add('mapview');
 let token = localStorage.getItem('smg-token') || new URLSearchParams(location.search).get('code') || '';
@@ -402,7 +429,7 @@ async function refreshSpectator() {
   renderFront(pub); drawFleet(pub); drawBubbles(pub);
   $('#spec').classList.remove('hide');
   $('#spec').replaceChildren(h('h2', {}, 'Chroniques du front'),
-    ...pub.chronicle.map((c) => h('blockquote', { class: 'chron ' + (c.camp === 'loyalist' ? 'ly' : 'rn') }, h('p', {}, c.text), h('footer', {}, '— ' + c.author))));
+    ...pub.chronicle.map((c) => h('blockquote', { class: 'chron ' + (c.camp === 'loyalist' ? 'ly' : 'rn') }, ico(c.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, c.text), h('footer', {}, '— ' + c.author))));
 }
 function leaveSpectator() { try { localStorage.removeItem('smg-spectator'); } catch {} location.href = location.pathname; }
 $('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('smg-spectator', '1'); } catch {} refreshSpectator(); };
@@ -421,9 +448,9 @@ function splitBar(l, r) {
 // small gauge under a planet: the two camps' logos around a bar with a cursor at the loyalist share
 function miniGauge(l, r) {
   const tot = l + r, pct = tot ? (l / tot) * 100 : 50;
-  const logo = (cls, svg) => { const e = h('span', { class: 'mlogo ' + cls }); e.innerHTML = svg; return e; };
-  return h('span', { class: 'gl', title: tot ? `${Math.round(pct)} % loyalistes · ${100 - Math.round(pct)} % renégats` : 'Aucun point investi' },
-    logo('ly', LOGO_LY), h('span', { class: 'mg' }, splitBar(l, r), tot ? h('s', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` }) : null), logo('rn', LOGO_RN));
+  const logo = (cls, name) => h('span', { class: 'mlogo ' + cls }, ico(name));
+  return h('span', { class: 'gl' + (tot ? '' : ' idle'), title: tot ? `${Math.round(pct)} % loyalistes · ${100 - Math.round(pct)} % renégats` : 'Aucun point investi' },
+    logo('ly', 'loyalist'), h('span', { class: 'mg' }, splitBar(l, r), tot ? h('s', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` }) : null), logo('rn', 'renegade'));
 }
 
 // show / hide the labels on the map; the choice is kept in the browser and shared with the other windows (projector view)
@@ -431,10 +458,10 @@ let labelsOff = false;
 try { labelsOff = localStorage.getItem('smg-nolabels') === '1'; } catch {}
 function applyLabels() {
   $('#map').classList.toggle('nolabels', labelsOff);
-  $('#lbl-toggle').textContent = labelsOff ? 'Afficher les annotations' : 'Masquer les annotations';
+  $('#lbl-toggle').replaceChildren(ico('label'), labelsOff ? ' Afficher les annotations' : ' Masquer les annotations');
   $('#lbl-toggle').setAttribute('aria-pressed', String(labelsOff));
   $('#map').classList.toggle('nofx', fxOff);
-  $('#fx-toggle').textContent = fxOff ? 'Afficher les animations' : 'Masquer les animations';
+  $('#fx-toggle').replaceChildren(ico('orbit'), fxOff ? ' Afficher les animations' : ' Masquer les animations');
   $('#fx-toggle').setAttribute('aria-pressed', String(fxOff));
 }
 // ships, flags, smoke, bombs, bubbles and the sunlight can be turned off (kept in the browser)
@@ -492,12 +519,11 @@ function openSpecPlanet(p) {
 }
 
 // ---------- front: share slider, fleet, flags, easter egg ----------
-const LOGO_LY = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M12 7v10M8 11h8"/></svg>';
-const LOGO_RN = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2 7 7-2-5 5 5 5-7-2-2 7-2-7-7 2 5-5-5-5 7 2z"/></svg>';
 function renderFront(f) {
-  const pct = f.share === null ? 50 : Math.round(f.share * 100);
-  const logo = (cls, svg, label, v) => { const e = h('span', { class: 'logo ' + cls, title: label }); e.innerHTML = svg; e.append(f.share === null ? '—' : v + ' %'); return e; };
-  $('#front').replaceChildren(logo('ly', LOGO_LY, 'Loyalistes', pct), h('div', { class: 'bar', title: 'Part de chaque camp' }, h('i', { style: `width:${pct}%` }), h('b', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` })), logo('rn', LOGO_RN, 'Renégats', 100 - pct));
+  const rest = f.share === null, pct = rest ? 50 : Math.round(f.share * 100);
+  const camp = (cls, name, label, v) => h('div', { class: 'camp ' + cls + (rest ? ' rest' : ''), title: label }, ico(name), h('div', {}, h('b', {}, rest ? 'en attente' : v + ' %'), h('span', {}, label)));
+  $('#front').classList.toggle('rest', rest);
+  $('#front').replaceChildren(camp('ly', 'loyalist', 'Loyalistes', pct), h('div', { class: 'bar' + (rest ? ' zero' : ''), title: 'Part de chaque camp' }, h('i', { style: `width:${pct}%` }), h('b', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` })), camp('rn', 'renegade', 'Renégats', 100 - pct));
 }
 const SUN_LINES = ['Smaragdus brille d’un vert que l’Administratum n’a jamais catalogué.', 'Quelque chose, dans la lumière, vous a regardé en retour.', 'Les Archives n’ont jamais enregistré cette étoile.', 'Omnia videre. Omnia notare. Omnia servire.'];
 let sunN = 0;
@@ -521,7 +547,7 @@ function drawFleet(f) {
         nodes.push(h('div', { class: 'orbit ' + (side === 'loyalist' ? 'fleet-ly' : 'fleet-rn'), style: `left:${p.x}%;top:${p.y}%;--t:${dur}s;--r:${46 + i * 5 + (side === 'loyalist' ? 0 : 3)}px;animation-delay:-${(i * 2.3 + pi + (side === 'loyalist' ? 0 : 1.7)).toFixed(1)}s;animation-direction:${side === 'loyalist' ? 'normal' : 'reverse'}` }, h('i')));
       }
     }
-    const flags = ['loyalist', 'renegade'].flatMap((side) => Array.from({ length: Math.min(p.flags[side], 6) }, () => h('span', { class: side === 'loyalist' ? 'fleet-ly' : 'fleet-rn' }, '⚑')));
+    const flags = ['loyalist', 'renegade'].flatMap((side) => Array.from({ length: Math.min(p.flags[side], 6) }, () => h('span', { class: side === 'loyalist' ? 'fleet-ly' : 'fleet-rn' }, ico('flag'))));
     // smoke over the fighting: one more cloud for each tier won on the planet
     for (let i = 0; i < Math.min(4, p.flags.loyalist + p.flags.renegade); i++) nodes.push(h('div', { class: 'smoke', style: `left:calc(${p.x}% + ${(i % 2 ? 16 : -34) + i * 4}px);top:calc(${p.y}% + ${-6 + i * 7}px);--d:${8 + i * 2}s` }));
     if (flags.length) nodes.push(h('div', { class: 'flags', style: `left:${p.x}%;top:calc(${p.y}% - 38px)` }, ...flags));

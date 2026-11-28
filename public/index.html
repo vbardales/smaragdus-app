@@ -200,6 +200,7 @@ details:not([open])>.hero .hn0{border-bottom:0;margin-bottom:0;padding-bottom:0;
 .hero .hn2{font-style:italic;color:#b9b19c;letter-spacing:.02em}
 .hero .hn3{font-style:italic;color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:.7em!important}
 .stepper{display:inline-flex;align-items:stretch;gap:4px}.stepper input{width:64px;text-align:center;-moz-appearance:textfield}.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stepper .step{min-width:34px;font-size:18px;line-height:1;padding:0 8px}
+.gl .delta{font:600 11px var(--mono);font-style:normal;color:var(--gold);margin-left:2px}
 .mlogo svg,.mlogo img{width:20px;height:20px;display:block;filter:drop-shadow(0 0 2px #000)}
 img.ico{object-fit:contain}
 img.ico.wide{width:auto;height:1.15em}
@@ -463,11 +464,13 @@ function splitBar(l, r) {
 }
 
 // small gauge under a planet: the two camps' logos around a bar with a cursor at the loyalist share
-function miniGauge(l, r) {
+function miniGauge(l, r, numbers) { // numbers: the admin also sees the score of each camp and the gap
+
   const tot = l + r, pct = tot ? (l / tot) * 100 : 50;
   const logo = (cls, name) => h('span', { class: 'mlogo ' + cls }, ico(name, true));
   return h('span', { class: 'gl' + (tot ? '' : ' idle'), title: tot ? `${Math.round(pct)} % loyalistes · ${100 - Math.round(pct)} % renégats` : 'Aucun point investi' },
-    logo('ly', 'loyalist'), h('span', { class: 'mg' }, splitBar(l, r), tot ? h('s', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` }) : null), logo('rn', 'renegade'));
+    logo('ly', 'loyalist'), numbers ? h('b', { class: 'ly' }, l) : null, h('span', { class: 'mg' }, splitBar(l, r), tot ? h('s', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` }) : null), numbers ? h('b', { class: 'rn' }, r) : null, logo('rn', 'renegade'),
+    numbers && tot ? h('em', { class: 'delta' }, `${l - r >= 0 ? '+' : ''}${Math.round((l - r) * 10) / 10}`) : null);
 }
 
 // show / hide the labels on the map; the choice is kept in the browser and shared with the other windows (projector view)
@@ -640,7 +643,7 @@ function render() {
       h('span', {}, t.name),
       t.natureKnown ? h('span', { class: 'nat' }, t.nature) : null, // the subtitle only appears once it has been discovered
       s.me && t.mine ? h('span', { class: 'mine' }, `vous : ${t.mine}`) : null, // a player's own points on the planet
-      miniGauge(l, r)));
+      miniGauge(l, r, isAdmin)));
   }
   document.body.classList.remove('zoomable'); $('#zoomtools').classList.add('hide');
   renderFront(s.front); drawFleet(s.front);

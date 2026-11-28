@@ -1221,9 +1221,19 @@ function setOptions(sel, items, first) { // refresh a select's options without l
 // @ autocomplete in a textarea: players (by the first part of their fluff name), legions, factions and camps.
 // Arrows and Enter or Tab pick, Escape closes. The @ stays in the note (the server drops it before it reaches the scribes).
 const norm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+// the planet a text is about: the first one mentioned with @ (the longest names first, so "Scorpius IV" wins over a shorter one)
+function planetFromText(text) {
+  let best = null;
+  for (const t of (state.targets || []).filter((x) => x.kind === 'planet').sort((a, b) => b.name.length - a.name.length)) {
+    const i = String(text).toLowerCase().indexOf('@' + t.name.toLowerCase());
+    if (i >= 0 && (!best || i < best.i)) best = { id: t.id, i };
+  }
+  return best?.id || null;
+}
 function mentionItems() {
   const seen = new Set(), out = [];
   const add = (label, sub) => { const k = norm(label); if (label && !seen.has(k)) { seen.add(k); out.push({ label, sub }); } };
+  for (const t of (state.targets || []).filter((x) => x.kind === 'planet')) add(t.name, 'Planète');
   for (const p of state.players || []) add(noArticle((p.fluffName || p.name).split(',')[0]), 'Joueur · ' + (p.army || p.name));
   for (const a of state.config?.armies || []) add(a.name, 'Légion');
   for (const f of state.factions || []) add(f.name, 'Faction');
@@ -1373,13 +1383,13 @@ let chronUi = null;
 const editingNotes = new Set();
 function buildChronUi() {
   // news of the front for the scribes: free text, optionally about a planet; it only feeds their prompt
-  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Tape @ pour mentionner un joueur, une légion ou une faction. Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
-  const notePlanet = h('select', {}), noteSpeak = h('input', { type: 'checkbox' }); noteSpeak.checked = true;
+  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Tape @ pour mentionner une planète, un joueur, une légion ou une faction (la première planète citée rattache la note à sa fiche). Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
+  const noteSpeak = h('input', { type: 'checkbox' }); noteSpeak.checked = true;
   const noteList = h('div'), noteNote = h('p', { class: 'dim' });
   const noteSend = h('button', { onclick: async (e) => {
     if (!noteText.value.trim()) return;
     e.target.disabled = true;
-    try { await api('POST', '/api/admin/note', { text: noteText.value, planetId: notePlanet.value || null, speak: noteSpeak.checked }); noteText.value = ''; noteNote.textContent = 'Note transmise aux chroniqueurs ✓'; await refresh(); }
+    try { await api('POST', '/api/admin/note', { text: noteText.value, planetId: planetFromText(noteText.value), speak: noteSpeak.checked }); noteText.value = ''; noteNote.textContent = 'Note transmise aux chroniqueurs ✓'; await refresh(); }
     catch (err) { noteNote.textContent = 'Échec : ' + err.message; }
     e.target.disabled = false;
   } }, 'Envoyer aux chroniqueurs');
@@ -1390,19 +1400,18 @@ function buildChronUi() {
   const focusGo = h('button', { onclick: async (e) => {
     if (!focusIn.value.trim()) return;
     e.target.disabled = true;
-    try { await api('POST', '/api/admin/scribe-focus', { focus: focusIn.value, camp: focusCamp.value, planetId: notePlanet.value || null }); focusNote.textContent = 'Demande envoyée : la réponse arrive en bulle sur la carte et dans la fiche de la planète choisie.'; }
+    try { await api('POST', '/api/admin/scribe-focus', { focus: focusIn.value, camp: focusCamp.value, planetId: planetFromText(focusIn.value) }); focusNote.textContent = 'Demande envoyée : la réponse arrive en bulle sur la carte et dans la fiche de la planète choisie.'; }
     catch (err) { focusNote.textContent = 'Échec : ' + err.message; }
     e.target.disabled = false;
   } }, 'Faire parler');
   const focusBox = h('div', { style: 'margin-top:10px;border-top:1px solid var(--line);padding-top:8px' }, h('b', {}, 'Focus sur un sujet'),
-    h('p', { class: 'dim' }, 'Les chroniqueurs donnent tout de suite leur avis sur un joueur, une légion, une faction ou un camp (planète : celle du sélecteur ci-dessus, sinon tout le front).'),
+    h('p', { class: 'dim' }, 'Les chroniqueurs donnent tout de suite leur avis sur un joueur, une légion, une faction ou un camp (une planète citée avec @ rattache la réponse à sa fiche).'),
     h('div', { class: 'row' }, attachMentions(focusIn, true), focusCamp, focusGo), focusNote);
   const notesBox = h('div', {}, h('p', { class: 'dim' }, 'Écris ici ce que tu vois sur le terrain : les chroniqueurs l\'ajoutent à leur contexte (les six dernières heures). Rien n\'est affiché tel quel aux observateurs.'),
-    attachMentions(noteText), h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList, focusBox);
+    attachMentions(noteText), h('div', { class: 'row', style: 'margin-top:6px' }, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList, focusBox);
 
-  return { box: notesBox, notePlanet, noteList };
+  return { box: notesBox, noteList };
 }
-const planetOptions = () => state.targets.filter((t) => t.kind === 'planet').map((t) => [t.id, t.name]);
 function noteRow(n) {
   const planetName = state.targets.find((t) => t.id === n.planetId)?.name;
   if (!editingNotes.has(n.id)) {
@@ -1410,11 +1419,10 @@ function noteRow(n) {
       h('div', { class: 'row' }, h('button', { title: 'Modifier cette note', onclick: () => { editingNotes.add(n.id); fillChron(true); } }, '✎'), h('button', { title: 'Retirer cette note', onclick: () => act('POST', '/api/admin/note-delete', { id: n.id }) }, '✕')));
   }
   const ta = h('textarea', { style: 'height:70px;width:100%' }); ta.value = n.text;
-  const sel = h('select', {}, h('option', { value: '' }, 'Tout le front'), planetOptions().map(([val, l]) => h('option', { value: val }, l))); sel.value = n.planetId || '';
   const err = h('p', { class: 'warn' });
   return h('div', { class: 'note editing' }, attachMentions(ta),
-    h('div', { class: 'row', style: 'margin-top:4px' }, sel,
-      h('button', { onclick: async () => { try { await api('POST', '/api/admin/note-edit', { id: n.id, text: ta.value, planetId: sel.value || null }); editingNotes.delete(n.id); await refresh(); fillChron(true); } catch (e) { err.textContent = e.message; } } }, 'Enregistrer'),
+    h('div', { class: 'row', style: 'margin-top:4px' },
+      h('button', { onclick: async () => { try { await api('POST', '/api/admin/note-edit', { id: n.id, text: ta.value, planetId: planetFromText(ta.value) }); editingNotes.delete(n.id); await refresh(); fillChron(true); } catch (e) { err.textContent = e.message; } } }, 'Enregistrer'),
       h('button', { onclick: () => { editingNotes.delete(n.id); fillChron(true); } }, 'Annuler')), err);
 }
 function fillChron(force) {
@@ -1426,7 +1434,6 @@ function fillChron(force) {
     chronUi.comList = h('div');
     box.replaceChildren(h('h2', {}, 'Chroniques'), chronUi.box, h('h3', { style: 'margin:14px 0 4px' }, 'Derniers commentaires des chroniqueurs'), chronUi.comList);
   }
-  setOptions(chronUi.notePlanet, planetOptions(), 'Tout le front');
   if (force || !chronUi.noteList.contains(document.activeElement)) {
     chronUi.noteList.replaceChildren(...(state.notes || []).slice().reverse().map(noteRow));
     if (!(state.notes || []).length) chronUi.noteList.append(h('p', { class: 'dim' }, 'Aucune note pour le moment.'));

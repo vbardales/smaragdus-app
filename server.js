@@ -368,7 +368,7 @@ let lastComment = 0, commenting = false, lastStatus = null; // lastStatus: what 
 // Notes of the organizer, typed in the admin page: real-time news about the battles. They only feed the prompt of the scribes (never shown as such,
 // never in the public payload), and the oldest ones fade out: only the last six hours count.
 const NOTE_KEEP = 6 * 3600_000;
-const recentNotes = () => (S.notes || []).filter((n) => Date.now() - n.t < NOTE_KEEP).slice(-8).map((n) => (n.planetId ? `[${S.targets.find((t) => t.id === n.planetId)?.name || n.planetId}] ` : '') + n.text);
+const recentNotes = () => (S.notes || []).filter((n) => Date.now() - n.t < NOTE_KEEP).slice(-8).map((n) => ({ ...n, text: n.text.replace(/@/g, '') })).map((n) => (n.planetId ? `[${S.targets.find((t) => t.id === n.planetId)?.name || n.planetId}] ` : '') + n.text);
 let commentQueue = Promise.resolve();
 function stimulate(kind, { planet = null, side = null, force = false } = {}) {
   const now = Date.now();

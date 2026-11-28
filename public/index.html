@@ -165,6 +165,9 @@ dialog.planetdlg.wide{width:min(920px,96vw)}
 dialog::before{content:"";display:block;height:34px;margin:-16px -16px 12px;background:url(/img/deco/dialog-banner.webp) center/100% 100% no-repeat}
 dialog h2{border-bottom:1px solid var(--line);padding-bottom:6px;background:linear-gradient(90deg,rgba(201,169,106,.14),transparent)}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
+.mwrap{position:relative}
+.mentions{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--panel);border:1px solid var(--gold);max-height:220px;overflow:auto;box-shadow:0 6px 18px #000a}
+.mention{padding:6px 10px;cursor:pointer;font-size:13px}.mention.on,.mention:hover{background:var(--hover)}
 dialog iframe.preview{width:100%;height:520px;border:1px solid var(--line);margin-top:10px;background:#0b0a0d}
 dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(360px,90vw)}
@@ -1212,6 +1215,49 @@ function setOptions(sel, items, first) { // refresh a select's options without l
   sel.dataset.sig = sig;
   sel.value = v;
 }
+// @ autocomplete in a textarea: players (by the first part of their fluff name), legions, factions and camps.
+// Arrows and Enter or Tab pick, Escape closes. The @ stays in the note (the server drops it before it reaches the scribes).
+const norm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function mentionItems() {
+  const seen = new Set(), out = [];
+  const add = (label, sub) => { const k = norm(label); if (label && !seen.has(k)) { seen.add(k); out.push({ label, sub }); } };
+  for (const p of state.players || []) add((p.fluffName || p.name).split(',')[0].trim(), 'Joueur · ' + (p.army || p.name));
+  for (const a of state.config?.armies || []) add(a.name, 'Légion');
+  for (const f of state.factions || []) add(f.name, 'Faction');
+  add('Loyalistes', 'Camp'); add('Renégats', 'Camp');
+  return out;
+}
+function attachMentions(ta) {
+  const box = h('div', { class: 'mentions hide', role: 'listbox' });
+  let items = [], sel = 0, start = -1;
+  const close = () => { box.classList.add('hide'); items = []; start = -1; };
+  const pick = (i) => {
+    const it = items[i]; if (!it) return;
+    const end = ta.selectionStart, ins = '@' + it.label + ' ';
+    ta.value = ta.value.slice(0, start) + ins + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + ins.length;
+    close(); ta.focus(); ta.dispatchEvent(new Event('input'));
+  };
+  const draw = () => box.replaceChildren(...items.map((it, i) => h('div', { class: 'mention' + (i === sel ? ' on' : ''), role: 'option', onmousedown: (e) => { e.preventDefault(); pick(i); } }, h('b', {}, it.label), h('span', { class: 'dim' }, ' ' + it.sub))));
+  ta.addEventListener('input', () => {
+    const before = ta.value.slice(0, ta.selectionStart), m = /(?:^|\s)@([^\n@]{0,30})$/.exec(before);
+    if (!m) return close();
+    const q = norm(m[1]);
+    items = mentionItems().filter((it) => norm(it.label).includes(q)).slice(0, 8);
+    if (!items.length) return close();
+    start = before.length - m[1].length - 1; sel = 0; draw(); box.classList.remove('hide');
+  });
+  ta.addEventListener('keydown', (e) => {
+    if (box.classList.contains('hide')) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); sel = (sel + 1) % items.length; draw(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sel = (sel - 1 + items.length) % items.length; draw(); }
+    else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pick(sel); }
+    else if (e.key === 'Escape') { e.preventDefault(); close(); }
+  });
+  ta.addEventListener('blur', () => setTimeout(close, 120));
+  return h('div', { class: 'mwrap' }, ta, box);
+}
+
 function buildPlayersUi() {
   const filter = h('input', { type: 'search', placeholder: 'Filtrer : nom, légion, faction, code, email…' });
   filter.oninput = () => { playerFilter = filter.value; fillPlayers(); };
@@ -1247,7 +1293,7 @@ function buildPlayersUi() {
     e.target.disabled = false;
   } }, 'Tester un commentaire');
   // news of the front for the scribes: free text, optionally about a planet; it only feeds their prompt
-  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
+  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Tape @ pour mentionner un joueur, une légion ou une faction. Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
   const notePlanet = h('select', {}), noteSpeak = h('input', { type: 'checkbox' }); noteSpeak.checked = true;
   const noteList = h('div'), noteNote = h('p', { class: 'dim' });
   const noteSend = h('button', { onclick: async (e) => {
@@ -1258,7 +1304,7 @@ function buildPlayersUi() {
     e.target.disabled = false;
   } }, 'Envoyer aux chroniqueurs');
   const notesBox = h('div', {}, h('p', { class: 'dim' }, 'Écris ici ce que tu vois sur le terrain : les chroniqueurs l\'ajoutent à leur contexte (les six dernières heures). Rien n\'est affiché tel quel aux observateurs.'),
-    noteText, h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList);
+    attachMentions(noteText), h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList);
   const servicesBox = h('div', {}, h('b', {}, 'Mail'), mailState, h('div', { class: 'row' }, mailTo, mailTest), mailNote,
     h('b', { style: 'display:block;margin-top:8px' }, 'Commentateurs'), comState, h('div', { class: 'row' }, comTest), comNote);
   let jsonDirty = false;

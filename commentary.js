@@ -65,7 +65,7 @@ async function apiError(name, r) {
 }
 
 async function askLlm(camp, facts, env) {
-  const system = `Tu es ${SCRIBES[camp].author}, chroniqueur de la campagne de Smaragdus dans l'univers Warhammer 30 000 (Hérésie d'Horus). Ton : ${SCRIBES[camp].tone}. Écris UN commentaire de 1 à 2 phrases courtes (240 caractères maximum), en français, comme une note dans ton journal. Tu peux t'appuyer sur les événements récents pour réagir à ce qui vient de se passer. Interdits : tout chiffre, nom de joueur, nombre de points, révélation de contenu secret. Réponds uniquement par le texte du commentaire.${LORE ? `
+  const system = `Tu es ${SCRIBES[camp].author}, chroniqueur de la campagne de Smaragdus dans l'univers Warhammer 30 000 (Hérésie d'Horus). Ton : ${SCRIBES[camp].tone}. Écris UN commentaire de 1 à 2 phrases courtes (240 caractères maximum), en français, comme une note dans ton journal. Tu peux t'appuyer sur les événements récents pour réagir à ce qui vient de se passer. Interdits : tout chiffre, nombre de points, nom de joueur (sauf ceux que l'organisateur nomme lui-même dans ses informations : tu peux alors les citer, comme les légions et les factions), révélation de contenu secret. Réponds uniquement par le texte du commentaire.${LORE ? `
 
 Contexte (ne pas citer tel quel) :
 ${LORE}` : ''}`;

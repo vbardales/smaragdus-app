@@ -273,6 +273,7 @@ function view(role, me) {
     out.mailInfo = mailEnabled ? { user: MAIL.user, from: MAIL.from, host: MAIL.host, port: MAIL.port, passLength: MAIL.pass.length } : null; // to spot a wrong paste, never the password itself
     out.commentary = { provider: provider(), last: lastStatus };
     out.notes = S.notes || [];
+    out.comments = (S.comments || []).slice(-12).map(({ t, camp, author, text, planetId }) => ({ t, camp, author, text, planetId }));
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
     out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers: tiers.map((pa) => ({ id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, docs: docsOf(pa), teaser: pa.teaser, shared: pa.shared })) })) };
   }
@@ -711,6 +712,16 @@ http.createServer(async (req, res) => {
         const camps = b.camp === 'loyalist' || b.camp === 'renegade' ? [b.camp] : ['loyalist', 'renegade'];
         logEvt(`Focus des chroniqueurs : ${focus}${planet ? ` (${planet.name})` : ''}`);
         for (const camp of camps) stimulate('focus', { planet, side: camp, force: true, focus });
+      } else if (route === 'POST /api/admin/note-edit') {
+        const n = (S.notes || []).find((x) => x.id === b.id);
+        if (!n) throw new Error('Note inconnue');
+        const text = String(b.text || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+        if (!text) throw new Error('Texte requis');
+        const planet = b.planetId ? S.targets.find((t) => t.id === b.planetId && t.kind === 'planet') : null;
+        if (b.planetId && !planet) throw new Error('Planète inconnue');
+        n.text = text; n.planetId = planet?.id || null;
+      } else if (route === 'POST /api/admin/comment-delete') {
+        S.comments = (S.comments || []).filter((c) => c.t !== Number(b.t));
       } else if (route === 'POST /api/admin/note-delete') {
         S.notes = (S.notes || []).filter((n) => n.id !== b.id);
       } else if (route === 'POST /api/admin/mail-test') {

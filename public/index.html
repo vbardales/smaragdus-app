@@ -83,7 +83,7 @@ body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
 @media(max-width:900px){
   main,body.isadmin main{grid-template-columns:1fr}
   main>aside{display:contents!important}
-  #me,#admin{order:-2!important}
+  #me,#chron{order:-2!important}
   #side{order:-1!important}
   body.spectator main>section{display:contents!important} /* the visitor has no right column: the front summary comes first */
   body.spectator #spec{order:-2!important;margin:0 0 12px!important}
@@ -147,8 +147,6 @@ body:not(.spectator) #front{display:none!important} /* the big slider is for the
 .flags{position:absolute;transform:translate(-50%,-100%);display:flex;gap:1px;font-size:11px;line-height:1;text-shadow:0 0 3px #000}
 #sun{position:absolute;left:38%;top:49%;width:9%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:none;border:0;padding:0;cursor:default;pointer-events:auto}
 @media(prefers-reduced-motion:reduce){.orbit,.roam{animation:none}}
-body.cfgclosed main{grid-template-columns:1fr}
-body.cfgclosed main>aside{display:none!important}
 .docs .doc{border-left:2px solid var(--line);padding-left:8px;margin:6px 0}
 .docs .doc textarea{width:100%}
 .reader figure{margin:8px 0}.reader figure img{max-width:180px;max-height:140px;display:block;border:1px solid var(--line)}.reader figcaption{font-size:12px;color:var(--dim)}
@@ -165,6 +163,8 @@ dialog.planetdlg.wide{width:min(920px,96vw)}
 dialog::before{content:"";display:block;height:34px;margin:-16px -16px 12px;background:url(/img/deco/dialog-banner.webp) center/100% 100% no-repeat}
 dialog h2{border-bottom:1px solid var(--line);padding-bottom:6px;background:linear-gradient(90deg,rgba(201,169,106,.14),transparent)}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
+.note{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;border-top:1px solid var(--line);padding:6px 0}.note.editing{display:block}
+.note>.row{flex:none}
 .mwrap{position:relative}
 .mentions{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--panel);border:1px solid var(--gold);max-height:220px;overflow:auto;box-shadow:0 6px 18px #000a}
 .mention{padding:6px 10px;cursor:pointer;font-size:13px}.mention.on,.mention:hover{background:var(--hover)}
@@ -355,15 +355,16 @@ body.mapview .spot{pointer-events:none}
     <div class="maptools"><span id="zoomtools" class="hide"><button id="zin" type="button" class="iconbtn" title="Zoom avant (ou Ctrl + molette)" aria-label="Zoom avant"><svg class="ico" aria-hidden="true"><use href="#ico-zoom-in"/></svg></button> <button id="zout" type="button" class="iconbtn" title="Zoom arrière" aria-label="Zoom arrière"><svg class="ico" aria-hidden="true"><use href="#ico-zoom-out"/></svg></button> <button id="zreset" type="button" class="iconbtn" title="Vue complète" aria-label="Vue complète"><svg class="ico" aria-hidden="true"><use href="#ico-fit"/></svg></button></span> <span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span> <button id="fx-toggle" type="button" style="margin-left:auto"></button> <button id="lbl-toggle" type="button"></button></div>
     <div id="mapwrap" tabindex="-1"><div id="map"><div id="fleet"></div></div><div id="pzoom" class="panel hide"></div></div>
     <div class="panel" id="front"></div>
+    <div class="panel hide" id="admin" style="margin-top:12px"></div>
     <div class="panel hide" id="worlds" aria-label="Les sept mondes"></div>
     <div class="panel hide" id="spec" style="margin-top:12px" aria-live="polite"></div>
     <div class="panel hide" id="players" style="margin-top:12px"></div>
     <div class="panel" id="journal" style="margin-top:12px"><h2>Registre de campagne</h2><div id="log"></div></div>
   </section>
   <aside>
+    <div class="panel hide" id="chron"></div>
     <div class="panel hide" id="me" style="margin-top:12px"></div>
     <div class="panel hide" id="inbox" style="margin-top:12px"></div>
-    <div class="panel hide" id="admin" style="margin-top:12px"></div>
   </aside>
 </main>
 <p id="err" style="padding:0 16px"></p>
@@ -726,7 +727,7 @@ function render() {
   applyLabels();
   applyAmbiance();
   $('#maphint').textContent = 'Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.'; $('#maphint').classList.remove('hide'); // players and admin: the hint beside the labels button; the planet details are in a pop-in for both
-  renderSide(); renderMe(); renderInbox(); renderPlayers(); renderAdmin();
+  renderSide(); renderMe(); renderInbox(); renderPlayers(); renderChron(); renderAdmin();
 }
 
 // tier list of a planet: the loyalist and renegade camps race to each threshold, the first one wins the tier.
@@ -1292,6 +1293,83 @@ function buildPlayersUi() {
     } catch (err) { comNote.textContent = 'Échec : ' + err.message; }
     e.target.disabled = false;
   } }, 'Tester un commentaire');
+  const servicesBox = h('div', {}, h('b', {}, 'Mail'), mailState, h('div', { class: 'row' }, mailTo, mailTest), mailNote,
+    h('b', { style: 'display:block;margin-top:8px' }, 'Commentateurs'), comState, h('div', { class: 'row' }, comTest), comNote);
+  let jsonDirty = false;
+  const json = h('textarea', { style: 'height:240px;font:12px monospace;width:100%' }), jsonNote = h('p', { class: 'dim' });
+  json.oninput = () => { jsonDirty = true; };
+  const jsonSave = h('button', { onclick: async () => {
+    let c;
+    try { c = JSON.parse(json.value); } catch (e) { jsonNote.textContent = 'JSON invalide : ' + e.message; return; }
+    if (!confirm('Appliquer ce JSON ? Il remplace immédiatement la configuration de tout le système.')) return;
+    await act('PUT', '/api/admin/config', c);
+    jsonNote.textContent = $('#err').textContent || 'Configuration appliquée ✓';
+    if (!$('#err').textContent) jsonDirty = false;
+  } }, 'Sauvegarder');
+  const keep = h('input', { type: 'checkbox' }); keep.checked = true;
+  const ioNote = h('p', { class: 'dim' }), file = h('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
+  file.onchange = () => { if (file.files[0]) importFile(file.files[0], ioNote, () => keep.checked); file.value = ''; };
+  const create = h('button', { onclick: async () => {
+    await act('POST', '/api/admin/player', { name: nm.value, fluffName: fn.value, code: cd.value, factionId: fs.value, army: ar.value });
+    if (!$('#err').textContent) nm.value = fn.value = cd.value = ''; // keep the fields when the server refused
+  } }, 'Créer joueur');
+  playersEl.replaceChildren(h('h2', {}, 'Joueurs'),
+    h('div', { class: 'row tools' }, filter, count),
+    h('div', { class: 'row tools' },
+      h('button', { onclick: () => window.open('/?view=spectateur', '_blank') }, 'Ouvrir la vue observateur')),
+    h('details', { class: 'ed' }, h('summary', {}, 'Créer un joueur'), h('div', { class: 'row' }, nm, fn, cd, fs, ar, create), hint),
+    h('table', {}, h('thead', {}, h('tr', {}, ['Joueur', 'Pts', 'Actions'].map((x) => h('th', {}, x)))), rows),
+    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', {}, 'Services (mail, commentateurs)'), servicesBox),
+    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', { style: 'color:var(--red)' }, 'Zone dangereuse'),
+      sendAll,
+      h('p', { class: 'dim' }, 'Import d\'un fichier JSON : planètes (comme seed-planets.json), joueurs (comme seed-players.json) ou configuration complète.'),
+      h('label', { class: 'dim', style: 'display:block' }, keep, ' Conserver les scores (investissements et paliers remportés). Décoché : la partie est remise à zéro après l\'import.'),
+      h('div', { class: 'row' }, h('button', { onclick: () => file.click() }, 'Importer un fichier JSON…'), file), ioNote,
+      h('p', { class: 'dim' }, 'JSON brut (avancé), configuration et joueurs sans leurs points : "Sauvegarder" l\'applique immédiatement à tout le système.'), json, h('div', { class: 'row' }, jsonSave), jsonNote,
+      h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers, rapports reçus et le journal. Les joueurs, leurs points et la config sont conservés.'),
+      h('div', { class: 'row' },
+        h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
+        h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs'))));
+  return { count, rows, fs, ar, sendAll, json, isJsonDirty: () => jsonDirty, mailState, comState };
+}
+function fillPlayers() {
+  const s = state, q = playerFilter.trim().toLowerCase();
+  const fname = (p) => s.factions.find((f) => f.id === p.factionId)?.name || '';
+  const list = s.players.filter((p) => !q || [p.name, p.fluffName, p.army, fname(p), p.code, p.email, p.discord].some((v) => String(v || '').toLowerCase().includes(q)));
+  playersUi.count.textContent = `${list.length} / ${s.players.length}`;
+  playersUi.rows.replaceChildren(...list.map((p) => {
+    const a = h('input', { type: 'number', value: 5 });
+    const link = `${PUBLIC_URL}/?code=${p.code}`;
+    return h('tr', {},
+      h('td', {}, h('span', { class: 'ptsbadge', title: 'Points disponibles / total' }, `${p.left}/${p.points}`), h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army].filter(Boolean).join(' · '), ' · ', h('span', { class: 'mono' }, p.code))),
+      h('td', {}, `${p.left}/${p.points}`),
+      h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'), ' ',
+        h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ',
+        p.email ? h('button', { onclick: () => showMail(p) }, '✉ mail') : null, ' ',
+        h('button', { style: 'color:var(--red)', title: 'Corriger les points de ce joueur', onclick: () => editPoints(p) }, '⚠ pts'), ' ',
+        h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
+  }));
+}
+function renderPlayers() {
+  if (state.role !== 'admin') return playersEl.classList.add('hide');
+  playersEl.classList.remove('hide');
+  playersUi ??= buildPlayersUi();
+  playersUi.sendAll.classList.toggle('hide', !state.mailEnabled);
+  playersUi.mailState.textContent = state.mailEnabled ? `Envoi configuré : compte « ${state.mailInfo?.user} » sur ${state.mailInfo?.host}:${state.mailInfo?.port}, mot de passe de ${state.mailInfo?.passLength} caractères (vérifie qu'il n'y a pas d'espace ni de guillemet en trop).` : 'Non configuré : définir SMTP_USER et SMTP_PASS dans les paramètres du serveur.';
+  const cm = state.commentary;
+  playersUi.comState.textContent = (cm?.provider ? `API ${cm.provider.name === 'anthropic' ? 'Claude' : 'OpenAI'} (modèle ${cm.provider.model})` :'Aucune clé API : phrases préécrites.')
+    + (cm?.last ? ` Dernier commentaire : ${cm.last.source === 'api' ? 'API' : 'phrases préécrites' + (cm.last.error ? ' (' + cm.last.error + ')' : '')}.` : '');
+  if (!playersUi.isJsonDirty()) playersUi.json.value = JSON.stringify({ ...state.config, players: state.players.map(({ id, name, fluffName, email, factionId, army, code }) => ({ id, name, fluffName, email, factionId, army, code })) }, null, 1);
+  setOptions(playersUi.fs, state.factions.map((f) => [f.id, f.name]));
+  setOptions(playersUi.ar, (state.config.armies || []).map((x) => [x.name, x.name]), 'Légion');
+  const typing = playersUi.rows.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; // an amount being typed
+  if (!typing) fillPlayers();
+}
+
+// ---------- Chroniques (admin, right column): the news of the front for the scribes ----------
+let chronUi = null;
+const editingNotes = new Set();
+function buildChronUi() {
   // news of the front for the scribes: free text, optionally about a planet; it only feeds their prompt
   const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Tape @ pour mentionner un joueur, une légion ou une faction. Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
   const notePlanet = h('select', {}), noteSpeak = h('input', { type: 'checkbox' }); noteSpeak.checked = true;
@@ -1319,85 +1397,46 @@ function buildPlayersUi() {
     h('div', { class: 'row' }, attachMentions(focusIn, true), focusCamp, focusGo), focusNote);
   const notesBox = h('div', {}, h('p', { class: 'dim' }, 'Écris ici ce que tu vois sur le terrain : les chroniqueurs l\'ajoutent à leur contexte (les six dernières heures). Rien n\'est affiché tel quel aux observateurs.'),
     attachMentions(noteText), h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList, focusBox);
-  const servicesBox = h('div', {}, h('b', {}, 'Mail'), mailState, h('div', { class: 'row' }, mailTo, mailTest), mailNote,
-    h('b', { style: 'display:block;margin-top:8px' }, 'Commentateurs'), comState, h('div', { class: 'row' }, comTest), comNote);
-  let jsonDirty = false;
-  const json = h('textarea', { style: 'height:240px;font:12px monospace;width:100%' }), jsonNote = h('p', { class: 'dim' });
-  json.oninput = () => { jsonDirty = true; };
-  const jsonSave = h('button', { onclick: async () => {
-    let c;
-    try { c = JSON.parse(json.value); } catch (e) { jsonNote.textContent = 'JSON invalide : ' + e.message; return; }
-    if (!confirm('Appliquer ce JSON ? Il remplace immédiatement la configuration de tout le système.')) return;
-    await act('PUT', '/api/admin/config', c);
-    jsonNote.textContent = $('#err').textContent || 'Configuration appliquée ✓';
-    if (!$('#err').textContent) jsonDirty = false;
-  } }, 'Sauvegarder');
-  const keep = h('input', { type: 'checkbox' }); keep.checked = true;
-  const ioNote = h('p', { class: 'dim' }), file = h('input', { type: 'file', accept: '.json,application/json', style: 'display:none' });
-  file.onchange = () => { if (file.files[0]) importFile(file.files[0], ioNote, () => keep.checked); file.value = ''; };
-  const create = h('button', { onclick: async () => {
-    await act('POST', '/api/admin/player', { name: nm.value, fluffName: fn.value, code: cd.value, factionId: fs.value, army: ar.value });
-    if (!$('#err').textContent) nm.value = fn.value = cd.value = ''; // keep the fields when the server refused
-  } }, 'Créer joueur');
-  playersEl.replaceChildren(h('h2', {}, 'Joueurs'),
-    h('div', { class: 'row tools' }, filter, count),
-    h('div', { class: 'row tools' },
-      h('button', { onclick: () => window.open('/?view=spectateur', '_blank') }, 'Ouvrir la vue observateur')),
-    h('details', { class: 'ed' }, h('summary', {}, 'Créer un joueur'), h('div', { class: 'row' }, nm, fn, cd, fs, ar, create), hint),
-    h('table', {}, h('thead', {}, h('tr', {}, ['Joueur', 'Pts', 'Actions'].map((x) => h('th', {}, x)))), rows),
-    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', {}, 'Nouvelles du front (pour les chroniqueurs)'), notesBox),
-    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', {}, 'Services (mail, commentateurs)'), servicesBox),
-    h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', { style: 'color:var(--red)' }, 'Zone dangereuse'),
-      sendAll,
-      h('p', { class: 'dim' }, 'Import d\'un fichier JSON : planètes (comme seed-planets.json), joueurs (comme seed-players.json) ou configuration complète.'),
-      h('label', { class: 'dim', style: 'display:block' }, keep, ' Conserver les scores (investissements et paliers remportés). Décoché : la partie est remise à zéro après l\'import.'),
-      h('div', { class: 'row' }, h('button', { onclick: () => file.click() }, 'Importer un fichier JSON…'), file), ioNote,
-      h('p', { class: 'dim' }, 'JSON brut (avancé), configuration et joueurs sans leurs points : "Sauvegarder" l\'applique immédiatement à tout le système.'), json, h('div', { class: 'row' }, jsonSave), jsonNote,
-      h('p', { class: 'dim' }, 'Reset : efface tous les investissements, gagnants de paliers, rapports reçus et le journal. Les joueurs, leurs points et la config sont conservés.'),
-      h('div', { class: 'row' },
-        h('button', { onclick: () => confirm('Remettre la partie à zéro ?') && act('POST', '/api/admin/reset', {}) }, 'Reset partie'),
-        h('button', { onclick: () => confirm('Tout effacer, JOUEURS COMPRIS ?') && confirm('Confirmer : suppression définitive des joueurs et codes.') && act('POST', '/api/admin/reset', { deletePlayers: true }) }, 'Reset + supprimer joueurs'))));
-  return { count, rows, fs, ar, sendAll, json, isJsonDirty: () => jsonDirty, mailState, comState, notePlanet, noteList };
-}
-function fillPlayers() {
-  const s = state, q = playerFilter.trim().toLowerCase();
-  const fname = (p) => s.factions.find((f) => f.id === p.factionId)?.name || '';
-  const list = s.players.filter((p) => !q || [p.name, p.fluffName, p.army, fname(p), p.code, p.email, p.discord].some((v) => String(v || '').toLowerCase().includes(q)));
-  playersUi.count.textContent = `${list.length} / ${s.players.length}`;
-  playersUi.rows.replaceChildren(...list.map((p) => {
-    const a = h('input', { type: 'number', value: 5 });
-    const link = `${PUBLIC_URL}/?code=${p.code}`;
-    return h('tr', {},
-      h('td', {}, h('span', { class: 'ptsbadge', title: 'Points disponibles / total' }, `${p.left}/${p.points}`), h('b', {}, p.name), p.mailedAt ? h('span', { class: 'dim' }, ` ✉ envoyé ${when(p.mailedAt)}`) : null, p.fluffName ? h('div', { class: 'dim' }, p.fluffName) : null, h('div', { class: 'dim' }, [fname(p), p.army].filter(Boolean).join(' · '), ' · ', h('span', { class: 'mono' }, p.code))),
-      h('td', {}, `${p.left}/${p.points}`),
-      h('td', {}, a, h('button', { onclick: () => act('POST', '/api/admin/grant', { playerId: p.id, amount: Number(a.value), pool: 'points' }) }, '+pts'), ' ',
-        h('button', { onclick: (e) => copyLink(link, e.target) }, 'lien'), ' ',
-        p.email ? h('button', { onclick: () => showMail(p) }, '✉ mail') : null, ' ',
-        h('button', { style: 'color:var(--red)', title: 'Corriger les points de ce joueur', onclick: () => editPoints(p) }, '⚠ pts'), ' ',
-        h('button', { onclick: () => confirm(`Supprimer ${p.name} ?`) && act('POST', '/api/admin/delete-player', { playerId: p.id }) }, '✕')));
-  }));
-}
-function renderPlayers() {
-  if (state.role !== 'admin') return playersEl.classList.add('hide');
-  playersEl.classList.remove('hide');
-  playersUi ??= buildPlayersUi();
-  playersUi.sendAll.classList.toggle('hide', !state.mailEnabled);
-  setOptions(playersUi.notePlanet, state.targets.filter((t) => t.kind === 'planet').map((t) => [t.id, t.name]), 'Tout le front');
-  playersUi.noteList.replaceChildren(...(state.notes || []).slice().reverse().map((n) => h('div', { class: 'row', style: 'justify-content:space-between;align-items:flex-start;border-top:1px solid var(--line);padding:4px 0' },
-    h('span', {}, h('span', { class: 'dim' }, when(n.t) + ' '), n.planetId ? h('b', {}, (state.targets.find((t) => t.id === n.planetId)?.name || '') + ' : ') : null, n.text),
-    h('button', { title: 'Retirer cette note', onclick: () => act('POST', '/api/admin/note-delete', { id: n.id }) }, '✕'))));
-  playersUi.mailState.textContent = state.mailEnabled ? `Envoi configuré : compte « ${state.mailInfo?.user} » sur ${state.mailInfo?.host}:${state.mailInfo?.port}, mot de passe de ${state.mailInfo?.passLength} caractères (vérifie qu'il n'y a pas d'espace ni de guillemet en trop).` : 'Non configuré : définir SMTP_USER et SMTP_PASS dans les paramètres du serveur.';
-  const cm = state.commentary;
-  playersUi.comState.textContent = (cm?.provider ? `API ${cm.provider.name === 'anthropic' ? 'Claude' : 'OpenAI'} (modèle ${cm.provider.model})` :'Aucune clé API : phrases préécrites.')
-    + (cm?.last ? ` Dernier commentaire : ${cm.last.source === 'api' ? 'API' : 'phrases préécrites' + (cm.last.error ? ' (' + cm.last.error + ')' : '')}.` : '');
-  if (!playersUi.isJsonDirty()) playersUi.json.value = JSON.stringify({ ...state.config, players: state.players.map(({ id, name, fluffName, email, factionId, army, code }) => ({ id, name, fluffName, email, factionId, army, code })) }, null, 1);
-  setOptions(playersUi.fs, state.factions.map((f) => [f.id, f.name]));
-  setOptions(playersUi.ar, (state.config.armies || []).map((x) => [x.name, x.name]), 'Légion');
-  const typing = playersUi.rows.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; // an amount being typed
-  if (!typing) fillPlayers();
-}
 
-// ---------- configuration (admin, right column) ----------
+  return { box: notesBox, notePlanet, noteList };
+}
+const planetOptions = () => state.targets.filter((t) => t.kind === 'planet').map((t) => [t.id, t.name]);
+function noteRow(n) {
+  const planetName = state.targets.find((t) => t.id === n.planetId)?.name;
+  if (!editingNotes.has(n.id)) {
+    return h('div', { class: 'note' }, h('div', {}, h('span', { class: 'dim' }, when(n.t) + ' '), planetName ? h('b', {}, planetName + ' : ') : null, n.text),
+      h('div', { class: 'row' }, h('button', { title: 'Modifier cette note', onclick: () => { editingNotes.add(n.id); fillChron(true); } }, '✎'), h('button', { title: 'Retirer cette note', onclick: () => act('POST', '/api/admin/note-delete', { id: n.id }) }, '✕')));
+  }
+  const ta = h('textarea', { style: 'height:70px;width:100%' }); ta.value = n.text;
+  const sel = h('select', {}, h('option', { value: '' }, 'Tout le front'), planetOptions().map(([val, l]) => h('option', { value: val }, l))); sel.value = n.planetId || '';
+  const err = h('p', { class: 'warn' });
+  return h('div', { class: 'note editing' }, attachMentions(ta),
+    h('div', { class: 'row', style: 'margin-top:4px' }, sel,
+      h('button', { onclick: async () => { try { await api('POST', '/api/admin/note-edit', { id: n.id, text: ta.value, planetId: sel.value || null }); editingNotes.delete(n.id); await refresh(); fillChron(true); } catch (e) { err.textContent = e.message; } } }, 'Enregistrer'),
+      h('button', { onclick: () => { editingNotes.delete(n.id); fillChron(true); } }, 'Annuler')), err);
+}
+function fillChron(force) {
+  const box = $('#chron');
+  if (state.role !== 'admin') return box.classList.add('hide');
+  box.classList.remove('hide');
+  if (!chronUi) {
+    chronUi = buildChronUi();
+    chronUi.comList = h('div');
+    box.replaceChildren(h('h2', {}, 'Chroniques'), chronUi.box, h('h3', { style: 'margin:14px 0 4px' }, 'Derniers commentaires des chroniqueurs'), chronUi.comList);
+  }
+  setOptions(chronUi.notePlanet, planetOptions(), 'Tout le front');
+  if (force || !chronUi.noteList.contains(document.activeElement)) {
+    chronUi.noteList.replaceChildren(...(state.notes || []).slice().reverse().map(noteRow));
+    if (!(state.notes || []).length) chronUi.noteList.append(h('p', { class: 'dim' }, 'Aucune note pour le moment.'));
+  }
+  chronUi.comList.replaceChildren(...((state.comments || []).slice().reverse().map((c) => h('div', { class: 'note' },
+    h('div', {}, ico(c.camp === 'loyalist' ? 'loyalist' : 'renegade', true), ' ', h('span', { class: 'dim' }, when(c.t) + ' '), c.planetId ? h('b', {}, (state.targets.find((t) => t.id === c.planetId)?.name || '') + ' : ') : null, c.text),
+    h('button', { title: 'Supprimer ce commentaire de la carte', onclick: () => act('POST', '/api/admin/comment-delete', { t: c.t }) }, '✕')))));
+  if (!(state.comments || []).length) chronUi.comList.append(h('p', { class: 'dim' }, 'Aucun commentaire pour le moment.'));
+}
+const renderChron = () => fillChron(false);
+
+// ---------- configuration (admin, under the map) ----------
 let configOpen = false;
 try { configOpen = localStorage.getItem('smg-config-open') === '1'; } catch {}
 function toggleConfig() {
@@ -1409,7 +1448,6 @@ function toggleConfig() {
 }
 function renderAdmin() {
   const box = $('#admin'), isAdmin = state.role === 'admin';
-  document.body.classList.toggle('cfgclosed', isAdmin && !configOpen); // no column at all while the configuration is folded
   if (!isAdmin || !configOpen) return box.classList.add('hide');
   box.classList.remove('hide');
   if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; // do not overwrite user input

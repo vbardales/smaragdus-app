@@ -308,6 +308,19 @@ test('notes of the organizer: admin only, shown to the admin, never in the publi
   assert.ok(!(await admin('GET', '/api/state')).json.notes.some((n) => n.id === id));
 });
 
+test('notes can be edited, and a comment of the scribes can be deleted', async () => {
+  await admin('POST', '/api/admin/note', { text: 'avant' });
+  const id = (await admin('GET', '/api/state')).json.notes.find((n) => n.text === 'avant').id;
+  assert.equal((await api(roster[0].code, 'POST', '/api/admin/note-edit', { id, text: 'x' })).status, 403);
+  assert.equal((await admin('POST', '/api/admin/note-edit', { id, text: '' })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/note-edit', { id: 'inconnue', text: 'x' })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/note-edit', { id, text: 'après', planetId: 'leo' })).status, 200);
+  const n = (await admin('GET', '/api/state')).json.notes.find((x) => x.id === id);
+  assert.equal(n.text, 'après'); assert.equal(n.planetId, 'leo');
+  await admin('POST', '/api/admin/note-delete', { id });
+  assert.equal((await admin('POST', '/api/admin/comment-delete', { t: 1 })).status, 200);
+});
+
 test('scribe focus: admin only, a subject is required', async () => {
   assert.equal((await api(roster[0].code, 'POST', '/api/admin/scribe-focus', { focus: 'Blood Angels' })).status, 403);
   assert.equal((await admin('POST', '/api/admin/scribe-focus', { focus: '' })).status, 400);

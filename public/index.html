@@ -90,6 +90,7 @@ main{--mapw:100%}
 @keyframes bub{0%{opacity:0}3%{opacity:1}90%{opacity:1}100%{opacity:0;visibility:hidden}}
 #daylight{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;transition:background 2s}
 body.zoomable #map{cursor:grab}
+#map.nofx .orbit,#map.nofx .roam,#map.nofx .flags,#map.nofx .smoke,#map.nofx .bomb,#map.nofx .scorch,#map.nofx .bubble,#map.nofx #daylight{display:none}
 #map .spot{scale:calc(1 / var(--z,1))}
 body.spectator main{grid-template-columns:1fr}
 body.spectator main>section{display:contents}
@@ -145,7 +146,7 @@ body.spectator main{grid-template-columns:1fr}
 .chron{margin:8px 0;padding:6px 12px;border-left:3px solid currentColor;font-style:italic;line-height:1.55}.chron p{margin:0 0 4px;color:var(--ink,inherit)}.chron footer{font-size:12px;opacity:.8;font-style:normal}
 .spot.spec{pointer-events:none}
 .tug{height:14px;background:#e0605f;border:1px solid var(--line);margin:8px 0}.tug i{display:block;height:100%;background:#e0c040}
-.maptools{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-bottom:6px}#maphint{font-size:13px}#lbl-toggle{margin-left:auto}body.mapview .maptools{display:none}
+.maptools{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-bottom:6px}#maphint{font-size:13px}body.mapview .maptools{display:none}
 /* labels off: only the map and the clickable planets remain (the name shows as a tooltip) */
 #map.nolabels .spot span{visibility:hidden}
 .spot.up{justify-content:flex-start;padding:2px 0 0}
@@ -267,7 +268,7 @@ body.mapview .spot{pointer-events:none}
 
 <main id="app" class="hide">
   <section>
-    <div class="maptools"><span id="zoomtools" class="hide"><button id="zin" type="button" title="Zoom avant">+</button> <button id="zout" type="button" title="Zoom arrière">−</button> <button id="zreset" type="button" title="Vue complète">⟲</button></span> <span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span> <button id="lbl-toggle" type="button"></button></div>
+    <div class="maptools"><span id="zoomtools" class="hide"><button id="zin" type="button" title="Zoom avant">+</button> <button id="zout" type="button" title="Zoom arrière">−</button> <button id="zreset" type="button" title="Vue complète">⟲</button></span> <span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span> <button id="fx-toggle" type="button" style="margin-left:auto"></button> <button id="lbl-toggle" type="button"></button></div>
     <div id="mapwrap"><div id="map"><div id="fleet"></div></div><div id="pzoom" class="panel hide"></div></div>
     <div class="panel" id="front"></div>
     <div class="panel hide" id="spec" style="margin-top:12px"></div>
@@ -432,7 +433,18 @@ function applyLabels() {
   $('#map').classList.toggle('nolabels', labelsOff);
   $('#lbl-toggle').textContent = labelsOff ? 'Afficher les annotations' : 'Masquer les annotations';
   $('#lbl-toggle').setAttribute('aria-pressed', String(labelsOff));
+  $('#map').classList.toggle('nofx', fxOff);
+  $('#fx-toggle').textContent = fxOff ? 'Afficher les animations' : 'Masquer les animations';
+  $('#fx-toggle').setAttribute('aria-pressed', String(fxOff));
 }
+// ships, flags, smoke, bombs, bubbles and the sunlight can be turned off (kept in the browser)
+let fxOff = false;
+try { fxOff = localStorage.getItem('smg-nofx') === '1'; } catch {}
+$('#fx-toggle').onclick = () => {
+  fxOff = !fxOff;
+  try { localStorage.setItem('smg-nofx', fxOff ? '1' : '0'); } catch {}
+  applyLabels();
+};
 $('#lbl-toggle').onclick = () => {
   labelsOff = !labelsOff;
   try { localStorage.setItem('smg-nolabels', labelsOff ? '1' : '0'); } catch {}

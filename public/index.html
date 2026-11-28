@@ -469,7 +469,7 @@ function resetZoom() { Z = { z: 1, x: 0, y: 0 }; applyZoom(true); specPlanetId =
 $('#zin').onclick = () => zoomAt(wrap.clientWidth / 2, wrap.clientHeight / 2, Z.z * 1.5, true);
 $('#zout').onclick = () => zoomAt(wrap.clientWidth / 2, wrap.clientHeight / 2, Z.z / 1.5, true);
 $('#zreset').onclick = resetZoom;
-wrap.addEventListener('wheel', (e) => { if (!spectator) return; e.preventDefault(); const r = wrap.getBoundingClientRect(); zoomAt(e.clientX - r.left, e.clientY - r.top, Z.z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), false); }, { passive: false });
+wrap.addEventListener('wheel', (e) => { if (!spectator || !(e.ctrlKey || e.metaKey)) return; e.preventDefault(); const r = wrap.getBoundingClientRect(); zoomAt(e.clientX - r.left, e.clientY - r.top, Z.z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), false); }, { passive: false });
 let drag = null;
 wrap.addEventListener('pointerdown', (e) => { if (spectator && Z.z > 1 && !e.target.closest('#pzoom')) { drag = { x: e.clientX, y: e.clientY, zx: Z.x, zy: Z.y }; dragged = false; } });
 window.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 4) dragged = true; if (dragged) { Z.x = drag.zx + dx; Z.y = drag.zy + dy; applyZoom(false); } });
@@ -819,7 +819,7 @@ const cls = (d) => (d ? ' tpl-' + d.template + (d.cssClass ? ' w-' + d.cssClass 
 function docNode(d, m) {
   const c = cls(d);
   if (d.type === 'fluff') return h('div', { class: 'fluff' + c }, fluffNodes(d.text, d.template === 'vox'));
-  if (d.type === 'image') return h('figure', { class: 'docimg' + c }, h('a', { href: d.url, target: '_blank' }, h('img', { src: d.url, alt: d.caption || '' })), d.caption ? h('figcaption', {}, d.caption) : null);
+  if (d.type === 'image') return h('figure', { class: 'docimg' + c }, h('a', { href: /^(\/|https?:\/\/)/.test(d.url) ? d.url : '#', target: '_blank' }, h('img', { src: d.url, alt: d.caption || '' })), d.caption ? h('figcaption', {}, d.caption) : null);
   if (d.type === 'prize') return h('div', { class: 'box' + c }, h('b', {}, '❖ Dotation'), d.text ? h('div', {}, d.text) : null, h('div', { class: 'dim' }, m.won ? 'Attribuée à vous' : m.winnerName ? `Tirée au sort : ${m.winnerName}` : 'Tirage à venir'));
   if (d.type === 'reclass') return h('div', { class: 'box' + c }, h('b', {}, 'Reclassement de la planète'), h('div', {}, d.text));
   return h('div', { class: 'box' + c }, h('b', {}, d.title || 'Doctrine acquise'), d.rule ? h('div', {}, h('i', {}, d.rule)) : null, d.text ? h('div', {}, d.text) : null);
@@ -1143,7 +1143,7 @@ function buildPlayersUi() {
   playersEl.replaceChildren(h('h2', {}, 'Joueurs'),
     h('div', { class: 'row tools' }, filter, count),
     h('div', { class: 'row tools' },
-      h('button', { onclick: () => window.open('/?view=map', 'smaragdus-map', 'popup,width=1280,height=860') }, 'Ouvrir la carte seule (fenêtre)')),
+      h('button', { onclick: () => window.open('/?view=spectateur', '_blank') }, 'Ouvrir la vue observateur')),
     h('details', { class: 'ed' }, h('summary', {}, 'Créer un joueur'), h('div', { class: 'row' }, nm, fn, cd, fs, ar, create), hint),
     h('table', {}, h('thead', {}, h('tr', {}, ['Joueur', 'Pts', 'Actions'].map((x) => h('th', {}, x)))), rows),
     h('details', { class: 'ed', style: 'margin-top:12px' }, h('summary', {}, 'Services (mail, commentateurs)'), servicesBox),
@@ -1182,7 +1182,7 @@ function renderPlayers() {
   playersEl.classList.remove('hide');
   playersUi ??= buildPlayersUi();
   playersUi.sendAll.classList.toggle('hide', !state.mailEnabled);
-  playersUi.mailState.textContent = state.mailEnabled ? 'Envoi configuré (SMTP).' : 'Non configuré : définir SMTP_USER et SMTP_PASS dans les paramètres du serveur.';
+  playersUi.mailState.textContent = state.mailEnabled ? `Envoi configuré : compte « ${state.mailInfo?.user} » sur ${state.mailInfo?.host}:${state.mailInfo?.port}, mot de passe de ${state.mailInfo?.passLength} caractères (vérifie qu'il n'y a pas d'espace ni de guillemet en trop).` : 'Non configuré : définir SMTP_USER et SMTP_PASS dans les paramètres du serveur.';
   const cm = state.commentary;
   playersUi.comState.textContent = (cm?.provider ? `API ${cm.provider.name === 'anthropic' ? 'Claude' : 'OpenAI'} (modèle ${cm.provider.model})` :'Aucune clé API : phrases préécrites.')
     + (cm?.last ? ` Dernier commentaire : ${cm.last.source === 'api' ? 'API' : 'phrases préécrites' + (cm.last.error ? ' (' + cm.last.error + ')' : '')}.` : '');

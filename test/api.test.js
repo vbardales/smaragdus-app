@@ -258,7 +258,21 @@ test('admin corrections: player total and planet score can be set, never below w
   assert.equal(g.total, 12, 'the score is the one typed');
   assert.equal((await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius-loyalist', value: -1 })).status, 400);
   assert.equal((await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius', value: 3 })).status, 400, 'a planet is not a gauge');
-  await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius-loyalist', value: 4 }); // back to the invested points
+  await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius-loyalist', value: 12 });
+  assert.equal((await admin('POST', '/api/admin/reset', {})).status, 200);
+  const after = (await st()).targets.find((x) => x.id === 'scorpius-loyalist');
+  assert.equal(after.total, 0, 'a reset also drops the score corrections');
+});
+
+test('the visitor view only shows the excerpts of shared tiers, and image links are limited to http(s) or site paths', async () => {
+  const pub = (await api('', 'GET', '/api/public')).json;
+  assert.ok(pub.planets.every((p) => Array.isArray(p.excerpts)));
+  const cfg = (await admin('GET', '/api/state')).json.config;
+  const tier = cfg.targets.find((x) => x.kind === 'planet').tiers[1];
+  tier.docs = [{ type: 'image', url: 'javascript:alert(1)' }];
+  assert.equal((await admin('PUT', '/api/admin/config', cfg)).status, 200);
+  const back = (await admin('GET', '/api/state')).json.config.targets.find((x) => x.kind === 'planet').tiers[1];
+  assert.equal(back.docs[0].url, '', 'a javascript: link is dropped');
 });
 
 test('the configuration JSON may carry players: imported with the configuration, all or nothing', async () => {

@@ -268,6 +268,7 @@ function view(role, me) {
   { const { planets, share, idle, fx } = frontOf(); out.front = { planets: planets.map(({ id, x, y, share, ships, flags }) => ({ id, x, y, share, ships, flags })), share, idle, fx }; }
   if (isAdmin) {
     out.mailEnabled = mailEnabled;
+    out.mailInfo = mailEnabled ? { user: MAIL.user, from: MAIL.from, host: MAIL.host, port: MAIL.port, passLength: MAIL.pass.length } : null; // to spot a wrong paste, never the password itself
     out.commentary = { provider: provider(), last: lastStatus };
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
     out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers: tiers.map((pa) => ({ id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, docs: docsOf(pa), teaser: pa.teaser, shared: pa.shared })) })) };
@@ -314,7 +315,7 @@ function frontOf() {
     const won = (side) => t.tiers.filter((pa) => pa.unlocked && pa.winnerSide === side).length;
     const l = sideTotal(t, 'loyalist'), r = sideTotal(t, 'renegade'), sum = l + r, share = sum ? l / sum : null, top = Math.max(1, ...t.tiers.map((pa) => pa.threshold));
     return { id: t.id, name: t.name, x: t.x, y: t.y, lbl: t.lbl, share, lead: share === null ? 'none' : share > 0.6 ? 'loyalist' : share < 0.4 ? 'renegade' : 'even',
-      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature(t, null), excerpts: excerptsOf(t), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
+      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature({ tiers: t.tiers.filter((pa) => pa.shared) }, null), excerpts: excerptsOf(t), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
   });
   const sum = (k) => planets.reduce((n, p) => n + p[k], 0);
   const tot = { loyalist: sum('_l'), renegade: sum('_r'), tiersLoyalist: sum('_tl'), tiersRenegade: sum('_tr') };
@@ -324,9 +325,10 @@ function frontOf() {
 }
 const publicView = frontOf;
 
-// A part of the story for the visitor: the first lines of the document of each tier a camp has unlocked (never the later ones, nor prizes or rules).
+// A part of the story for the visitor: the first lines of the document of each shared tier (first contact) a camp has unlocked. Those are known to both camps;
+// the tiers won in a race stay secret from the other camp, so they never reach the public view. Never prizes or rules either.
 function excerptsOf(t) {
-  return t.tiers.filter((pa) => pa.unlocked).sort((a, b) => a.threshold - b.threshold).map((pa) => {
+  return t.tiers.filter((pa) => pa.unlocked && pa.shared).sort((a, b) => a.threshold - b.threshold).map((pa) => {
     const raw = docsOf(pa).find((d) => d.type === 'fluff')?.text || '';
     const clean = raw.split('\n').filter((l) => l.trim() && !/^CLASSIFICATION|^\[\d\d:\d\d:\d\d\]|^\+\+/.test(l.trim())).join(' ').replace(/\s+/g, ' ').trim();
     if (!clean) return null;
@@ -349,7 +351,7 @@ function recentEvents() {
     let m, e = null;
     if ((m = /^PALIER (.+?) « .* » \(\d+\) franchi par les (Loyalistes|Renégats)/.exec(l.text))) e = `un palier a été franchi sur ${m[1]} par les ${m[2].toLowerCase()}`;
     else if ((m = /^Premier contact établi sur (.+)$/.exec(l.text))) e = `premier contact établi sur ${m[1]}`;
-    else if ((m = /→ (.+?) · (Loyaliste|Renégat) : \+/.exec(l.text))) e = `des renforts ${m[2].toLowerCase()}s arrivent sur ${m[1]}`;
+    else if ((m = /→ (.+?) · (Loyaliste|Renégat|Traître) : \+/.exec(l.text))) e = `des renforts ${m[2] === 'Traître' ? 'renégat' : m[2].toLowerCase()}s arrivent sur ${m[1]}`;
     else if ((m = /détruit les points des (Loyalistes|Renégats) sur (.+?) :/.exec(l.text))) e = `les points des ${m[1].toLowerCase()} ont été détruits sur ${m[2]}`;
     if (e && !seen.has(e)) { seen.add(e); out.push(e); }
   }
@@ -449,7 +451,7 @@ const worldClass = (v) => str(v).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice
 function docsOf(pa) {
   const blank = { id: '', type: '', title: '', text: '', url: '', caption: '', template: 'standard', cssClass: '', rule: '' };
   if (Array.isArray(pa.docs)) {
-    return pa.docs.filter((d) => DOC_TYPES.includes(d?.type)).map((d, i) => ({ ...blank, id: str(d.id) || `${pa.id}-d${i}`, type: d.type, title: str(d.title).slice(0, 200), text: str(d.text), url: str(d.url).slice(0, 500), caption: str(d.caption).slice(0, 300), template: d.template === 'vox' ? 'vox' : 'standard', cssClass: worldClass(d.cssClass), rule: str(d.rule).slice(0, 200) }));
+    return pa.docs.filter((d) => DOC_TYPES.includes(d?.type)).map((d, i) => ({ ...blank, id: str(d.id) || `${pa.id}-d${i}`, type: d.type, title: str(d.title).slice(0, 200), text: str(d.text), url: /^(\/|https?:\/\/)/.test(str(d.url).trim()) ? str(d.url).trim().slice(0, 500) : '', caption: str(d.caption).slice(0, 300), template: d.template === 'vox' ? 'vox' : 'standard', cssClass: worldClass(d.cssClass), rule: str(d.rule).slice(0, 200) }));
   }
   const out = [];
   if (str(pa.fluff).trim()) out.push({ ...blank, type: 'fluff', text: str(pa.fluff) });
@@ -562,6 +564,8 @@ async function body(req) {
 }
 
 S.comments ??= []; S.fx ??= [];
+for (const t of S.targets) if (t.kind === 'gauge') t.name = t.name.replace(/Traître$/, 'Renégat'); // names saved before the rename
+for (const f of S.factions) if (f.name === 'Traître') f.name = 'Renégat';
 for (const t of S.targets) if (t.kind === 'planet') settle(t); // delivers reports missing after a migration
 if (loadFailed) console.error(`Not writing ${DATA_FILE} at startup: it could not be read, fix or remove it first.`); else save(); // persist the seed or the migration
 http.createServer(async (req, res) => {
@@ -675,7 +679,8 @@ http.createServer(async (req, res) => {
         for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; pa.camps = []; }
         if (b.deletePlayers) S.players = {};
         else for (const p of Object.values(S.players)) { p.alloc = {}; p.abilityUsed = false; p.inbox = []; }
-        S.log = [];
+        S.log = []; S.fx = []; S.comments = [];
+        for (const t of S.targets) if (t.kind === 'gauge') t.adjust = 0; // score corrections of the admin go too
         logEvt(b.deletePlayers ? 'RESET complet (joueurs supprimés)' : 'RESET : investissements et gagnants effacés', 'public');
       } else if (route === 'POST /api/admin/delete-player') {
         delete S.players[b.playerId];

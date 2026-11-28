@@ -166,6 +166,14 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);wi
 .note{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;border-top:1px solid var(--line);padding:6px 0}.note.editing{display:block}
 .note>.row{flex:none}
 .mwrap{position:relative}
+.mwrap>textarea,.mwrap>input{position:relative;background:transparent!important;width:100%;display:block}
+.mirror{position:absolute;inset:0;padding:6px 8px;border:1px solid transparent;font:inherit;white-space:pre-wrap;overflow-wrap:break-word;overflow:hidden;color:transparent;background:var(--input);pointer-events:none}
+.mirror.inline{white-space:pre}
+.mchip{border-radius:3px;font-style:normal}
+mark.mchip{color:transparent}
+.k-player{background:rgba(122,215,240,.30);color:#7AD7F0}.k-faction{background:rgba(180,140,242,.32);color:#c4a5f5}.k-planet{background:rgba(125,223,143,.30);color:#8ee59f}
+.k-camp-ly{background:rgba(230,195,106,.34);color:#e6c36a}.k-camp-rn{background:rgba(224,69,47,.34);color:#f0725f}
+mark.mchip.k-player,mark.mchip.k-faction,mark.mchip.k-planet,mark.mchip.k-camp-ly,mark.mchip.k-camp-rn{color:transparent}
 .mentions{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--panel);border:1px solid var(--gold);max-height:220px;overflow:auto;box-shadow:0 6px 18px #000a}
 .mention{padding:6px 10px;cursor:pointer;font-size:13px}.mention.on,.mention:hover{background:var(--hover)}
 dialog iframe.preview{width:100%;height:520px;border:1px solid var(--line);margin-top:10px;background:#0b0a0d}
@@ -510,7 +518,7 @@ const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https
 // position of the label of a planet (field lbl): under it by default, 'up' above it, 'middle' on it
 const lblClass = (l) => (l === 'up' ? ' up' : l === 'middle' ? ' mid' : '');
 // a title without its leading article ("Le Maréchal-Prétorien…" becomes "Maréchal-Prétorien…"), for display only
-const noArticle = (t) => String(t).trim().replace(/^(les|le|la|l['’])s*/i, '').replace(/^./, (c) => c.toUpperCase());
+const noArticle = (t) => String(t).trim().replace(/^(les|le|la|l['’])\s*/i, '').replace(/^./, (c) => c.toUpperCase());
 const SIDE = { loyalist: 'Loyalistes', renegade: 'Renégats' };
 // the name of a camp with its emblem: the simple one inside a sentence, the fine one (big) on its own line
 const campName = (side, big) => h('span', { class: 'camptag ' + (side === 'loyalist' ? 'ly' : 'rn') + (big ? ' big' : '') }, ico(side === 'loyalist' ? 'loyalist' : 'renegade', !big), ' ', SIDE[side]);
@@ -1232,14 +1240,32 @@ function planetFromText(text) {
 }
 function mentionItems() {
   const seen = new Set(), out = [];
-  const add = (label, sub) => { const k = norm(label); if (label && !seen.has(k)) { seen.add(k); out.push({ label, sub }); } };
-  for (const t of (state.targets || []).filter((x) => x.kind === 'planet')) add(t.name, 'Planète');
-  for (const p of state.players || []) add(noArticle((p.fluffName || p.name).split(',')[0]), 'Joueur · ' + (p.army || p.name));
-  for (const a of state.config?.armies || []) add(a.name, 'Légion');
-  for (const f of state.factions || []) add(f.name, 'Faction');
-  add('Loyalistes', 'Camp'); add('Renégats', 'Camp');
+  const add = (label, sub, kind) => { const k = norm(label); if (label && !seen.has(k)) { seen.add(k); out.push({ label, sub, kind }); } };
+  for (const t of (state.targets || []).filter((x) => x.kind === 'planet')) add(t.name, 'Planète', 'planet');
+  for (const p of state.players || []) add(noArticle((p.fluffName || p.name).split(',')[0]), 'Joueur · ' + (p.army || p.name), 'player');
+  for (const a of state.config?.armies || []) add(a.name, 'Légion', 'faction');
+  for (const f of state.factions || []) add(f.name, 'Faction', 'faction');
+  add('Loyalistes', 'Camp', 'camp-ly'); add('Renégats', 'Camp', 'camp-rn');
   return out;
 }
+// the mentions of a text, found by their exact name after an @
+function mentionParts(text) {
+  const items = mentionItems(), byName = new Map(items.map((i) => [norm(i.label), i.kind]));
+  const labels = items.map((i) => i.label).sort((a, b) => b.length - a.length).map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (!labels.length) return [{ text }];
+  const re = new RegExp('@(' + labels.join('|') + ')(?![\\p{L}\\p{N}])', 'giu'), out = [];
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push({ text: text.slice(last, m.index) });
+    out.push({ text: m[0], kind: byName.get(norm(m[1])) || '' });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push({ text: text.slice(last) });
+  return out;
+}
+const mentionNodes = (text) => mentionParts(text).map((p) => (p.kind ? h('span', { class: 'mchip k-' + p.kind }, p.text) : p.text));
+const mentionHtml = (text) => mentionParts(text).map((p) => { const e = p.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); return p.kind ? `<mark class="mchip k-${p.kind}">${e}</mark>` : e; }).join('');
+
 function attachMentions(ta, inline) {
   const box = h('div', { class: 'mentions hide', role: 'listbox' });
   let items = [], sel = 0, start = -1;
@@ -1251,7 +1277,7 @@ function attachMentions(ta, inline) {
     ta.selectionStart = ta.selectionEnd = start + ins.length;
     close(); ta.focus(); ta.dispatchEvent(new Event('input'));
   };
-  const draw = () => box.replaceChildren(...items.map((it, i) => h('div', { class: 'mention' + (i === sel ? ' on' : ''), role: 'option', onmousedown: (e) => { e.preventDefault(); pick(i); } }, h('b', {}, it.label), h('span', { class: 'dim' }, ' ' + it.sub))));
+  const draw = () => box.replaceChildren(...items.map((it, i) => h('div', { class: 'mention' + (i === sel ? ' on' : ''), role: 'option', onmousedown: (e) => { e.preventDefault(); pick(i); } }, h('b', { class: 'mchip k-' + it.kind }, ' ' + it.label + ' '), h('span', { class: 'dim' }, ' ' + it.sub))));
   ta.addEventListener('input', () => {
     const before = ta.value.slice(0, ta.selectionStart), m = /(?:^|\s)@([^\n@]{0,30})$/.exec(before);
     if (!m) return close();
@@ -1268,7 +1294,12 @@ function attachMentions(ta, inline) {
     else if (e.key === 'Escape') { e.preventDefault(); close(); }
   });
   ta.addEventListener('blur', () => setTimeout(close, 120));
-  return h('div', { class: 'mwrap', style: inline ? 'flex:1;min-width:160px' : '' }, ta, box);
+  // the colours are drawn on a copy of the text behind the field (a field cannot colour a part of its own text)
+  const mirror = h('div', { class: 'mirror' + (inline ? ' inline' : ''), 'aria-hidden': 'true' });
+  const sync = () => { mirror.innerHTML = mentionHtml(ta.value) + '\u200b'; mirror.scrollTop = ta.scrollTop; mirror.scrollLeft = ta.scrollLeft; };
+  ta.addEventListener('input', sync); ta.addEventListener('scroll', sync); ta.addEventListener('focus', sync);
+  sync();
+  return h('div', { class: 'mwrap', style: inline ? 'flex:1;min-width:160px' : '' }, mirror, ta, box);
 }
 
 function buildPlayersUi() {
@@ -1383,13 +1414,13 @@ let chronUi = null;
 const editingNotes = new Set();
 function buildChronUi() {
   // news of the front for the scribes: free text, optionally about a planet; it only feeds their prompt
-  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Tape @ pour mentionner une planète, un joueur, une légion ou une faction (la première planète citée rattache la note à sa fiche). Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
+  const noteText = h('textarea', { placeholder: 'Ex. : « Grosse bataille sur Grus, les Blood Angels défendent la cité de Xian contre les World Eaters. » Tape @ pour mentionner une planète (vert), un joueur (bleu), une légion ou une faction (violet), un camp (or ou rouge) (la première planète citée rattache la note à sa fiche). Les chroniqueurs s\'en inspirent, sans le citer ni donner de chiffre.', style: 'height:90px;width:100%' });
   const noteSpeak = h('input', { type: 'checkbox' }); noteSpeak.checked = true;
   const noteList = h('div'), noteNote = h('p', { class: 'dim' });
   const noteSend = h('button', { onclick: async (e) => {
     if (!noteText.value.trim()) return;
     e.target.disabled = true;
-    try { await api('POST', '/api/admin/note', { text: noteText.value, planetId: planetFromText(noteText.value), speak: noteSpeak.checked }); noteText.value = ''; noteNote.textContent = 'Note transmise aux chroniqueurs ✓'; await refresh(); }
+    try { await api('POST', '/api/admin/note', { text: noteText.value, planetId: planetFromText(noteText.value), speak: noteSpeak.checked }); noteText.value = ''; noteText.dispatchEvent(new Event('input')); noteNote.textContent = 'Note transmise aux chroniqueurs ✓'; await refresh(); }
     catch (err) { noteNote.textContent = 'Échec : ' + err.message; }
     e.target.disabled = false;
   } }, 'Envoyer aux chroniqueurs');
@@ -1415,7 +1446,7 @@ function buildChronUi() {
 function noteRow(n) {
   const planetName = state.targets.find((t) => t.id === n.planetId)?.name;
   if (!editingNotes.has(n.id)) {
-    return h('div', { class: 'note' }, h('div', {}, h('span', { class: 'dim' }, when(n.t) + ' '), planetName ? h('b', {}, planetName + ' : ') : null, n.text),
+    return h('div', { class: 'note' }, h('div', {}, h('span', { class: 'dim' }, when(n.t) + ' '), planetName ? h('b', {}, planetName + ' : ') : null, ...mentionNodes(n.text)),
       h('div', { class: 'row' }, h('button', { title: 'Modifier cette note', onclick: () => { editingNotes.add(n.id); fillChron(true); } }, '✎'), h('button', { title: 'Retirer cette note', onclick: () => act('POST', '/api/admin/note-delete', { id: n.id }) }, '✕')));
   }
   const ta = h('textarea', { style: 'height:70px;width:100%' }); ta.value = n.text;

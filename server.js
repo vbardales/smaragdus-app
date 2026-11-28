@@ -720,10 +720,13 @@ http.createServer(async (req, res) => {
         const planet = b.planetId ? S.targets.find((t) => t.id === b.planetId && t.kind === 'planet') : null;
         if (b.planetId && !planet) throw new Error('Planète inconnue');
         n.text = text; n.planetId = planet?.id || null;
+        stimulate('note', { planet, force: true }); // an edited note makes the scribes speak again
       } else if (route === 'POST /api/admin/comment-delete') {
         S.comments = (S.comments || []).filter((c) => c.t !== Number(b.t));
       } else if (route === 'POST /api/admin/note-delete') {
+        const gone = (S.notes || []).find((n) => n.id === b.id);
         S.notes = (S.notes || []).filter((n) => n.id !== b.id);
+        if (gone) stimulate('note', { planet: S.targets.find((t) => t.id === gone.planetId) || null, force: true }); // so does a removed one
       } else if (route === 'POST /api/admin/mail-test') {
         const to = String(b.to || '').trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) throw new Error('Adresse invalide');

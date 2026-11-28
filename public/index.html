@@ -202,6 +202,12 @@ details:not([open])>.hero .hn0{border-bottom:0;margin-bottom:0;padding-bottom:0;
 .stepper{display:inline-flex;align-items:stretch;gap:4px}.stepper input{width:64px;text-align:center;-moz-appearance:textfield}.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stepper .step{min-width:34px;font-size:18px;line-height:1;padding:0 8px}
 .mlogo svg,.mlogo img{width:20px;height:20px;display:block;filter:drop-shadow(0 0 2px #000)}
 img.ico{object-fit:contain}
+img.ico.wide{width:auto;height:1.15em}
+.mlogo img.wide{width:auto;height:11px}
+#front .camp .ico.wide{width:auto;height:30px}
+.chron .ico.wide{width:auto;height:22px;margin-top:6px}
+.hero .emblem .ico.wide{width:auto;height:22px}
+details:not([open])>.hero .emblem .ico.wide{height:16px}
 .gl.idle .mlogo{opacity:.5}
 .ico{width:1.15em;height:1.15em;vertical-align:-.22em;flex:none}
 button .ico{margin-right:2px}.iconbtn{padding:6px 9px;line-height:0}.iconbtn .ico{width:18px;height:18px;margin:0;vertical-align:middle}
@@ -324,6 +330,8 @@ const h = (tag, attrs = {}, ...kids) => {
 const ico = (name, small) => {
   // the renegade emblem is a picture (bronze shield); the other pictograms come from the sprite
   if (name === 'renegade') return h('img', { class: 'ico', src: `/img/deco/logo-renegade${small ? '-sm' : ''}.webp`, alt: '', draggable: 'false' });
+  // the imperial aquila is wide (about 2.6 times as wide as high): it keeps its ratio in a slot made for squares
+  if (name === 'loyalist') return h('img', { class: 'ico wide', src: `/img/deco/logo-loyalist${small ? '-sm' : ''}.webp`, alt: '', draggable: 'false' });
   const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
   svg.setAttribute('class', 'ico'); svg.setAttribute('aria-hidden', 'true');
   use.setAttribute('href', '#ico-' + name); svg.append(use);

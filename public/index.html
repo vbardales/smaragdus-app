@@ -65,6 +65,7 @@ body.isadmin main{grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px)}
   .maptools{flex-wrap:wrap;gap:6px}
   #maphint{order:5;flex-basis:100%}
   .maptools button:not(.iconbtn){font-size:12px;padding:6px 8px}
+  .maptools .full{display:none} /* "Masquer les" is dropped: the icon and the noun are enough */
   .maptools #fx-toggle{margin-left:0!important}
   #front{display:grid!important;grid-template-columns:1fr 1fr;gap:6px 8px;padding:8px}
   #front .bar{grid-column:1/-1;grid-row:2;margin-top:22px!important}
@@ -497,10 +498,10 @@ let labelsOff = false;
 try { labelsOff = localStorage.getItem('smg-nolabels') === '1'; } catch {}
 function applyLabels() {
   $('#map').classList.toggle('nolabels', labelsOff);
-  $('#lbl-toggle').replaceChildren(ico('label'), labelsOff ? ' Afficher les annotations' : ' Masquer les annotations');
+  $('#lbl-toggle').replaceChildren(ico('label'), ' ', h('span', { class: 'full' }, labelsOff ? 'Afficher les ' : 'Masquer les '), 'annotations');
   $('#lbl-toggle').setAttribute('aria-pressed', String(labelsOff));
   $('#map').classList.toggle('nofx', fxOff);
-  $('#fx-toggle').replaceChildren(ico('orbit'), fxOff ? ' Afficher les animations' : ' Masquer les animations');
+  $('#fx-toggle').replaceChildren(ico('orbit'), ' ', h('span', { class: 'full' }, fxOff ? 'Afficher les ' : 'Masquer les '), 'animations');
   $('#fx-toggle').setAttribute('aria-pressed', String(fxOff));
 }
 // ships, flags, smoke, bombs, bubbles and the sunlight can be turned off (kept in the browser)

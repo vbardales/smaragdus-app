@@ -1227,7 +1227,7 @@ function mentionItems() {
   add('Loyalistes', 'Camp'); add('Renégats', 'Camp');
   return out;
 }
-function attachMentions(ta) {
+function attachMentions(ta, inline) {
   const box = h('div', { class: 'mentions hide', role: 'listbox' });
   let items = [], sel = 0, start = -1;
   const close = () => { box.classList.add('hide'); items = []; start = -1; };
@@ -1255,7 +1255,7 @@ function attachMentions(ta) {
     else if (e.key === 'Escape') { e.preventDefault(); close(); }
   });
   ta.addEventListener('blur', () => setTimeout(close, 120));
-  return h('div', { class: 'mwrap' }, ta, box);
+  return h('div', { class: 'mwrap', style: inline ? 'flex:1;min-width:160px' : '' }, ta, box);
 }
 
 function buildPlayersUi() {
@@ -1303,8 +1303,22 @@ function buildPlayersUi() {
     catch (err) { noteNote.textContent = 'Échec : ' + err.message; }
     e.target.disabled = false;
   } }, 'Envoyer aux chroniqueurs');
+  // focus: ask the scribes to talk about one subject now
+  const focusIn = h('input', { placeholder: '@ joueur, légion, faction, camp…', style: 'flex:1;min-width:160px' });
+  const focusCamp = h('select', {}, [['', 'Les deux chroniqueurs'], ['loyalist', 'Frère Hesper'], ['renegade', 'Le Scribe de la Fosse']].map(([val, l]) => h('option', { value: val }, l)));
+  const focusNote = h('p', { class: 'dim' });
+  const focusGo = h('button', { onclick: async (e) => {
+    if (!focusIn.value.trim()) return;
+    e.target.disabled = true;
+    try { await api('POST', '/api/admin/scribe-focus', { focus: focusIn.value, camp: focusCamp.value, planetId: notePlanet.value || null }); focusNote.textContent = 'Demande envoyée : la réponse arrive en bulle sur la carte et dans la fiche de la planète choisie.'; }
+    catch (err) { focusNote.textContent = 'Échec : ' + err.message; }
+    e.target.disabled = false;
+  } }, 'Faire parler');
+  const focusBox = h('div', { style: 'margin-top:10px;border-top:1px solid var(--line);padding-top:8px' }, h('b', {}, 'Focus sur un sujet'),
+    h('p', { class: 'dim' }, 'Les chroniqueurs donnent tout de suite leur avis sur un joueur, une légion, une faction ou un camp (planète : celle du sélecteur ci-dessus, sinon tout le front).'),
+    h('div', { class: 'row' }, attachMentions(focusIn, true), focusCamp, focusGo), focusNote);
   const notesBox = h('div', {}, h('p', { class: 'dim' }, 'Écris ici ce que tu vois sur le terrain : les chroniqueurs l\'ajoutent à leur contexte (les six dernières heures). Rien n\'est affiché tel quel aux observateurs.'),
-    attachMentions(noteText), h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList);
+    attachMentions(noteText), h('div', { class: 'row', style: 'margin-top:6px' }, notePlanet, h('label', { class: 'dim' }, noteSpeak, ' faire commenter tout de suite'), noteSend), noteNote, noteList, focusBox);
   const servicesBox = h('div', {}, h('b', {}, 'Mail'), mailState, h('div', { class: 'row' }, mailTo, mailTest), mailNote,
     h('b', { style: 'display:block;margin-top:8px' }, 'Commentateurs'), comState, h('div', { class: 'row' }, comTest), comNote);
   let jsonDirty = false;

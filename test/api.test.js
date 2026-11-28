@@ -308,6 +308,12 @@ test('notes of the organizer: admin only, shown to the admin, never in the publi
   assert.ok(!(await admin('GET', '/api/state')).json.notes.some((n) => n.id === id));
 });
 
+test('scribe focus: admin only, a subject is required', async () => {
+  assert.equal((await api(roster[0].code, 'POST', '/api/admin/scribe-focus', { focus: 'Blood Angels' })).status, 403);
+  assert.equal((await admin('POST', '/api/admin/scribe-focus', { focus: '' })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/scribe-focus', { focus: '@Blood Angels', camp: 'renegade' })).status, 200);
+});
+
 // ---------- themed mail ----------
 test('the mail preview is a themed HTML page with a button for the link and the emblem of the camp', async () => {
   const p = byFaction('renegade')[0];

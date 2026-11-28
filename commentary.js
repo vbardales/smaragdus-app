@@ -44,6 +44,10 @@ const BANK = {
     loyalist: ['Les échos du front se précisent du côté de {p}. Je les consigne, et je prie pour ceux qui y combattent.', 'On me rapporte du mouvement sur {p}. La Garde ne dort pas.'],
     renegade: ['Du bruit sur {p}, et la Fosse tend l’oreille. Les loyalistes n’y verront rien venir.', 'Les nouvelles de {p} sont bonnes pour qui sait lire entre les lignes.'],
   },
+  focus: {
+    loyalist: ['Je pose ma plume sur {p} : on en parlera dans les archives.', 'Il est des noms qu’un archiviste ne peut passer sous silence : {p}.'],
+    renegade: ['{p}… voilà un nom que la Fosse n’oubliera pas.', 'Parlons un peu de {p}, puisqu’on me le demande si poliment.'],
+  },
   idle: {
     loyalist: ['La frontière est calme, mais les vigies ne dorment pas. Omnia videre.', 'Je relis mes notes : l’histoire se joue ici, planète après planète.'],
     renegade: ['Le silence est une arme comme une autre. Nous attendons.', 'Qu’ils s’endorment dans leur certitude : la Fosse veille.'],
@@ -87,16 +91,16 @@ ${LORE}` : ''}`;
 }
 
 // returns { camp, author, text, planetId, source, error }; never throws (an API failure falls back on the phrase banks, and says why)
-export async function comment({ kind, camp, planet, situation, events = [], notes = [] }, env = process.env) {
+export async function comment({ kind, camp, planet, situation, events = [], notes = [], focus = '' }, env = process.env) {
   const side = camp === 'loyalist' ? 'loyaliste' : 'renégat';
-  const event = { invest: `des renforts du camp ${side} arrivent sur ${planet?.name}`, grant: 'de nouveaux moyens parviennent aux combattants', note: `des nouvelles du front viennent d'arriver à propos de ${planet?.name || 'la campagne'}`, tier: `le camp ${side} vient de franchir une étape de ses recherches sur ${planet?.name}, sans qu'on sache ce qu'il a trouvé`, power: `un pouvoir de légion a détruit des forces sur ${planet?.name}`, idle: 'rien de notable, une pause dans les combats' }[kind] || 'rien de notable';
+  const event = { invest: `des renforts du camp ${side} arrivent sur ${planet?.name}`, grant: 'de nouveaux moyens parviennent aux combattants', focus: `l'organisateur te demande de donner ton avis sur ${focus || 'un sujet'}, en t'appuyant sur ce que tu sais du front et des informations de l'organisateur`, note: `des nouvelles du front viennent d'arriver à propos de ${planet?.name || 'la campagne'}`, tier: `le camp ${side} vient de franchir une étape de ses recherches sur ${planet?.name}, sans qu'on sache ce qu'il a trouvé`, power: `un pouvoir de légion a détruit des forces sur ${planet?.name}`, idle: 'rien de notable, une pause dans les combats' }[kind] || 'rien de notable';
   let text = null, error = null;
   try { text = await askLlm(camp, { event, situation, events, notes }, env); } catch (e) { error = e.name === 'TimeoutError' ? 'délai dépassé' : e.message; console.error('Commentary:', error); }
   text = String(text || '').replace(/\s+/g, ' ').trim().replace(/^["«]\s*|\s*["»]$/g, '');
   let source = 'api';
   if (!text || /\d/.test(text) || text.length > 300) {
     if (text) error = 'texte refusé (chiffre ou trop long)';
-    source = 'banks'; text = fallbackComment(kind, camp, planet?.name);
+    source = 'banks'; text = fallbackComment(kind, camp, focus || planet?.name);
   }
   return { camp, author: SCRIBES[camp].author, text, planetId: planet?.id || null, source, error };
 }

@@ -370,13 +370,13 @@ let lastComment = 0, commenting = false, lastStatus = null; // lastStatus: what 
 const NOTE_KEEP = 6 * 3600_000;
 const recentNotes = () => (S.notes || []).filter((n) => Date.now() - n.t < NOTE_KEEP).slice(-8).map((n) => ({ ...n, text: n.text.replace(/@/g, '') })).map((n) => (n.planetId ? `[${S.targets.find((t) => t.id === n.planetId)?.name || n.planetId}] ` : '') + n.text);
 let commentQueue = Promise.resolve();
-function stimulate(kind, { planet = null, side = null, force = false } = {}) {
+function stimulate(kind, { planet = null, side = null, force = false, focus = '' } = {}) {
   const now = Date.now();
   if (!force && (commenting || now - lastComment < COMMENT_GAP || Math.random() > 0.45)) return; // a power or a tier won always speaks, the rest is throttled
   lastComment = now;
   const f = frontOf(), lead = (s) => names(f.planets.filter((p) => p.lead === s).map((p) => p.name));
   const args = {
-    kind, camp: side || (Math.random() < 0.5 ? 'loyalist' : 'renegade'), planet: planet && { id: planet.id, name: planet.name }, events: recentEvents(), notes: recentNotes(),
+    kind, camp: side || (Math.random() < 0.5 ? 'loyalist' : 'renegade'), planet: planet && { id: planet.id, name: planet.name }, events: recentEvents(), notes: recentNotes(), focus,
     situation: f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde'
       : `les loyalistes dominent ${lead('loyalist') || 'aucun monde'} ; les renégats dominent ${lead('renegade') || 'aucun monde'}`,
   };
@@ -702,6 +702,15 @@ http.createServer(async (req, res) => {
         S.notes.splice(0, Math.max(0, S.notes.length - 30));
         logEvt(`Note aux chroniqueurs${planet ? ` (${planet.name})` : ''} : ${text}`);
         if (b.speak) stimulate('note', { planet, force: true });
+      } else if (route === 'POST /api/admin/scribe-focus') {
+        // asks one scribe or both to give an opinion on a player, a legion, a faction or a camp, right now
+        const focus = String(b.focus || '').replace(/^@/, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+        if (!focus) throw new Error('Sujet requis');
+        const planet = b.planetId ? S.targets.find((t) => t.id === b.planetId && t.kind === 'planet') : null;
+        if (b.planetId && !planet) throw new Error('Planète inconnue');
+        const camps = b.camp === 'loyalist' || b.camp === 'renegade' ? [b.camp] : ['loyalist', 'renegade'];
+        logEvt(`Focus des chroniqueurs : ${focus}${planet ? ` (${planet.name})` : ''}`);
+        for (const camp of camps) stimulate('focus', { planet, side: camp, force: true, focus });
       } else if (route === 'POST /api/admin/note-delete') {
         S.notes = (S.notes || []).filter((n) => n.id !== b.id);
       } else if (route === 'POST /api/admin/mail-test') {

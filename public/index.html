@@ -157,6 +157,7 @@ body.spectator main{grid-template-columns:1fr}
 /* labels off: only the map and the clickable planets remain (the name shows as a tooltip) */
 #map.nolabels .spot span{visibility:hidden}
 .spot.up{justify-content:flex-start;padding:2px 0 0}
+.spot.mid{justify-content:center}
 .spot:hover,.spot.sel{background:transparent;border-color:var(--gold);box-shadow:0 0 14px var(--gold)}
 .spot span{background:#000b;padding:1px 5px;border-radius:3px;white-space:nowrap}
 .bar{height:8px;background:#000;border:1px solid var(--line);margin:3px 0 8px}
@@ -441,7 +442,7 @@ async function refreshSpectator() {
   applyLabels();
   const map = $('#map'); map.querySelectorAll('.spot').forEach((e) => e.remove());
   for (const p of pub.planets) { // no figure: the name and the balance bar only
-    map.append(h('div', { class: 'spot spec' + (p.lbl === 'up' ? ' up' : ''), style: `left:${p.x}%;top:${p.y}%`, title: p.name, onclick: () => openSpecPlanet(p) },
+    map.append(h('div', { class: 'spot spec' + lblClass(p.lbl), style: `left:${p.x}%;top:${p.y}%`, title: p.name, onclick: () => openSpecPlanet(p) },
       h('span', {}, p.name),
       miniGauge(p.share === null ? 0 : p.share, p.share === null ? 0 : 1 - p.share)));
   }
@@ -458,6 +459,8 @@ $('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('s
 
 // base of the player links: the live site, even when the admin page is opened from a local server
 const PUBLIC_URL = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? 'https://smaragdus.antredudragon.fr' : location.origin;
+// position of the label of a planet (field lbl): under it by default, 'up' above it, 'middle' on it
+const lblClass = (l) => (l === 'up' ? ' up' : l === 'middle' ? ' mid' : '');
 const SIDE = { loyalist: 'Loyalistes', renegade: 'Renégats' };
 // the name of a camp with its emblem: the simple one inside a sentence, the fine one (big) on its own line
 const campName = (side, big) => h('span', { class: 'camptag ' + (side === 'loyalist' ? 'ly' : 'rn') + (big ? ' big' : '') }, ico(side === 'loyalist' ? 'loyalist' : 'renegade', !big), ' ', SIDE[side]);
@@ -644,7 +647,7 @@ function render() {
   const map = $('#map'); map.querySelectorAll('.spot').forEach((e) => e.remove());
   for (const t of s.targets.filter((t) => t.kind === 'planet')) {
     const l = gaugeOf(t, 'loyalist')?.total ?? 0, r = gaugeOf(t, 'renegade')?.total ?? 0;
-    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : '') + (t.lbl === 'up' ? ' up' : ''), style: `left:${t.x}%;top:${t.y}%`, title: t.name, onclick: () => openPlanet(t.id) },
+    map.append(h('button', { class: 'spot' + (selected === t.id ? ' sel' : '') + lblClass(t.lbl), style: `left:${t.x}%;top:${t.y}%`, title: t.name, onclick: () => openPlanet(t.id) },
       h('span', {}, t.name),
       t.natureKnown ? h('span', { class: 'nat' }, t.nature) : null, // the subtitle only appears once it has been discovered
       s.me && t.mine ? h('span', { class: 'mine' }, `vous : ${t.mine}`) : null, // a player's own points on the planet

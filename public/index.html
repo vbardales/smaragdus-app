@@ -425,6 +425,7 @@ let spectator = false;
 try { spectator = new URLSearchParams(location.search).get('view') === 'spectateur' || localStorage.getItem('smg-spectator') === '1'; } catch {}
 const fmt = (n) => +Number(n).toFixed(1);
 const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+const chronFlip = Math.random() < 0.5; // which scribe speaks first is drawn once per visit, so the page does not reshuffle at each refresh
 async function refreshSpectator() {
   let pub;
   try { pub = await api('GET', '/api/public'); } catch (e) { // the visitor view needs no code, but the server can still be down
@@ -447,7 +448,7 @@ async function refreshSpectator() {
   renderFront(pub); drawFleet(pub); drawBubbles(pub);
   $('#spec').classList.remove('hide');
   $('#spec').replaceChildren(h('h2', {}, 'Chroniques du front'),
-    ...pub.chronicle.map((c) => h('blockquote', { class: 'chron ' + (c.camp === 'loyalist' ? 'ly' : 'rn') }, ico(c.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, c.text), h('footer', {}, '— ' + c.author))));
+    ...(chronFlip ? [...pub.chronicle].reverse() : pub.chronicle).map((c) => h('blockquote', { class: 'chron ' + (c.camp === 'loyalist' ? 'ly' : 'rn') }, ico(c.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, c.text), h('footer', {}, '— ' + c.author))));
 }
 function leaveSpectator() { try { localStorage.removeItem('smg-spectator'); } catch {} location.href = location.pathname; }
 $('#spec-btn').onclick = () => { spectator = true; try { localStorage.setItem('smg-spectator', '1'); } catch {} refreshSpectator(); };

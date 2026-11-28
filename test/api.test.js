@@ -321,6 +321,21 @@ test('notes can be edited, and a comment of the scribes can be deleted', async (
   assert.equal((await admin('POST', '/api/admin/comment-delete', { t: 1 })).status, 200);
 });
 
+test('visitor subjects: camps and legions without any figure or player, and a limited ask for an opinion', async () => {
+  const pub = (await api('', 'GET', '/api/public')).json;
+  assert.equal(pub.camps.length, 2);
+  assert.ok(pub.legions.length > 5, 'the legions of the roster');
+  const txt = JSON.stringify([pub.camps, pub.legions]);
+  for (const p of roster) { assert.ok(!txt.includes(p.code), 'a code leaks'); assert.ok(!txt.includes(p.email), 'an email leaks'); }
+  for (const l of pub.legions) for (const pl of l.planets) assert.ok(pl.level >= 1 && pl.level <= 3);
+  const ask = (key) => fetch(base + '/api/public/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
+  assert.equal((await ask('legion:nulle-part')).status, 404);
+  const first = await ask('camp:loyalist');
+  assert.equal(first.status, 200);
+  assert.equal((await first.json()).pending, true);
+  assert.equal((await (await ask('camp:loyalist')).json()).fresh, true, 'a second ask within 10 minutes only reads');
+});
+
 test('scribe focus: admin only, a subject is required', async () => {
   assert.equal((await api(roster[0].code, 'POST', '/api/admin/scribe-focus', { focus: 'Blood Angels' })).status, 403);
   assert.equal((await admin('POST', '/api/admin/scribe-focus', { focus: '' })).status, 400);

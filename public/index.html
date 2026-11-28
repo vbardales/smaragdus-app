@@ -118,13 +118,19 @@ body.spectator .panel{margin-top:0!important}
 body.spectator #spec{order:-3}
 body.spectator main>aside{display:none!important}
 body:not(.spectator) #worlds{display:none!important}
-#worlds{display:flex;gap:6px;padding:10px 12px;justify-content:center;flex-wrap:wrap}
+#worlds{padding:10px 12px}
+.subjects-sec{margin:0 0 8px}.subjects-sec h3{margin:0 0 4px;font-size:.8em;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.subjects-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+button.camp-btn{display:flex;align-items:center;gap:8px;padding:6px 14px;font-weight:700}
+button.camp-btn.ly{border-color:#e6c36a;color:#e6c36a}button.camp-btn.rn{border-color:#e0452f;color:#f0725f}
+button.camp-btn .ico{height:26px}button.camp-btn img.ico:not(.wide){width:26px}
+button.legion{font-size:13px;padding:5px 10px;display:inline-flex;align-items:center;gap:6px}
+button.legion.ly{border-left:3px solid #e6c36a}button.legion.rn{border-left:3px solid #e0452f}button.legion .ico{height:14px}button.legion img.ico:not(.wide){width:14px}
 .world{background:none;border:0;padding:4px 6px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:76px;color:var(--text);cursor:pointer}
 .world img{width:62px;height:62px;border-radius:50%;object-fit:cover;background:#000;border:2px solid var(--line);transition:transform .2s,box-shadow .2s}
 .world:hover img,.world:focus-visible img{transform:scale(1.08)}
 .world.ly img{border-color:#e6c36a;box-shadow:0 0 12px #e6c36a66}.world.rn img{border-color:#e0452f;box-shadow:0 0 12px #e0452f66}
 .world span{font:600 12px var(--display);letter-spacing:.06em}
-body.spectator #worlds{order:-2}
 body:not(.spectator) #front{display:none!important} /* the big slider is for the visitor only */
 #front{display:flex;align-items:center;gap:12px;padding:8px 12px}
 #front .camp{display:flex;align-items:center;gap:10px;white-space:nowrap}#front .camp.rn{flex-direction:row-reverse;text-align:right}
@@ -364,7 +370,7 @@ body.mapview .spot{pointer-events:none}
     <div id="mapwrap" tabindex="-1"><div id="map"><div id="fleet"></div></div><div id="pzoom" class="panel hide"></div></div>
     <div class="panel" id="front"></div>
     <div class="panel hide" id="admin" style="margin-top:12px"></div>
-    <div class="panel hide" id="worlds" aria-label="Les sept mondes"></div>
+    <div class="panel hide" id="worlds" aria-label="Mondes, camps et légions"></div>
     <div class="panel hide" id="spec" style="margin-top:12px" aria-live="polite"></div>
     <div class="panel hide" id="players" style="margin-top:12px"></div>
     <div class="panel" id="journal" style="margin-top:12px"><h2>Registre de campagne</h2><div id="log"></div></div>
@@ -503,7 +509,7 @@ async function refreshSpectator() {
       miniGauge(p.share === null ? 0 : p.share, p.share === null ? 0 : 1 - p.share)));
   }
   $('#maphint').textContent = 'Cliquez sur une planète pour zoomer et consulter ce que l’on sait de ce monde.'; $('#maphint').classList.remove('hide');
-  specPlanets = pub.planets; fillSpecPlanet(); renderWorlds(pub.planets);
+  specPlanets = pub.planets; specCamps = pub.camps || []; specLegions = pub.legions || []; fillSpecPlanet(); renderSubjects(pub);
   document.body.classList.add('zoomable'); $('#zoomtools').classList.remove('hide');
   renderFront(pub); drawFleet(pub); drawBubbles(pub);
   $('#spec').classList.remove('hide');
@@ -578,7 +584,7 @@ function applyZoom(animate) {
   mapEl.style.transform = Z.z === 1 ? '' : `translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;
 }
 function zoomAt(px, py, z, animate) { const k = Math.min(6, Math.max(1, z)) / Z.z; Z.x = px - (px - Z.x) * k; Z.y = py - (py - Z.y) * k; Z.z *= k; applyZoom(animate); }
-function resetZoom() { Z = { z: 1, x: 0, y: 0 }; applyZoom(true); specPlanetId = null; $('#pzoom').classList.add('hide'); }
+function resetZoom() { Z = { z: 1, x: 0, y: 0 }; applyZoom(true); specPlanetId = null; specOther = null; $('#pzoom').classList.add('hide'); }
 $('#zin').onclick = () => zoomAt(wrap.clientWidth / 2, wrap.clientHeight / 2, Z.z * 1.5, true);
 $('#zout').onclick = () => zoomAt(wrap.clientWidth / 2, wrap.clientHeight / 2, Z.z / 1.5, true);
 $('#zreset').onclick = resetZoom;
@@ -589,27 +595,67 @@ window.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.
 window.addEventListener('pointerup', () => { drag = null; });
 wrap.addEventListener('click', (e) => { if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; } }, true);
 window.addEventListener('resize', () => applyZoom(false));
-let specPlanetId = null, specPlanets = [];
+let specPlanetId = null, specPlanets = [], specOther = null, specCamps = [], specLegions = [];
+const askNotes = {};
+const LEVEL_WORD = { 1: 'faible', 2: 'notable', 3: 'forte' };
+const opinionNodes = (list) => (list || []).length ? list.map((o) => h('blockquote', { class: 'chron ' + (o.camp === 'loyalist' ? 'ly' : 'rn') }, ico(o.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, o.text), h('footer', {}, '— ' + o.author))) : [h('p', { class: 'dim' }, 'Les chroniqueurs ne se sont pas encore exprimés sur ce sujet.')];
+// asks the scribes for an opinion (the server decides: one per subject every ten minutes, a limit for the whole site)
+function askButton(key) {
+  const note = h('p', { class: 'dim' }, askNotes[key] || '');
+  const btn = h('button', { onclick: async (e) => {
+    e.target.disabled = true;
+    try {
+      const r = await api('POST', '/api/public/ask', { key });
+      askNotes[key] = r.busy ? 'Les chroniqueurs sont très sollicités : réessayez dans un moment.' : r.fresh ? 'Les chroniqueurs ont été sollicités il y a peu : leur avis arrive.' : 'Les chroniqueurs réfléchissent… leur avis apparaîtra ici.';
+    } catch (err) { askNotes[key] = err.message; }
+    note.textContent = askNotes[key]; e.target.disabled = false;
+  } }, 'Demander l’avis des chroniqueurs');
+  return [btn, note];
+}
 function fillSpecPlanet() {
-  const p = specPlanets.find((x) => x.id === specPlanetId), box = $('#pzoom');
+  const box = $('#pzoom');
+  const close = h('button', { onclick: resetZoom }, specOther ? 'Fermer' : 'Vue complète');
+  if (specOther) {
+    const camp = specOther.kind === 'camp' ? specCamps.find((x) => x.id === specOther.id) : null, leg = specOther.kind === 'legion' ? specLegions.find((x) => x.id === specOther.id) : null;
+    if (!camp && !leg) return box.classList.add('hide');
+    box.classList.remove('hide');
+    if (camp) {
+      box.replaceChildren(h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, campName(camp.id, true)), close),
+        h('p', {}, h('b', {}, 'Mondes dominés : '), camp.led.length ? camp.led.join(', ') : 'aucun pour l’instant'),
+        h('p', {}, h('b', {}, 'Étapes franchies : '), { none: 'aucune', some: 'quelques-unes', many: 'nombreuses' }[camp.tiers]),
+        h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(camp.opinions), ...askButton('camp:' + camp.id));
+    } else {
+      box.replaceChildren(h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, leg.name), close),
+        leg.side ? h('p', {}, h('b', {}, 'Camp : '), campName(leg.side)) : null,
+        h('p', {}, h('b', {}, 'Présence : '), leg.planets.length ? leg.planets.map((p) => `${p.name} (${LEVEL_WORD[p.level]})`).join(', ') : 'aucune pour l’instant'),
+        h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(leg.opinions), ...askButton('legion:' + leg.id));
+    }
+    return;
+  }
+  const p = specPlanets.find((x) => x.id === specPlanetId);
   if (!p) return box.classList.add('hide');
   box.classList.remove('hide');
-  box.replaceChildren(planetBg(p.id), h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, p.name), h('button', { onclick: resetZoom }, 'Vue complète')),
+  box.replaceChildren(planetBg(p.id), h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, p.name), close),
     h('p', {}, h('b', {}, 'Nature du monde : '), p.nature || 'inconnue'),
     ...(p.excerpts.length ? p.excerpts.map((x) => h('blockquote', {}, h('b', {}, x.label + ' — '), x.text)) : [h('p', { class: 'dim' }, 'Aucun secret de ce monde n’a encore été percé.')]),
-    h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'),
-    ...((p.opinions || []).length ? p.opinions.map((o) => h('blockquote', { class: 'chron ' + (o.camp === 'loyalist' ? 'ly' : 'rn') }, ico(o.camp === 'loyalist' ? 'loyalist' : 'renegade'), h('p', {}, o.text), h('footer', {}, '— ' + o.author))) : [h('p', { class: 'dim' }, 'Les chroniqueurs ne se sont pas encore exprimés sur ce monde.')]));
+    h('h3', { style: 'margin:10px 0 4px' }, 'Avis des chroniqueurs'), ...opinionNodes(p.opinions), ...askButton('planet:' + p.id));
 }
 // strip of the seven worlds for the visitor: a portrait each, ringed in the colour of the camp that leads there; a click zooms on it
-function renderWorlds(planets) {
-  const box = $('#worlds'), sig = JSON.stringify(planets.map((p) => [p.id, p.lead]));
+function renderSubjects(pub) {
+  const box = $('#worlds'), sig = JSON.stringify([pub.planets.map((p) => [p.id, p.lead]), (pub.camps || []).map((x) => x.id), (pub.legions || []).map((l) => [l.id, l.side])]);
   box.classList.remove('hide');
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
-  box.replaceChildren(...planets.map((p) => h('button', { type: 'button', class: 'world ' + (p.lead === 'loyalist' ? 'ly' : p.lead === 'renegade' ? 'rn' : ''), title: p.name, onclick: () => { openSpecPlanet(p); $('#mapwrap').scrollIntoView({ behavior: 'smooth', block: 'center' }); } },
-    Object.assign(h('img', { src: `/img/planets/${p.id}.webp`, alt: '', loading: 'lazy' }), { onerror: (e) => e.target.remove() }), h('span', {}, p.name))));
+  const show = () => $('#mapwrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const open = (kind, item) => () => { if (kind === 'planet') openSpecPlanet(item); else { specPlanetId = null; specOther = { kind, id: item.id }; Z = { z: 1, x: 0, y: 0 }; applyZoom(true); fillSpecPlanet(); } show(); };
+  const section = (title, nodes) => h('div', { class: 'subjects-sec' }, h('h3', {}, title), h('div', { class: 'subjects-row' }, ...nodes));
+  box.replaceChildren(
+    section('Mondes', pub.planets.map((p) => h('button', { type: 'button', class: 'world ' + (p.lead === 'loyalist' ? 'ly' : p.lead === 'renegade' ? 'rn' : ''), title: p.name, onclick: open('planet', p) },
+      Object.assign(h('img', { src: `/img/planets/${p.id}.webp`, alt: '', loading: 'lazy' }), { onerror: (e) => e.target.remove() }), h('span', {}, p.name)))),
+    section('Camps', (pub.camps || []).map((x) => h('button', { type: 'button', class: 'camp-btn ' + (x.id === 'loyalist' ? 'ly' : 'rn'), onclick: open('camp', x) }, ico(x.id === 'loyalist' ? 'loyalist' : 'renegade', true), x.name))),
+    section('Légions', (pub.legions || []).map((l) => h('button', { type: 'button', class: 'legion ' + (l.side === 'loyalist' ? 'ly' : l.side === 'renegade' ? 'rn' : ''), onclick: open('legion', l) }, l.side ? ico(l.side === 'loyalist' ? 'loyalist' : 'renegade', true) : null, l.name))));
 }
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && specPlanetId && !document.querySelector('dialog[open]')) resetZoom(); });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (specPlanetId || specOther) && !document.querySelector('dialog[open]')) resetZoom(); });
 function openSpecPlanet(p) {
   specPlanetId = p.id; fillSpecPlanet();
   const W = wrap.clientWidth, H = wrap.clientHeight;

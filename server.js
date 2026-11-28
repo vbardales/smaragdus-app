@@ -324,7 +324,7 @@ function frontOf() {
   const sum = (k) => planets.reduce((n, p) => n + p[k], 0);
   const tot = { loyalist: sum('_l'), renegade: sum('_r'), tiersLoyalist: sum('_tl'), tiersRenegade: sum('_tr') };
   return { planets: planets.map(({ _l, _r, _tl, _tr, ...p }) => p), share: tot.loyalist + tot.renegade ? tot.loyalist / (tot.loyalist + tot.renegade) : null,
-    idle: Object.values(S.players).filter((p) => p.points - spent(p) > 0).length, chronicle: chronicle(planets, tot),
+    idle: Object.values(S.players).filter((p) => p.points - spent(p) > 0).length, chronicle: chronicle(planets, tot), camps: campsOf(planets), legions: legionsOf(planets),
     fx: recentFx(), bubbles: recentBubbles() };
 }
 const publicView = frontOf;
@@ -339,6 +339,59 @@ function excerptsOf(t) {
     const cut = clean.length > 240 ? clean.slice(0, 240).replace(/\s+\S*$/, '') + '…' : clean;
     return { label: pa.label, text: cut };
   }).filter(Boolean);
+}
+
+// ---------- subjects of the visitor: camps and legions ----------
+// A legion is a filter of the players: the visitor sees where it is present (a level, never a figure) and what the scribes think of it.
+// Subject keys: 'planet:<id>', 'camp:<side>', 'legion:<slug>'.
+const slug = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const opinionsOfSubject = (key) => ['loyalist', 'renegade'].map((camp) => (S.comments || []).filter((c) => c.subject === key && c.camp === camp).pop()).filter(Boolean).map((c) => ({ camp: c.camp, author: c.author, text: c.text, age: Math.floor((Date.now() - c.t) / 1000) }));
+function legionsOf(planets) {
+  return (S.armies || []).map((a) => {
+    const players = Object.values(S.players).filter((p) => p.army === a.name);
+    if (!players.length) return null;
+    const sides = new Set(players.map(fixedSide).filter(Boolean));
+    const present = S.targets.filter((t) => t.kind === 'planet').map((t) => {
+      const top = Math.max(1, ...t.tiers.map((pa) => pa.threshold));
+      const pts = players.reduce((n, p) => n + ['loyalist', 'renegade'].reduce((m, side) => m + (p.alloc[gaugeOf(t, side)?.id] || 0), 0), 0);
+      return pts > 0 ? { id: t.id, name: t.name, level: Math.min(3, Math.max(1, Math.ceil((3 * pts) / top))) } : null;
+    }).filter(Boolean);
+    return { id: slug(a.name), name: a.name, side: sides.size === 1 ? [...sides][0] : null, planets: present, opinions: opinionsOfSubject('legion:' + slug(a.name)) };
+  }).filter(Boolean);
+}
+function campsOf(planets) {
+  return ['loyalist', 'renegade'].map((side) => ({
+    id: side, name: SIDE_NAME[side], led: planets.filter((p) => p.lead === side).map((p) => p.name),
+    tiers: planets.reduce((n, p) => n + p.flags[side], 0) ? (planets.reduce((n, p) => n + p.flags[side], 0) > 4 ? 'many' : 'some') : 'none',
+    opinions: opinionsOfSubject('camp:' + side),
+  }));
+}
+// the label of a subject and the scribe that should speak, from a key or from a name typed by the admin
+function subjectFor(input) {
+  const raw = String(input || '').replace(/^@/, '').trim(), key = raw.includes(':') ? raw : null, n = slug(raw);
+  const planet = S.targets.find((t) => t.kind === 'planet' && (key === 'planet:' + t.id || slug(t.name) === n));
+  if (planet) return { key: 'planet:' + planet.id, label: planet.name, planet };
+  for (const side of ['loyalist', 'renegade']) if (key === 'camp:' + side || slug(SIDE_NAME[side]) === n) return { key: 'camp:' + side, label: SIDE_NAME[side], side };
+  const army = (S.armies || []).find((a) => key === 'legion:' + slug(a.name) || slug(a.name) === n);
+  if (army) { const sides = new Set(Object.values(S.players).filter((p) => p.army === army.name).map(fixedSide).filter(Boolean)); return { key: 'legion:' + slug(army.name), label: army.name, side: sides.size === 1 ? [...sides][0] : null }; }
+  return null;
+}
+// the visitor may ask the scribes for an opinion on a subject: one per subject every 10 minutes, 20 per hour for the whole site, 6 per 10 minutes per address
+const ASK_KEY = new Map(), ASK_IP = new Map();
+let askHour = [];
+function askScribes(key, ip) {
+  const sub = subjectFor(key);
+  if (!sub) throw Object.assign(new Error('Sujet inconnu'), { code: 404 });
+  const now = Date.now();
+  if (!hit(ASK_IP, ip, 6)) throw Object.assign(new Error('Trop de demandes : réessayez dans quelques minutes.'), { code: 429 });
+  const last = ASK_KEY.get(sub.key);
+  if (last && now - last < 10 * 60_000) return { ok: true, pending: false, fresh: true }; // an opinion was asked for recently
+  askHour = askHour.filter((t) => now - t < 3600_000);
+  if (askHour.length >= 20) return { ok: true, pending: false, busy: true };
+  ASK_KEY.set(sub.key, now); askHour.push(now);
+  const camps = sub.key.startsWith('camp:') ? ['loyalist', 'renegade'] : [sub.side || (Math.random() < 0.5 ? 'loyalist' : 'renegade')];
+  for (const camp of camps) stimulate('focus', { planet: sub.planet || null, side: camp, force: true, focus: sub.label, subject: sub.key });
+  return { ok: true, pending: true };
 }
 
 // ---------- effects and commentators ----------
@@ -371,7 +424,7 @@ let lastComment = 0, commenting = false, lastStatus = null; // lastStatus: what 
 const NOTE_KEEP = 6 * 3600_000;
 const recentNotes = () => (S.notes || []).filter((n) => Date.now() - n.t < NOTE_KEEP).slice(-8).map((n) => ({ ...n, text: n.text.replace(/@/g, '') })).map((n) => (n.planetId ? `[${S.targets.find((t) => t.id === n.planetId)?.name || n.planetId}] ` : '') + n.text);
 let commentQueue = Promise.resolve();
-function stimulate(kind, { planet = null, side = null, force = false, focus = '' } = {}) {
+function stimulate(kind, { planet = null, side = null, force = false, focus = '', subject = '' } = {}) {
   const now = Date.now();
   if (!force && (commenting || now - lastComment < COMMENT_GAP || Math.random() > 0.45)) return; // a power or a tier won always speaks, the rest is throttled
   lastComment = now;
@@ -387,7 +440,7 @@ function stimulate(kind, { planet = null, side = null, force = false, focus = ''
     try {
       const { source, error, ...c } = await comment(args);
       lastStatus = { at: Date.now(), source, error };
-      (S.comments ??= []).push({ ...c, t: Date.now() }); S.comments.splice(0, Math.max(0, S.comments.length - 30));
+      (S.comments ??= []).push({ ...c, t: Date.now(), subject: subject || (c.planetId ? 'planet:' + c.planetId : '') }); S.comments.splice(0, Math.max(0, S.comments.length - 30));
       save(); broadcast();
     } catch (e) { console.error('Commentary failed:', e.message); } finally { commenting = false; }
   });
@@ -606,6 +659,10 @@ http.createServer(async (req, res) => {
       return;
     }
     if (url.pathname === '/api/public') return send(res, 200, publicView());
+    if (req.method === 'POST' && url.pathname === '/api/public/ask') {
+      try { return send(res, 200, askScribes(String((await body(req)).key || ''), clientIp(req))); }
+      catch (e) { if (e.code) return send(res, e.code, { error: e.message }); throw e; }
+    }
     if (req.method === 'POST' && url.pathname === '/api/lost-code') {
       const email = String((await body(req)).email || '').trim().toLowerCase();
       if (email.length > 200 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Adresse mail invalide' });
@@ -711,7 +768,8 @@ http.createServer(async (req, res) => {
         if (b.planetId && !planet) throw new Error('Planète inconnue');
         const camps = b.camp === 'loyalist' || b.camp === 'renegade' ? [b.camp] : ['loyalist', 'renegade'];
         logEvt(`Focus des chroniqueurs : ${focus}${planet ? ` (${planet.name})` : ''}`);
-        for (const camp of camps) stimulate('focus', { planet, side: camp, force: true, focus });
+        const sub = subjectFor(focus);
+        for (const camp of camps) stimulate('focus', { planet: planet || sub?.planet || null, side: camp, force: true, focus, subject: sub?.key || '' });
       } else if (route === 'POST /api/admin/note-edit') {
         const n = (S.notes || []).find((x) => x.id === b.id);
         if (!n) throw new Error('Note inconnue');

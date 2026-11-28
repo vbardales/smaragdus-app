@@ -145,7 +145,7 @@ body.spectator main{grid-template-columns:1fr}
 .chron{margin:8px 0;padding:6px 12px;border-left:3px solid currentColor;font-style:italic;line-height:1.55}.chron p{margin:0 0 4px;color:var(--ink,inherit)}.chron footer{font-size:12px;opacity:.8;font-style:normal}
 .spot.spec{pointer-events:none}
 .tug{height:14px;background:#e0605f;border:1px solid var(--line);margin:8px 0}.tug i{display:block;height:100%;background:#e0c040}
-.maptools{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}#maphint{font-size:13px}body.mapview .maptools{display:none}
+.maptools{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-bottom:6px}#maphint{font-size:13px}#lbl-toggle{margin-left:auto}body.mapview .maptools{display:none}
 /* labels off: only the map and the clickable planets remain (the name shows as a tooltip) */
 #map.nolabels .spot span{visibility:hidden}
 .spot.up{justify-content:flex-start;padding:2px 0 0}
@@ -267,7 +267,7 @@ body.mapview .spot{pointer-events:none}
 
 <main id="app" class="hide">
   <section>
-    <div class="maptools"><span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span><span id="zoomtools" class="hide"><button id="zin" type="button" title="Zoom avant">+</button> <button id="zout" type="button" title="Zoom arrière">−</button> <button id="zreset" type="button" title="Vue complète">⟲</button></span> <button id="lbl-toggle" type="button"></button></div>
+    <div class="maptools"><span id="zoomtools" class="hide"><button id="zin" type="button" title="Zoom avant">+</button> <button id="zout" type="button" title="Zoom arrière">−</button> <button id="zreset" type="button" title="Vue complète">⟲</button></span> <span id="maphint" class="dim hide">Sélectionnez un monde sur la carte stellaire pour ouvrir son dossier.</span> <button id="lbl-toggle" type="button"></button></div>
     <div id="mapwrap"><div id="map"><div id="fleet"></div></div><div id="pzoom" class="panel hide"></div></div>
     <div class="panel" id="front"></div>
     <div class="panel hide" id="spec" style="margin-top:12px"></div>

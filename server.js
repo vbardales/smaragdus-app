@@ -6,6 +6,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { comment, provider } from './commentary.js';
+import { renderMail } from './mailTheme.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -403,10 +404,10 @@ const MAIL = { host: process.env.SMTP_HOST || 'mail.infomaniak.com', port: Numbe
 MAIL.from = process.env.MAIL_FROM || MAIL.user;
 const mailEnabled = !!(MAIL.user && MAIL.pass);
 let transport = null;
-async function sendMail(to, subject, text) {
+async function sendMail(to, subject, text, html) {
   if (!mailEnabled) throw new Error('Envoi de mail non configuré (variables SMTP_USER et SMTP_PASS)');
   transport ??= (await import('nodemailer')).default.createTransport({ host: MAIL.host, port: MAIL.port, secure: MAIL.port === 465, requireTLS: MAIL.port === 587, auth: { user: MAIL.user, pass: MAIL.pass } });
-  await transport.sendMail({ from: MAIL.from, to, subject, text });
+  await transport.sendMail({ from: MAIL.from, to, subject, text, ...(html ? { html } : {}) });
 }
 
 // ---------- login throttling ----------
@@ -562,11 +563,20 @@ function lostCodeMail(players) {
   });
   return `Salutations,\n\nLe cogitateur a reçu une demande de rappel de sigil pour cette adresse. ${players.length > 1 ? 'Voici les sigils associés' : 'Voici votre sigil'} :\n\n${lines.join('\n\n')}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\nGloire à l'Empereur... ou à qui vous savez.`;
 }
+// the same mail in the colours of the site: one box per sigil, one button per link
+function lostCodeHtml(players) {
+  const text = `Salutations,\n\nLe cogitateur a reçu une demande de rappel de sigil pour cette adresse. ${players.length > 1 ? 'Voici les sigils associés' : 'Voici votre sigil'} :\n\n${players.map((p) => `${SITE_URL}/?code=${p.code}`).join('\n\n')}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\nGloire à l'Empereur... ou à qui vous savez.`;
+  const sigils = players.map((p) => {
+    const amb = [...new Set([...p.code].filter((c) => AMBIGUOUS[c]))].map((c) => AMBIGUOUS[c]);
+    return { label: p.fluffName || p.name, code: p.code, note: amb.length ? `Attention : ${amb.join(' ; ')}` : '' };
+  });
+  return renderMail({ title: 'Votre sigil d’accès', text, sigils, siteUrl: SITE_URL, camp: players.length === 1 ? fixedSide(players[0]) : null });
+}
 function lostCode(email, ip) {
   const known = Object.values(S.players).filter((p) => (p.email || '').trim().toLowerCase() === email);
   logEvt(`Code perdu demandé : adresse ${known.length ? 'connue' : 'inconnue'}`);
   if (!known.length || !mailEnabled || !hit(LOST_MAIL, email, 1)) return;
-  sendMail(email, 'Système Smaragdus : votre sigil d\'accès', lostCodeMail(known)).catch((e) => console.error('Lost-code mail failed:', e.message));
+  sendMail(email, 'Système Smaragdus : votre sigil d\'accès', lostCodeMail(known), lostCodeHtml(known)).catch((e) => console.error('Lost-code mail failed:', e.message));
 }
 
 async function body(req) {
@@ -672,9 +682,12 @@ http.createServer(async (req, res) => {
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p.email || '')) throw new Error(`Pas d'adresse mail valide pour ${p.name}`);
         const subject = String(b.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200), text = String(b.body || '').slice(0, 20000);
         if (!subject || !text.trim()) throw new Error('Objet et texte requis');
-        try { await sendMail(p.email, subject, text); } catch (e) { console.error(`Mail to ${p.email}:`, e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
+        try { await sendMail(p.email, subject, text, renderMail({ title: subject, text, siteUrl: SITE_URL, camp: fixedSide(p) })); } catch (e) { console.error(`Mail to ${p.email}:`, e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
         p.mailedAt = Date.now();
         logEvt(`Mail envoyé à ${p.name} (${p.email})`);
+      } else if (route === 'POST /api/admin/mail-preview') {
+        const p = S.players[b.playerId];
+        reply.html = renderMail({ title: String(b.subject || ''), text: String(b.body || '').slice(0, 20000), siteUrl: SITE_URL, camp: p ? fixedSide(p) : null });
       } else if (route === 'POST /api/admin/mail-test') {
         const to = String(b.to || '').trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) throw new Error('Adresse invalide');

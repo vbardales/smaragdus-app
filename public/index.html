@@ -165,6 +165,7 @@ dialog.planetdlg.wide{width:min(920px,96vw)}
 dialog::before{content:"";display:block;height:34px;margin:-16px -16px 12px;background:url(/img/deco/dialog-banner.webp) center/100% 100% no-repeat}
 dialog h2{border-bottom:1px solid var(--line);padding-bottom:6px;background:linear-gradient(90deg,rgba(201,169,106,.14),transparent)}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);width:min(640px,92vw);padding:16px}dialog::backdrop{background:#000b}
+dialog iframe.preview{width:100%;height:520px;border:1px solid var(--line);margin-top:10px;background:#0b0a0d}
 dialog textarea{height:260px;font:13px Georgia,serif;margin:6px 0}
 #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(360px,90vw)}
 .toast{background:var(--panel);border:1px solid var(--alert);color:var(--text);padding:10px 12px;cursor:pointer;box-shadow:0 0 14px #000a}
@@ -1104,7 +1105,7 @@ function mailOf(p) {
   const camp = state.factions.find((f) => f.id === p.factionId)?.gauge;
   const closing = MAIL_CLOSING[p.factionId === 'alpha' ? 'alpha' : camp] || 'Que les étoiles guident vos armées.';
   // the fluff name starts with an article ("Le Maréchal…", "L'Archimagos…"): drop it, it reads badly after "Salutations,"
-  const addressee = (p.fluffName || p.name).replace(/^(les|le|la|l['’])\s*/i, '').replace(/^./, (c) => c.toUpperCase());
+  const addressee = (p.fluffName || p.name).split(',')[0].trim().replace(/^(les|le|la|l['’])\s*/i, '').replace(/^./, (c) => c.toUpperCase());
   const body = [`Salutations, ${addressee},`, '',
     'Les éclaireurs ont quitté l\'orbite et les premières transmissions parviennent au Système Smaragdus. Aux confins de la frontière, les camps se disputent déjà les mondes : chaque point que vous y investirez pèsera dans la balance.', '',
     'Voici votre accès personnel au tableau de bord où consigner vos prises de victoire :', '',
@@ -1142,6 +1143,15 @@ function showMail(p) {
       btn('Ouvrir dans Gmail', () => {
         window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${enc(m.to)}&su=${enc(subject.value)}&body=${enc(body.value)}`, '_blank');
         note.textContent = 'Gmail ouvert dans un nouvel onglet.';
+      }),
+      btn('Aperçu du mail', async () => {
+        note.textContent = 'Aperçu…';
+        try {
+          const r = await api('POST', '/api/admin/mail-preview', { playerId: p.id, subject: subject.value, body: body.value });
+          let fr = dlg.querySelector('iframe.preview');
+          if (!fr) { fr = h('iframe', { class: 'preview', title: 'Aperçu du mail', sandbox: '' }); dlg.append(fr); }
+          fr.srcdoc = r.html; note.textContent = 'Voici le rendu du mail (version HTML, avec le texte ci-dessus en secours).';
+        } catch (err) { note.textContent = 'Échec : ' + err.message; }
       }),
       btn('Copier le texte', async () => {
         try { await navigator.clipboard.writeText(body.value); note.textContent = 'Texte copié ✓'; } catch { body.select(); note.textContent = 'Copie impossible : le texte est sélectionné, fais Ctrl+C.'; }

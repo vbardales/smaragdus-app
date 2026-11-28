@@ -292,6 +292,18 @@ test('the configuration JSON may carry players: imported with the configuration,
   assert.ok((await admin('GET', '/api/state')).json.players.some((p) => p.code === 'json-player-1'));
 });
 
+// ---------- themed mail ----------
+test('the mail preview is a themed HTML page with a button for the link and the emblem of the camp', async () => {
+  const p = byFaction('renegade')[0];
+  const r = await admin('POST', '/api/admin/mail-preview', { playerId: p.id, subject: 'Sujet <test>', body: 'Salutations,\n\nVoici un point :\n- un\n- deux\n\nhttps://smaragdus.example/?code=abcd1234\n\nGloire.' });
+  assert.equal(r.status, 200);
+  assert.match(r.json.html, /<a href="https:\/\/smaragdus.example\/\?code=abcd1234"/, 'the link is a button');
+  assert.match(r.json.html, /mail-renegade\.png/, 'the emblem of the camp');
+  assert.match(r.json.html, /<li/, 'the list');
+  assert.ok(!r.json.html.includes('<test>'), 'the subject is escaped');
+  assert.equal((await api(roster[0].code, 'POST', '/api/admin/mail-preview', {})).status, 403);
+});
+
 // ---------- lost code ----------
 test('lost code: the same answer for a known and an unknown address, a bad format is refused, requests are limited', async () => {
   const post = (email) => fetch(base + '/api/lost-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });

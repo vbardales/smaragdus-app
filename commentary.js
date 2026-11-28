@@ -41,6 +41,13 @@ export function fallbackComment(kind, camp, planetName) {
   return pick(list).replaceAll('{p}', planetName || 'la frontière');
 }
 
+// the status and the reason the API gives (a low credit balance, an unknown model...), so the admin sees why the phrase banks are used
+async function apiError(name, r) {
+  const j = await r.json().catch(() => null);
+  const why = String(j?.error?.message || '').replace(/s+/g, ' ').slice(0, 160);
+  return `${name}: HTTP ${r.status}${why ? ' — ' + why : ''}`;
+}
+
 async function askLlm(camp, facts, env) {
   const system = `Tu es ${SCRIBES[camp].author}, chroniqueur de la campagne de Smaragdus dans l'univers Warhammer 30 000 (Hérésie d'Horus). Ton : ${SCRIBES[camp].tone}. Écris UN commentaire de 1 à 2 phrases courtes (240 caractères maximum), en français, comme une note dans ton journal. Tu peux t'appuyer sur les événements récents pour réagir à ce qui vient de se passer. Interdits : tout chiffre, nom de joueur, nombre de points, révélation de contenu secret. Réponds uniquement par le texte du commentaire.`;
   const recent = facts.events?.length ? `\nÉvénements récents (du plus récent au plus ancien) :\n- ${facts.events.join('\n- ')}` : '';
@@ -48,12 +55,12 @@ async function askLlm(camp, facts, env) {
   const signal = AbortSignal.timeout(15000);
   if (env.ANTHROPIC_API_KEY) {
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: env.COMMENT_MODEL || 'claude-haiku-5-5', max_tokens: 200, system, messages: [{ role: 'user', content: user }] }) });
-    if (!r.ok) throw new Error(`Anthropic API: HTTP ${r.status}`);
+    if (!r.ok) throw new Error(await apiError('Anthropic API', r));
     return (await r.json()).content?.find((c) => c.type === 'text')?.text;
   }
   if (env.OPENAI_API_KEY) {
     const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', signal, headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'content-type': 'application/json' }, body: JSON.stringify({ model: env.COMMENT_MODEL || 'gpt-4o-mini', max_tokens: 200, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }) });
-    if (!r.ok) throw new Error(`OpenAI API: HTTP ${r.status}`);
+    if (!r.ok) throw new Error(await apiError('OpenAI API', r));
     return (await r.json()).choices?.[0]?.message?.content;
   }
   return null;

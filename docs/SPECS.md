@@ -31,7 +31,7 @@ Reached at `/` with no stored session.
 | 2.8 | Under the box, an "Accès observateur" button leads to the spectator view, whether a code was typed or not | [manual] |
 | 2.9 | Decoration: logo, framed panels, diamond headings, motto, footer | [manual] first pass done, more can be added |
 | 2.10 | Easter egg | [todo] |
-| 2.11 | A "Code perdu" link under the identification box opens an email field. The address is checked for a valid format. Whether the address exists or not, the page answers the same: "si votre email est connu du système, vous recevrez un mail avec votre code en clair". If a player has this address, the code is mailed to them in clear. | [todo] |
+| 2.11 | A "Code perdu" link under the identification box opens an email field. The address is checked for a valid format. Whether the address exists or not, the page answers the same: "si votre email est connu du système, vous recevrez un mail avec votre code en clair". If a player has this address, the code is mailed to them in clear. | [test] |
 
 Codes are case-insensitive and stored in lower case. A code never equals the admin password.
 
@@ -44,10 +44,15 @@ Once in, whichever part was joined, the page has the same top:
 
 ## 3. Spectator view
 
+(Layout, common to players and visitors: card or chronicle first, then the map as wide as the screen allows, then a slider with the share of each camp, then the rest. The map carries tiny ships orbiting each planet (more of them as a camp's points grow against the highest tier), flags for the tiers won, ships crossing the map for the players who still hold points, and an invisible easter egg on the sun.)
+
 - Entry: 2.8, or `/?view=spectateur` (the choice is kept in the browser until "Quitter").
-- Data: `GET /api/public`, without any code. It returns, per planet, the name, the position, each camp's score and the number of tiers each camp has won, plus the totals per camp.
-  It never returns player data (names, codes, emails), report texts, rules, prizes, natures or logs. `[test]`
-- Screen: the map with the two scores on each planet, a "Le front" banner (totals and a balance bar). No side column, no players, no log, no inbox, no investment.
+- Data: `GET /api/public`, without any code. It returns no figure: per planet the name, the position and the share of the loyalist camp (for the balance bar), plus a chronicle of two scribes (one per camp) generated from who leads where and who has won more tiers.
+  It never returns player data (names, codes, emails), report texts, rules, prizes, natures, logs or scores. `[test]`
+- Screen: the chronicle first ("Chroniques du front"), then the map with names and balance bars only. No side column, no players, no log, no inbox, no investment.
+- Click on a planet: the map zooms on it and a card shows its revealed nature and the first lines of the document of each tier unlocked (never the later ones, nor prizes or rules). Also zoom with the wheel or the + / − buttons, drag to pan. [manual]
+- Commentators: two scribes (one per camp) speak in bubbles on the map for 30 seconds, triggered by investments, new points, a legion power (always), or from time to time. The text comes from the Anthropic or OpenAI API when a key is set, otherwise from phrase banks; the prompt only carries public facts and a text with a digit is refused. At most one comment every 30 seconds. [manual]
+- Effects: a bomb and a fading scorch where a legion power hit, smoke clouds that grow with the tiers won, and a light that follows the sun through the day (browser time). [manual]
 - Live: updated through the SSE stream (`/api/events`), no reload. [manual]
 - Cannot act: every write route answers 401 without a code. `[test]`
 
@@ -88,10 +93,11 @@ Once in, whichever part was joined, the page has the same top:
 ## 8. Backlog
 
 1. Easter egg (2.10); more decoration if wanted.
-1. "Code perdu" (2.11). Points to settle when building it: the same answer and the same response time whether the address is known or not (no way to probe which addresses exist), a limit on requests per address and per IP so nobody can flood a player with mails, a minimal log, and it needs the SMTP settings (see README). Several players may share an address (it happens in the roster): the mail then lists each code.
+1. (Done) "Code perdu" (2.11): same answer for any address, 5 requests per IP per 10 minutes, one mail per address per 10 minutes.
 2. Lottery at the end (section 5).
 3. One ship added on the map for each tier unlocked.
 4. Wire the `public/*_ambiance.wav` files (one ambiance per planet).
+5. Map effects, done: bombs, smoke, sunlight, zoom, bubbles. To refine: real logos, bombs for other kinds of point removal, light by the real sun of the event.
 
 ## 9. Tests
 

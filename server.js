@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { comment, provider } from './commentary.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -38,7 +39,7 @@ const armyRow = ([name, planetId = null, wipe = null]) => ({ name, bonus: planet
 const planetOf = (p) => ({ ...p, kind: 'planet', multiplier: 1, tiers: p.tiers.map(tier) });
 // every planet owns one loyalist and one renegade gauge: the camp's total on the planet (no tiers of their own)
 const gaugesOf = (p) => ['loyalist', 'renegade'].map((side) => ({
-  id: `${p.id}-${side}`, kind: 'gauge', planetId: p.id, side, name: `${p.name} · ${side === 'loyalist' ? 'Loyaliste' : 'Traître'}`, specialty: '', multiplier: 1,
+  id: `${p.id}-${side}`, kind: 'gauge', planetId: p.id, side, name: `${p.name} · ${side === 'loyalist' ? 'Loyaliste' : 'Renégat'}`, specialty: '', multiplier: 1,
   tiers: [],
 }));
 // Default roster (registered players), kept next to the code so a fresh state starts with them.
@@ -48,7 +49,7 @@ const seed = () => ({
   factions: [
     { id: 'alpha', name: 'Alpha Légion', gauge: 'choice' },
     { id: 'loyalist', name: 'Loyaliste', gauge: 'loyalist' },
-    { id: 'renegade', name: 'Traître', gauge: 'renegade' },
+    { id: 'renegade', name: 'Renégat', gauge: 'renegade' },
     { id: 'worldeaters', name: 'World Eaters', gauge: 'renegade' },
     { id: 'neutral', name: 'Sans faction', gauge: null },
   ],
@@ -105,7 +106,7 @@ const logEvt = (text, scope) => { S.log.unshift({ t: Date.now(), text, scope });
 // ---------- logic ----------
 // Players invest on a planet's loyalist or renegade gauge (their camp). Neutral players and the Alpha Legion pick the camp
 // at each investment; the other factions are tied to theirs.
-const SIDE_NAME = { loyalist: 'Loyalistes', renegade: 'Traîtres' };
+const SIDE_NAME = { loyalist: 'Loyalistes', renegade: 'Renégats' };
 const spent = (p) => S.targets.reduce((n, t) => n + (p.alloc[t.id] || 0), 0);
 const planetOfGauge = (g) => S.targets.find((x) => x.id === g.planetId);
 const gaugeOf = (planet, side) => S.targets.find((g) => g.kind === 'gauge' && g.planetId === planet.id && g.side === side);
@@ -117,8 +118,9 @@ const sideTotal = (planet, side) => {
   const g = gaugeOf(planet, side);
   if (!g) return 0;
   const sum = Object.values(S.players).reduce((n, p) => n + (p.alloc[g.id] || 0) * (1 + planetBonus(p, planet) / 100), 0);
-  return Math.round(sum * (planet.multiplier || 1) * 1e4) / 1e4;
+  return Math.max(0, Math.round((sum * (planet.multiplier || 1) + (g.adjust || 0)) * 1e4) / 1e4); // g.adjust: correction typed by the admin
 };
+const rawSide = (planet, side) => { const g = gaugeOf(planet, side), a = g?.adjust; if (g) g.adjust = 0; const n = sideTotal(planet, side); if (g) g.adjust = a; return n; };
 const fixedSide = (p) => { const g = faction(p)?.gauge; return g === 'loyalist' || g === 'renegade' ? g : null; }; // null: picks the camp at each investment
 const allowedGauges = (p) => (fixedSide(p) ? [fixedSide(p)] : ['loyalist', 'renegade']);
 const wipeSide = (p) => { // the camp whose points the player's legion can destroy
@@ -130,7 +132,7 @@ const wipeSide = (p) => { // the camp whose points the player's legion can destr
 
 function allocate(p, target, amount) {
   if (!Number.isInteger(amount) || amount <= 0) throw new Error('Montant invalide');
-  if (target.kind !== 'gauge') throw new Error('Choisissez un camp (loyaliste ou traître)');
+  if (target.kind !== 'gauge') throw new Error('Choisissez un camp (loyaliste ou renégat)');
   const avail = p.points - spent(p);
   if (amount > avail) throw new Error(`Réserve insuffisante (${avail} point${avail > 1 ? 's' : ''} disponible${avail > 1 ? 's' : ''})`);
   if (!allowedGauges(p).includes(target.side)) throw new Error('Allégeance incompatible : ce camp vous est fermé');
@@ -196,7 +198,7 @@ function deliverTeasers(planet, pa, contributors) {
   for (const q of Object.values(S.players)) {
     if (contributors.includes(q) || (fixedSide(q) && !served.has(fixedSide(q))) || q.inbox.some((m) => m.tierId === pa.id)) continue;
     q.inbox.push({ tierId: pa.id, targetId: planet.id, t: Date.now(), teaser: true });
-    logEvt(`Extrait intercepté : ${planet.name}`, q.id);
+    logEvt(`Extrait intercepté : ${planet.name} « ${pa.label} »`, q.id);
   }
 }
 // what the planet is taken to be: the nature of the highest unlocked tier that sets one, else its starting nature
@@ -237,7 +239,7 @@ function wipe(p, planet) {
 function view(role, me) {
   const isAdmin = role === 'admin';
   const targets = S.targets.map((t) => ({
-    id: t.id, kind: t.kind, name: t.name, specialty: t.specialty, nature: t.kind === 'planet' ? natureOf(t, isAdmin ? null : me) : '', natureKnown: t.kind === 'planet' && !!revealedNature(t, isAdmin ? null : me), multiplier: t.multiplier, x: t.x, y: t.y, lbl: t.lbl, planetId: t.planetId, side: t.side,
+    id: t.id, kind: t.kind, name: t.name, specialty: isAdmin ? t.specialty : undefined, nature: t.kind === 'planet' ? (isAdmin ? natureOf(t, null) : revealedNature(t, me)) : '' /* players never get the starting nature: only what a tier revealed */, natureKnown: t.kind === 'planet' && !!revealedNature(t, isAdmin ? null : me), multiplier: t.multiplier, x: t.x, y: t.y, lbl: t.lbl, planetId: t.planetId, side: t.side,
     total: t.kind === 'planet' ? sideTotal(t, 'loyalist') + sideTotal(t, 'renegade') : sideTotal(planetOfGauge(t), t.side),
     mine: me ? (t.kind === 'planet' ? ['loyalist', 'renegade'].reduce((n, side) => n + (me.alloc[gaugeOf(t, side)?.id] || 0), 0) : me.alloc[t.id] || 0) : 0,
     // players never learn the tiers nobody has unlocked yet, not even how many there are; unlocked ones show only threshold, public label and prize winner
@@ -247,7 +249,7 @@ function view(role, me) {
       : null)),
   }));
   const campLog = (l) => me && l.scope?.startsWith('camp:') && (!fixedSide(me) || fixedSide(me) === l.scope.slice(5)); // a camp's own news
-  const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id) || campLog(l)).slice(0, 40).map(({ t, text }) => ({ t, text }));
+  const log = S.log.filter((l) => isAdmin || l.scope === 'public' || (me && l.scope === me.id) || campLog(l)).slice(0, isAdmin ? 200 : 40).map(({ t, text, scope }) => (isAdmin ? { t, text, scope } : { t, text })); // the admin also gets the kind of each line, to filter the log
   const out = { role, targets, log, factions: S.factions.map(({ id, name, gauge }) => ({ id, name, gauge })) };
   if (me) {
     out.me = { id: me.id, name: me.name, fluffName: me.fluffName || null, factionId: me.factionId, points: me.points - spent(me), gauges: allowedGauges(me), army: me.army || null, wipe: !me.abilityUsed ? wipeSide(me) : null };
@@ -257,29 +259,120 @@ function view(role, me) {
       if (!pa) return null;
       if (m.teaser) { // only the short notice, never the report, the rules or the prize
         const [head, ...rest] = pa.teaser.split('\n');
-        return { teaser: true, fx: t.fx || '', t: m.t, targetId: t.id, tierId: pa.id, targetName: t.name, label: pa.label, title: head.trim(), fluff: rest.join('\n').trim(), images: [], rules: '', hasPrize: false, prize: null, won: false };
+        return { teaser: true, fx: t.fx || '', t: m.t, targetId: t.id, tierId: pa.id, targetName: t.name, label: pa.label, title: head.trim(), fluff: rest.join('\n').trim(), docs: [], hasPrize: false, won: false };
       }
       const won = pa.winnerId === me.id;
-      return { t: m.t, fx: t.fx || '', targetId: t.id, tierId: pa.id, targetName: t.name, side: pa.winnerSide, label: pa.label, title: pa.title, fluff: pa.fluff, images: pa.images, rules: pa.rules, hasPrize: !!pa.prize, prize: won ? pa.prize : null, won, winnerName: pa.winnerName };
+      return { t: m.t, fx: t.fx || '', targetId: t.id, tierId: pa.id, targetName: t.name, side: pa.winnerSide, label: pa.label, title: pa.title, fluff: pa.fluff, docs: docsOf(pa), hasPrize: !!pa.prize, won, winnerName: pa.winnerName };
     }).filter(Boolean).reverse();
   }
+  { const { planets, share, idle, fx } = frontOf(); out.front = { planets: planets.map(({ id, x, y, share, ships, flags }) => ({ id, x, y, share, ships, flags })), share, idle, fx }; }
   if (isAdmin) {
     out.mailEnabled = mailEnabled;
+    out.commentary = { provider: provider(), last: lastStatus };
     out.players = Object.values(S.players).map((p) => ({ ...p, inbox: p.inbox.length, left: p.points - spent(p) }));
-    out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers: tiers.map(({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared }) => ({ id, threshold, label, title, fluff, images, rules, prize, nature, teaser, shared })) })) };
+    out.config = { factions: S.factions, armies: S.armies, targets: S.targets.map(({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers }) => ({ id, kind, name, specialty, nature, fx, multiplier, x, y, lbl, planetId, side, tiers: tiers.map((pa) => ({ id: pa.id, threshold: pa.threshold, label: pa.label, title: pa.title, docs: docsOf(pa), teaser: pa.teaser, shared: pa.shared })) })) };
   }
   return out;
 }
 
 // What a spectator may see, without any code: the planets and each camp's score and number of tiers won. Nothing about players, reports, rules or prizes.
-function publicView() {
+// The visitor gets no figure at all: the share of each camp on a planet (for the balance bar) and a chronicle written by two scribes,
+// one on each side, from what is already public (who leads where, who has won more tiers). Never the content of a tier.
+const names = (l) => (l.length < 2 ? l.join('') : `${l.slice(0, -1).join(', ')} et ${l[l.length - 1]}`);
+const SCRIBES = { loyalist: 'Frère Hesper, archiviste de l’Ordo Astronomica', renegade: 'Le Scribe de la Fosse' };
+function chronicle(planets, tot) {
+  const sum = tot.loyalist + tot.renegade, share = sum ? tot.loyalist / sum : 0.5;
+  const held = (side) => names(planets.filter((p) => p.lead === side).map((p) => p.name));
+  if (planets.every((p) => p.lead === 'none')) {
+    return [{ camp: 'loyalist', author: SCRIBES.loyalist, text: 'Les vaisseaux d’éclairage ont quitté l’orbite, mais aucune bannière n’a encore été plantée dans le Système Smaragdus. L’Empereur attend, et l’Imperium avec lui.' },
+      { camp: 'renegade', author: SCRIBES.renegade, text: 'Le silence règne sur la frontière. Les loups affûtent leurs lames : celui qui frappera le premier écrira l’histoire de ce système.' }];
+  }
+  const lw = held('loyalist'), rw = held('renegade');
+  const tiers = Math.sign(tot.tiersLoyalist - tot.tiersRenegade);
+  const mood = share > 0.62 ? 1 : share < 0.38 ? -1 : 0;
+  const hesper = [
+    mood > 0 ? 'Je consigne avec une fierté mesurée que les armées de l’Imperium tiennent l’initiative sur la frontière de Smaragdus.'
+      : mood < 0 ? 'Je consigne, la plume lourde, que les Renégats gagnent du terrain sur la frontière de Smaragdus.'
+      : 'Je consigne que la balance vacille sur la frontière de Smaragdus : nul ne peut encore dire qui l’emportera.',
+    lw && `Nos bannières flottent plus haut sur ${lw}.`, rw && `L’ennemi s’accroche à ${rw}.`,
+    tiers > 0 ? 'Nos équipes de reconnaissance arrachent les secrets de ces mondes avant l’adversaire.' : tiers < 0 ? 'Les secrets de ces mondes tombent plus souvent entre des mains renégates : il faut redoubler d’efforts.' : 'Les secrets de ces mondes se dévoilent à égalité entre les deux camps.',
+  ].filter(Boolean).join(' ');
+  const fosse = [
+    mood < 0 ? 'La Fosse se réjouit : les loyalistes reculent, et leurs étendards pourrissent sur les mondes de Smaragdus.'
+      : mood > 0 ? 'Les chiens de l’Empereur avancent, mais ils avancent dans une toile que nous tissons.'
+      : 'Rien n’est joué, et c’est tant mieux : une guerre indécise nourrit les dieux.',
+    rw && `Nous tenons ${rw}.`, lw && `Ils se vantent de ${lw}, pour combien de temps ?`,
+    tiers < 0 ? 'Les vieux secrets nous reviennent, comme il se doit.' : tiers > 0 ? 'Ils déterrent des archives avant nous. Qu’ils les lisent : certaines vérités brûlent les yeux.' : '',
+  ].filter(Boolean).join(' ');
+  return [{ camp: 'loyalist', author: SCRIBES.loyalist, text: hesper }, { camp: 'renegade', author: SCRIBES.renegade, text: fosse }];
+}
+// What the map shows to everyone, without any score: the share of each camp, a fleet level (0..6) per camp and planet that grows with the points
+// against the highest tier of the planet, the tiers won (flags), and how many players still hold points to invest (ships on the move).
+function frontOf() {
+  const lvl = (n, top) => (n > 0 ? Math.min(6, Math.max(1, Math.ceil((6 * n) / top))) : 0);
   const planets = S.targets.filter((t) => t.kind === 'planet').map((t) => {
     const won = (side) => t.tiers.filter((pa) => pa.unlocked && pa.winnerSide === side).length;
-    return { id: t.id, name: t.name, x: t.x, y: t.y, lbl: t.lbl, loyalist: sideTotal(t, 'loyalist'), renegade: sideTotal(t, 'renegade'), tiersLoyalist: won('loyalist'), tiersRenegade: won('renegade') };
+    const l = sideTotal(t, 'loyalist'), r = sideTotal(t, 'renegade'), sum = l + r, share = sum ? l / sum : null, top = Math.max(1, ...t.tiers.map((pa) => pa.threshold));
+    return { id: t.id, name: t.name, x: t.x, y: t.y, lbl: t.lbl, share, lead: share === null ? 'none' : share > 0.6 ? 'loyalist' : share < 0.4 ? 'renegade' : 'even',
+      ships: { loyalist: lvl(l, top), renegade: lvl(r, top) }, flags: { loyalist: won('loyalist'), renegade: won('renegade') }, nature: revealedNature(t, null), excerpts: excerptsOf(t), _l: l, _r: r, _tl: won('loyalist'), _tr: won('renegade') };
   });
   const sum = (k) => planets.reduce((n, p) => n + p[k], 0);
-  return { planets, totals: { loyalist: sum('loyalist'), renegade: sum('renegade'), tiersLoyalist: sum('tiersLoyalist'), tiersRenegade: sum('tiersRenegade') } };
+  const tot = { loyalist: sum('_l'), renegade: sum('_r'), tiersLoyalist: sum('_tl'), tiersRenegade: sum('_tr') };
+  return { planets: planets.map(({ _l, _r, _tl, _tr, ...p }) => p), share: tot.loyalist + tot.renegade ? tot.loyalist / (tot.loyalist + tot.renegade) : null,
+    idle: Object.values(S.players).filter((p) => p.points - spent(p) > 0).length, chronicle: chronicle(planets, tot),
+    fx: recentFx(), bubbles: recentBubbles() };
 }
+const publicView = frontOf;
+
+// A part of the story for the visitor: the first lines of the document of each tier a camp has unlocked (never the later ones, nor prizes or rules).
+function excerptsOf(t) {
+  return t.tiers.filter((pa) => pa.unlocked).sort((a, b) => a.threshold - b.threshold).map((pa) => {
+    const raw = docsOf(pa).find((d) => d.type === 'fluff')?.text || '';
+    const clean = raw.split('\n').filter((l) => l.trim() && !/^CLASSIFICATION|^\[\d\d:\d\d:\d\d\]|^\+\+/.test(l.trim())).join(' ').replace(/\s+/g, ' ').trim();
+    if (!clean) return null;
+    const cut = clean.length > 240 ? clean.slice(0, 240).replace(/\s+\S*$/, '') + '…' : clean;
+    return { label: pa.label, text: cut };
+  }).filter(Boolean);
+}
+
+// ---------- effects and commentators ----------
+// fx: short-lived visual events (a bomb where a legion power hit). comments: what the two scribes said, shown as bubbles on the visitor's map.
+const FX_KEEP = 60_000, BUBBLE_KEEP = 30_000, COMMENT_GAP = 30_000;
+const recentFx = () => (S.fx || []).filter((f) => Date.now() - f.t < FX_KEEP).map((f) => ({ id: f.t, type: f.type, planetId: f.planetId, age: Math.floor((Date.now() - f.t) / 1000) }));
+const recentBubbles = () => (S.comments || []).filter((c) => Date.now() - c.t < BUBBLE_KEEP).slice(-2).map((c) => ({ id: c.t, camp: c.camp, author: c.author, text: c.text, planetId: c.planetId, age: Math.floor((Date.now() - c.t) / 1000) }));
+// What the scribes may know of the log: the last events turned into anonymous sentences (no player, no amount, no tier name),
+// from the lines of every scope. Reinforcements only say where and for which camp.
+function recentEvents() {
+  const out = [], seen = new Set();
+  for (const l of S.log) { // newest first
+    if (Date.now() - l.t > 20 * 60_000 || out.length >= 8) break;
+    let m, e = null;
+    if ((m = /^PALIER (.+?) « .* » \(\d+\) franchi par les (Loyalistes|Renégats)/.exec(l.text))) e = `un palier a été franchi sur ${m[1]} par les ${m[2].toLowerCase()}`;
+    else if ((m = /^Premier contact établi sur (.+)$/.exec(l.text))) e = `premier contact établi sur ${m[1]}`;
+    else if ((m = /→ (.+?) · (Loyaliste|Renégat) : \+/.exec(l.text))) e = `des renforts ${m[2].toLowerCase()}s arrivent sur ${m[1]}`;
+    else if ((m = /détruit les points des (Loyalistes|Renégats) sur (.+?) :/.exec(l.text))) e = `les points des ${m[1].toLowerCase()} ont été détruits sur ${m[2]}`;
+    if (e && !seen.has(e)) { seen.add(e); out.push(e); }
+  }
+  return out;
+}
+let lastComment = 0, commenting = false, lastStatus = null; // lastStatus: what the last comment came from, for the admin
+// A stimulus (points invested, points given, power used, or a timer) may make a scribe speak: at most one comment every 30 seconds,
+// and only some stimuli trigger one (a power always does). The text only carries public facts.
+function stimulate(kind, { planet = null, side = null, force = false } = {}) {
+  const now = Date.now();
+  if (commenting || now - lastComment < COMMENT_GAP || (!force && Math.random() > 0.45)) return;
+  commenting = true; lastComment = now;
+  const f = frontOf(), lead = (side) => names(f.planets.filter((p) => p.lead === side).map((p) => p.name));
+  const situation = f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde'
+    : `les loyalistes dominent ${lead('loyalist') || 'aucun monde'} ; les renégats dominent ${lead('renegade') || 'aucun monde'}`;
+  const camp = side || (Math.random() < 0.5 ? 'loyalist' : 'renegade');
+  comment({ kind, camp, planet: planet && { id: planet.id, name: planet.name }, situation, events: recentEvents() })
+    .then(({ source, error, ...c }) => { lastStatus = { at: Date.now(), source, error }; (S.comments ??= []).push({ ...c, t: Date.now() }); S.comments.splice(0, Math.max(0, S.comments.length - 30)); save(); broadcast(); })
+    .catch((e) => console.error('Commentary failed:', e.message))
+    .finally(() => { commenting = false; });
+}
+setInterval(() => { if (Object.values(S.players).some((p) => spent(p) > 0)) stimulate('idle'); }, 4 * 60_000).unref();
+
 
 function auth(req) {
   const tok = String(req.headers['x-token'] || '');
@@ -334,6 +427,7 @@ function validateConfig(c) {
       if (!pa.id || tierIds.has(pa.id) || !(Number(pa.threshold) > 0)) throw new Error(`palier invalide ou id dupliqué dans ${t.id}: ${pa.id}`);
       tierIds.add(pa.id);
       if (pa.images != null && !Array.isArray(pa.images)) throw new Error(`images[] attendu: ${pa.id}`);
+      if (pa.docs != null && !Array.isArray(pa.docs)) throw new Error(`docs[] attendu: ${pa.id}`);
     }
   }
   if (c.armies != null && !Array.isArray(c.armies)) throw new Error('armies[] attendu');
@@ -346,6 +440,27 @@ function validateConfig(c) {
   }
 }
 
+// Documents unlocked by a tier (0..N): fluff text, image, prize, reclassification of the planet, special rule. The flat fields
+// (fluff, images, rules, prize, nature) are derived from them, so the rest of the server keeps working on them. A tier saved or imported
+// without `docs` (old files, seed-planets.json) gets its documents from those flat fields.
+const DOC_TYPES = ['fluff', 'image', 'prize', 'reclass', 'rule'];
+const str = (v) => String(v ?? '');
+const worldClass = (v) => str(v).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+function docsOf(pa) {
+  const blank = { id: '', type: '', title: '', text: '', url: '', caption: '', template: 'standard', cssClass: '', rule: '' };
+  if (Array.isArray(pa.docs)) {
+    return pa.docs.filter((d) => DOC_TYPES.includes(d?.type)).map((d, i) => ({ ...blank, id: str(d.id) || `${pa.id}-d${i}`, type: d.type, title: str(d.title).slice(0, 200), text: str(d.text), url: str(d.url).slice(0, 500), caption: str(d.caption).slice(0, 300), template: d.template === 'vox' ? 'vox' : 'standard', cssClass: worldClass(d.cssClass), rule: str(d.rule).slice(0, 200) }));
+  }
+  const out = [];
+  if (str(pa.fluff).trim()) out.push({ ...blank, type: 'fluff', text: str(pa.fluff) });
+  for (const u of pa.images || []) if (str(u).trim()) out.push({ ...blank, type: 'image', url: str(u) });
+  if (str(pa.rules).trim()) out.push({ ...blank, type: 'rule', title: 'Doctrine acquise', text: str(pa.rules) });
+  if (str(pa.prize).trim()) out.push({ ...blank, type: 'prize', text: str(pa.prize) });
+  if (str(pa.nature).trim()) out.push({ ...blank, type: 'reclass', text: str(pa.nature) });
+  return out.map((d, i) => ({ ...d, id: `${pa.id}-d${i}` }));
+}
+const firstDoc = (docs, type) => docs.find((d) => d.type === type);
+
 // Applies a full configuration (planets, gauges, tiers, legions, factions). What the game recorded (unlocked tiers, winners, camps) is kept by tier id.
 function applyConfig(b) {
   validateConfig(b);
@@ -355,10 +470,10 @@ function applyConfig(b) {
   const old = new Map(S.targets.flatMap((t) => t.tiers.map((pa) => [pa.id, pa])));
   S.factions = b.factions;
   if (b.armies) S.armies = b.armies.map((a) => ({ name: String(a.name), bonus: a.bonus?.planetId ? { planetId: a.bonus.planetId, pct: Number(a.bonus.pct) } : null, wipe: ['loyalist', 'renegade', 'opponent'].includes(a.wipe) ? a.wipe : null }));
-  const str = (v) => String(v ?? '');
-  S.targets = b.targets.map((t) => ({ ...t, tiers: t.kind === 'gauge' ? [] : t.tiers.map((pa) => { // unlock state and prize winner are kept by tier id
-    const o = old.get(pa.id);
-    return { id: pa.id, threshold: Number(pa.threshold), label: str(pa.label), title: str(pa.title), fluff: str(pa.fluff), images: (pa.images || []).map(str).filter(Boolean), rules: str(pa.rules), prize: str(pa.prize), nature: str(pa.nature), teaser: str(pa.teaser), shared: !!pa.shared, unlocked: o?.unlocked ?? false, camps: o?.camps ?? [], winnerSide: o?.winnerSide ?? null, winnerId: o?.winnerId ?? null, winnerName: o?.winnerName ?? null };
+  const oldT = new Map(S.targets.map((x) => [x.id, x]));
+  S.targets = b.targets.map((t) => ({ ...t, ...(t.kind === 'gauge' ? { adjust: oldT.get(t.id)?.adjust ?? 0 } : {}), tiers: t.kind === 'gauge' ? [] : t.tiers.map((pa) => { // unlock state and prize winner are kept by tier id
+    const o = old.get(pa.id), docs = docsOf(pa);
+    return { id: pa.id, threshold: Number(pa.threshold), label: str(pa.label), title: str(pa.title), docs, fluff: firstDoc(docs, 'fluff')?.text ?? '', images: docs.filter((d) => d.type === 'image').map((d) => d.url).filter(Boolean), rules: firstDoc(docs, 'rule')?.text ?? '', prize: firstDoc(docs, 'prize')?.text ?? '', nature: firstDoc(docs, 'reclass')?.text ?? '', teaser: str(pa.teaser), shared: !!pa.shared, unlocked: o?.unlocked ?? false, camps: o?.camps ?? [], winnerSide: o?.winnerSide ?? null, winnerId: o?.winnerId ?? null, winnerName: o?.winnerName ?? null };
   }) }));
   for (const t of S.targets) if (t.kind === 'planet') settle(t); // new thresholds or prizes can unlock tiers right away
   logEvt('Configuration mise à jour');
@@ -417,12 +532,36 @@ function importPlayers(list) {
   return { added, updated };
 }
 
+// ---------- lost code ----------
+// A player who lost their code types their address on the login page. The answer is the same whether the address is known or not, and
+// it comes at once (the mail is sent afterwards), so nobody can probe which addresses exist. Limits: 5 requests per address (IP) per
+// 10 minutes, and one mail per player address per 10 minutes. The admin log only says whether the address was known, never the address.
+const SITE_URL = process.env.PUBLIC_URL || 'https://smaragdus.antredudragon.fr';
+const LOST_IP = new Map(), LOST_MAIL = new Map(), LOST_WINDOW = 10 * 60_000;
+setInterval(() => { const now = Date.now(); for (const m of [LOST_IP, LOST_MAIL]) for (const [k, f] of m) if (now > f.until) m.delete(k); }, LOST_WINDOW).unref();
+const hit = (map, key, max) => { const now = Date.now(), f = map.get(key); if (!f || now > f.until) { map.set(key, { n: 1, until: now + LOST_WINDOW }); return true; } return ++f.n <= max; };
+const AMBIGUOUS = { 0: '0 est le chiffre zéro', o: 'o est la lettre O minuscule', 1: '1 est le chiffre un', l: 'l est la lettre L minuscule', i: 'i est la lettre I minuscule' };
+function lostCodeMail(players) {
+  const lines = players.map((p) => {
+    const amb = [...new Set([...p.code].filter((c) => AMBIGUOUS[c]))].map((c) => AMBIGUOUS[c]);
+    return `- ${p.fluffName || p.name} : ${p.code}${amb.length ? `\n  (attention : ${amb.join(' ; ')})` : ''}\n  ${SITE_URL}/?code=${p.code}`;
+  });
+  return `Salutations,\n\nLe cogitateur a reçu une demande de rappel de sigil pour cette adresse. ${players.length > 1 ? 'Voici les sigils associés' : 'Voici votre sigil'} :\n\n${lines.join('\n\n')}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\nGloire à l'Empereur... ou à qui vous savez.`;
+}
+function lostCode(email, ip) {
+  const known = Object.values(S.players).filter((p) => (p.email || '').trim().toLowerCase() === email);
+  logEvt(`Code perdu demandé : adresse ${known.length ? 'connue' : 'inconnue'}`);
+  if (!known.length || !mailEnabled || !hit(LOST_MAIL, email, 1)) return;
+  sendMail(email, 'Système Smaragdus : votre sigil d\'accès', lostCodeMail(known)).catch((e) => console.error('Lost-code mail failed:', e.message));
+}
+
 async function body(req) {
   let s = '';
   for await (const ch of req) { s += ch; if (s.length > 1e6) throw new Error('Corps trop gros'); }
   return s ? JSON.parse(s) : {};
 }
 
+S.comments ??= []; S.fx ??= [];
 for (const t of S.targets) if (t.kind === 'planet') settle(t); // delivers reports missing after a migration
 if (loadFailed) console.error(`Not writing ${DATA_FILE} at startup: it could not be read, fix or remove it first.`); else save(); // persist the seed or the migration
 http.createServer(async (req, res) => {
@@ -435,6 +574,13 @@ http.createServer(async (req, res) => {
       return;
     }
     if (url.pathname === '/api/public') return send(res, 200, publicView());
+    if (req.method === 'POST' && url.pathname === '/api/lost-code') {
+      const email = String((await body(req)).email || '').trim().toLowerCase();
+      if (email.length > 200 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { error: 'Adresse mail invalide' });
+      if (!hit(LOST_IP, clientIp(req), 5)) return send(res, 429, { error: 'Trop de demandes : réessayez dans quelques minutes.' });
+      lostCode(email);
+      return send(res, 200, { ok: true });
+    }
     if (url.pathname.startsWith('/api/')) {
       const ip = clientIp(req);
       if (blocked(ip)) return send(res, 429, { error: 'Trop de tentatives : réessayez dans une minute.' });
@@ -451,12 +597,15 @@ http.createServer(async (req, res) => {
         const t = S.targets.find((x) => x.id === b.targetId);
         if (!t) throw new Error('Cible inconnue');
         allocate(p, t, int(b.amount));
+        stimulate('invest', { planet: S.targets.find((x) => x.id === t.planetId) || t, side: t.side });
       } else if (route === 'POST /api/ability') {
         const p = a.role === 'admin' ? S.players[b.playerId] : a.me;
         if (!p) throw new Error('Joueur inconnu');
         const t = S.targets.find((x) => x.id === b.targetId);
         if (!t || t.kind !== 'planet') throw new Error('Planète inconnue');
         wipe(p, t);
+        (S.fx ??= []).push({ t: Date.now(), type: 'bomb', planetId: t.id }); S.fx.splice(0, Math.max(0, S.fx.length - 20));
+        stimulate('power', { planet: t, side: fixedSide(p), force: true });
       } else if (a.role !== 'admin') {
         return send(res, 403, { error: 'Admin requis' });
       } else if (route === 'POST /api/admin/player') {
@@ -476,6 +625,26 @@ http.createServer(async (req, res) => {
         if (p.points + n < spent(p)) throw new Error('Retrait supérieur aux points disponibles');
         p.points += n;
         logEvt(`${n >= 0 ? '+' : ''}${n} points pour ${p.name}`, p.id);
+        if (n > 0) stimulate('grant');
+      } else if (route === 'POST /api/admin/set-points') {
+        // correction of a mistake: the total of a player is set to a value (never below what they already invested)
+        const p = S.players[b.playerId];
+        if (!p) throw new Error('Joueur inconnu');
+        const n = int(b.points);
+        if (n < 0) throw new Error('Valeur négative impossible');
+        if (n < spent(p)) throw new Error(`Impossible : ${p.name} a déjà investi ${spent(p)} points`);
+        logEvt(`Correction : points de ${p.name} fixés à ${n} (avant : ${p.points})`);
+        p.points = n;
+      } else if (route === 'POST /api/admin/set-gauge') {
+        // correction of a camp's score on a planet: the gap to the points really invested is kept as an adjustment
+        const g = S.targets.find((x) => x.id === b.targetId && x.kind === 'gauge');
+        if (!g) throw new Error('Jauge inconnue');
+        const value = Number(b.value);
+        if (!Number.isFinite(value) || value < 0) throw new Error('Valeur invalide');
+        const planet = planetOfGauge(g);
+        g.adjust = Math.round((value - rawSide(planet, g.side)) * 1e4) / 1e4;
+        logEvt(`Correction : score ${SIDE_NAME[g.side]} sur ${planet.name} fixé à ${value}`);
+        settle(planet); // a higher score can win tiers; a lower one never takes a won tier back
       } else if (route === 'POST /api/admin/faction') {
         const p = S.players[b.playerId];
         if (!p || !S.factions.some((f) => f.id === b.factionId)) throw new Error('Joueur ou faction inconnu');
@@ -490,6 +659,17 @@ http.createServer(async (req, res) => {
         try { await sendMail(p.email, subject, text); } catch (e) { console.error(`Mail to ${p.email}:`, e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
         p.mailedAt = Date.now();
         logEvt(`Mail envoyé à ${p.name} (${p.email})`);
+      } else if (route === 'POST /api/admin/mail-test') {
+        const to = String(b.to || '').trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) throw new Error('Adresse invalide');
+        try { await sendMail(to, 'Système Smaragdus : test d\'envoi', 'Si vous lisez ce message, l\'envoi de mail du Système Smaragdus fonctionne.'); } catch (e) { console.error('Mail test:', e.message); throw new Error(`Échec de l’envoi du mail : ${e.message}`); }
+        reply.sent = true;
+      } else if (route === 'POST /api/admin/commentary-test') {
+        // one comment on demand, not shown on the map: tells whether the API answers or the phrase banks are used
+        const f = frontOf();
+        const c = await comment({ kind: 'idle', camp: Math.random() < 0.5 ? 'loyalist' : 'renegade', planet: null, situation: f.planets.every((p) => p.lead === 'none') ? 'aucun camp ne tient encore de monde' : 'la bataille fait rage', events: recentEvents() });
+        lastStatus = { at: Date.now(), source: c.source, error: c.error };
+        Object.assign(reply, { text: c.text, author: c.author, source: c.source, error: c.error });
       } else if (route === 'POST /api/admin/reset') {
         // Reset game: investments, winners, log. Config is kept.
         for (const t of S.targets) for (const pa of t.tiers) { pa.winnerId = pa.winnerName = pa.winnerSide = null; pa.unlocked = false; pa.camps = []; }
@@ -504,7 +684,9 @@ http.createServer(async (req, res) => {
       } else if (route === 'POST /api/admin/import-players') {
         Object.assign(reply, importPlayers(b.players));
       } else if (route === 'PUT /api/admin/config') {
-        applyConfig(b);
+        // the raw JSON may also carry the players (as in seed-players.json): they are imported after the configuration, all or nothing
+        const snap = structuredClone(S);
+        try { applyConfig(b); if (Array.isArray(b.players) && b.players.length) importPlayers(b.players); } catch (e) { S = snap; throw e; }
       } else return send(res, 404, { error: 'Route inconnue' });
       save(); broadcast();
       return send(res, 200, reply);

@@ -17,7 +17,7 @@ before(async () => {
   const port = 41000 + Math.floor(Math.random() * 2000);
   const dataFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'smaragdus-')), 'data.json');
   base = `http://localhost:${port}`;
-  proc = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(port), ADMIN_PASSWORD: ADMIN, DATA_FILE: dataFile, SMTP_USER: '', SMTP_PASS: '' } });
+  proc = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(port), ADMIN_PASSWORD: ADMIN, DATA_FILE: dataFile, SMTP_USER: '', SMTP_PASS: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
   await new Promise((resolve, reject) => {
     proc.stdout.on('data', (d) => { if (String(d).includes('listening')) resolve(); });
     proc.on('exit', (code) => reject(new Error(`server exited with ${code}`)));
@@ -71,8 +71,18 @@ test('spectator view: reachable without any code, read-only', async () => {
   const pub = await api('', 'GET', '/api/public');
   assert.equal(pub.status, 200);
   assert.equal(pub.json.planets.length, 7);
-  assert.deepEqual(Object.keys(pub.json.totals).sort(), ['loyalist', 'renegade', 'tiersLoyalist', 'tiersRenegade']);
+  assert.equal(pub.json.chronicle.length, 2, 'two chroniclers');
+  assert.ok(!/\d/.test(pub.json.chronicle.map((c) => c.text).join(' ')), 'the chronicle has no figure');
   assert.equal((await api('', 'POST', '/api/allocate', { targetId: 'grus-loyalist', amount: 1 })).status, 401, 'a spectator cannot invest');
+});
+
+test('spectator view: only short excerpts of unlocked tiers, comments without figures', async () => {
+  const pub = (await api('', 'GET', '/api/public')).json;
+  for (const p of pub.planets) {
+    assert.ok(Array.isArray(p.excerpts));
+    for (const x of p.excerpts) assert.ok(x.text.length <= 241, 'an excerpt is short');
+  }
+  for (const b of pub.bubbles) assert.ok(!/d/.test(b.text), 'a bubble has no figure');
 });
 
 test('spectator view: no player data, no report text', async () => {
@@ -119,7 +129,8 @@ test('the camp that reaches a threshold first wins the tier, the other camp lear
   assert.ok(!tiers(ren).some((t) => t.winnerSide === 'loyalist'), 'the other camp does not see the tier');
   assert.ok(!ren.log.some((l) => /PALIER/.test(l.text)), 'the other camp does not see the log line');
   const pub = (await api('', 'GET', '/api/public')).json;
-  assert.ok(pub.totals.tiersLoyalist >= 1, 'the spectator counts the tier');
+  assert.ok(pub.planets.find((p) => p.id === 'leo').share > 0.6, 'the spectator sees the loyalist lead on Leo');
+  assert.ok(!JSON.stringify(pub).includes('totals'), 'no totals');
 });
 
 test('players without a fixed camp get the notice of a won tier, not the full report', async () => {
@@ -161,6 +172,23 @@ test('importing players keeps the fields the file does not mention', async () =>
   assert.equal(after.factionId, p.factionId);
 });
 
+test('typed documents are kept, sanitized, and old flat fields are migrated into documents', async () => {
+  const cfg = (await admin('GET', '/api/state')).json.config;
+  const planet = cfg.targets.find((x) => x.kind === 'planet');
+  const tier = planet.tiers[1];
+  assert.ok(Array.isArray(tier.docs), 'the config exposes documents');
+  tier.docs = [{ type: 'image', url: '/img/x.webp', caption: 'Légende', cssClass: 'Grus Sombre!' }, { type: 'bogus', text: 'x' }, { type: 'prize', text: 'Un lot' }];
+  assert.equal((await admin('PUT', '/api/admin/config', cfg)).status, 200);
+  const back = (await admin('GET', '/api/state')).json.config.targets.find((x) => x.id === planet.id).tiers.find((x) => x.id === tier.id);
+  assert.deepEqual(back.docs.map((d) => d.type), ['image', 'prize'], 'unknown types are dropped');
+  assert.equal(back.docs[0].cssClass, 'grussombre', 'the world class is sanitized');
+  const old = structuredClone(cfg); const o = old.targets.find((x) => x.id === planet.id).tiers.find((x) => x.id === tier.id);
+  delete o.docs; o.fluff = 'Texte'; o.images = ['/img/y.webp']; o.nature = 'Monde mort';
+  assert.equal((await admin('PUT', '/api/admin/config', old)).status, 200);
+  const mig = (await admin('GET', '/api/state')).json.config.targets.find((x) => x.id === planet.id).tiers.find((x) => x.id === tier.id);
+  assert.deepEqual(mig.docs.map((d) => d.type), ['fluff', 'image', 'reclass']);
+});
+
 test('a configuration cannot drop a faction that players still use', async () => {
   const cfg = (await admin('GET', '/api/state')).json.config;
   cfg.factions = cfg.factions.filter((f) => f.id !== 'loyalist');
@@ -195,6 +223,64 @@ test('static files: a folder or a data file is never served', async () => {
   assert.equal((await fetch(base + '/seed-players.json')).status, 404);
   assert.equal((await fetch(base + '/../server.js')).status, 404);
   assert.equal((await fetch(base + '/')).status, 200, 'the server is still alive');
+});
+
+// ---------- services ----------
+test('admin services: mail test refuses without SMTP, commentary test answers with its source', async () => {
+  assert.equal((await api('x', 'POST', '/api/admin/commentary-test', {})).status, 401);
+  const mail = await admin('POST', '/api/admin/mail-test', { to: 'quelquun@example.org' });
+  assert.equal(mail.status, 400, 'no SMTP in the tests');
+  assert.match(mail.json.error, /Échec|non configuré/i);
+  assert.equal((await admin('POST', '/api/admin/mail-test', { to: 'pas-une-adresse' })).status, 400);
+  const c = await admin('POST', '/api/admin/commentary-test', {});
+  assert.equal(c.status, 200);
+  assert.equal(c.json.source, 'banks', 'no API key in the tests');
+  assert.ok(c.json.text.length > 10 && !/[0-9]/.test(c.json.text));
+  const st = (await admin('GET', '/api/state')).json;
+  assert.equal(st.commentary.provider, null);
+  assert.equal(st.commentary.last.source, 'banks');
+  assert.equal((await api(roster[0].code, 'GET', '/api/state')).json.commentary, undefined, 'a player does not see the services');
+});
+
+// ---------- corrections ----------
+test('admin corrections: player total and planet score can be set, never below what was invested', async () => {
+  assert.equal((await admin('POST', '/api/admin/player', { name: 'Correction', code: 'correction-test', factionId: 'loyalist' })).status, 200);
+  const p = { id: (await admin('GET', '/api/state')).json.players.find((x) => x.code === 'correction-test').id, code: 'correction-test' };
+  await give(p, 10);
+  await invest(p, 'scorpius-loyalist', 4);
+  const st = async () => (await admin('GET', '/api/state')).json;
+  assert.equal((await admin('POST', '/api/admin/set-points', { playerId: p.id, points: 2 })).status, 400, 'below the invested points');
+  assert.equal((await admin('POST', '/api/admin/set-points', { playerId: p.id, points: 7 })).status, 200);
+  assert.equal((await st()).players.find((x) => x.id === p.id).points, 7);
+  assert.equal((await api(p.code, 'POST', '/api/admin/set-points', { playerId: p.id, points: 99 })).status, 403, 'a player cannot');
+  assert.equal((await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius-loyalist', value: 12 })).status, 200);
+  const g = (await st()).targets.find((x) => x.id === 'scorpius-loyalist');
+  assert.equal(g.total, 12, 'the score is the one typed');
+  assert.equal((await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius-loyalist', value: -1 })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius', value: 3 })).status, 400, 'a planet is not a gauge');
+  await admin('POST', '/api/admin/set-gauge', { targetId: 'scorpius-loyalist', value: 4 }); // back to the invested points
+});
+
+test('the configuration JSON may carry players: imported with the configuration, all or nothing', async () => {
+  const cfg = (await admin('GET', '/api/state')).json.config;
+  const bad = await admin('PUT', '/api/admin/config', { ...cfg, players: [{ name: 'Sans code', code: 'x' }] });
+  assert.equal(bad.status, 400, 'an invalid player refuses the whole file');
+  const ok = await admin('PUT', '/api/admin/config', { ...cfg, players: [{ name: 'Joueur JSON', code: 'json-player-1', factionId: 'neutral' }] });
+  assert.equal(ok.status, 200);
+  assert.ok((await admin('GET', '/api/state')).json.players.some((p) => p.code === 'json-player-1'));
+});
+
+// ---------- lost code ----------
+test('lost code: the same answer for a known and an unknown address, a bad format is refused, requests are limited', async () => {
+  const post = (email) => fetch(base + '/api/lost-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+  const known = await post(roster.find((p) => p.email).email), unknown = await post('personne@inconnu.example');
+  assert.equal(known.status, 200);
+  assert.equal(unknown.status, 200);
+  assert.deepEqual(await known.json(), await unknown.json());
+  assert.equal((await post('pas-une-adresse')).status, 400);
+  let last;
+  for (let i = 0; i < 6 && last !== 429; i++) last = (await post('x' + i + '@inconnu.example')).status;
+  assert.equal(last, 429, 'the requests of one address are limited');
 });
 
 // ---------- login throttling (last: it locks the address of the tests for a minute) ----------

@@ -77,7 +77,7 @@ main{--mapw:100%}
 #mapwrap,#front,.maptools{width:var(--mapw);margin-inline:auto}
 #mapwrap{position:relative;overflow:hidden}
 #map{width:100%}
-#pzoom{position:absolute;left:8px;bottom:8px;width:min(380px,calc(100% - 16px));max-height:62%;overflow:auto;z-index:6;background:#000d;font-size:13px}
+#pzoom{position:absolute;left:8px;bottom:8px;width:min(380px,calc(100% - 16px));max-height:62%;overflow-x:hidden;overflow-y:auto;z-index:6;background:#000d;font-size:13px}
 #pzoom blockquote{margin:6px 0;padding-left:8px;border-left:2px solid var(--line);font-style:italic}
 .bomb{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:radial-gradient(circle,#fff6c8 0,#ff9a2e 30%,#c2321c 55%,transparent 72%);opacity:0;animation:boom 3s ease-out 3}
 @keyframes boom{0%{transform:scale(.1);opacity:1}60%{opacity:.85}100%{transform:scale(1.7);opacity:0}}
@@ -131,7 +131,8 @@ dialog.planetdlg{width:min(560px,94vw);max-height:88vh;overflow-x:hidden;overflo
 dialog.planetdlg.wide{width:min(920px,96vw)}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}.cols h3{margin-top:0}
 @media(max-width:700px){.cols{grid-template-columns:1fr}}
-.pbg{position:absolute;right:-130px;top:50%;margin-top:-130px;width:260px;height:260px;border-radius:50%;background:center/cover no-repeat;opacity:.7;pointer-events:none;-webkit-mask:radial-gradient(circle,#000 58%,transparent 72%);mask:radial-gradient(circle,#000 58%,transparent 72%)}
+.pbg{position:absolute;right:-110px;top:50%;margin-top:-150px;width:300px;height:300px;border-radius:50%;background:center/cover no-repeat;opacity:.85;pointer-events:none;-webkit-mask:radial-gradient(circle closest-side,#000 84%,transparent 100%);mask:radial-gradient(circle closest-side,#000 84%,transparent 100%)}
+#pzoom>*:not(.pbg){position:relative;z-index:1}
 .tools{margin:8px 0}.tools input[type=search]{flex:1;min-width:200px}
 dialog::before{content:"";display:block;height:34px;margin:-16px -16px 12px;background:url(/img/deco/dialog-banner.webp) center/100% 100% no-repeat}
 dialog h2{border-bottom:1px solid var(--line);padding-bottom:6px;background:linear-gradient(90deg,rgba(201,169,106,.14),transparent)}
@@ -532,7 +533,7 @@ function fillSpecPlanet() {
   const p = specPlanets.find((x) => x.id === specPlanetId), box = $('#pzoom');
   if (!p) return box.classList.add('hide');
   box.classList.remove('hide');
-  box.replaceChildren(h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, p.name), h('button', { onclick: resetZoom }, 'Vue complète')),
+  box.replaceChildren(planetBg(p.id), h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, p.name), h('button', { onclick: resetZoom }, 'Vue complète')),
     h('p', {}, h('b', {}, 'Nature du monde : '), p.nature || 'inconnue'),
     ...(p.excerpts.length ? p.excerpts.map((x) => h('blockquote', {}, h('b', {}, x.label + ' — '), x.text)) : [h('p', { class: 'dim' }, 'Aucun secret de ce monde n’a encore été percé.')]));
 }
@@ -752,6 +753,14 @@ let planetDlg = null;
 const typingIn = (el) => el.contains(document.activeElement) && document.activeElement.tagName === 'INPUT'; // an amount is being typed
 let adminPlayerId = null; // the player the admin invests for, kept across live refreshes
 const planetPics = new Set();
+// half of the planet's own picture (public/img/planets/<id>.webp, a round close-up) as a faded background on the right of a box;
+// no picture, no background
+function planetBg(id) {
+  const bg = h('div', { class: 'pbg' }), src = `/img/planets/${id}.webp`;
+  if (planetPics.has(src)) bg.style.backgroundImage = `url(${src})`; // already known: no flash on live refreshes
+  else { const probe = new Image(); probe.onload = () => { planetPics.add(src); bg.style.backgroundImage = `url(${src})`; }; probe.src = src; }
+  return bg;
+}
 function fillPlanetDialog() {
   const t = state.targets.find((x) => x.id === selected);
   if (!t || !planetDlg?.open || typingIn(planetDlg)) return;
@@ -761,12 +770,7 @@ function fillPlanetDialog() {
     if (state.players.some((p) => p.id === adminPlayerId)) sel.value = adminPlayerId; else adminPlayerId = sel.value;
     sel.onchange = () => { adminPlayerId = sel.value; };
   }
-  // half of the planet's own picture (public/img/planets/<id>.webp, a round close-up) as a faded background on the right of the box;
-  // no picture, no background
-  const bg = h('div', { class: 'pbg' });
-  const src = `/img/planets/${t.id}.webp`;
-  if (planetPics.has(src)) bg.style.backgroundImage = `url(${src})`; // already known: no flash on live refreshes
-  else { const probe = new Image(); probe.onload = () => { planetPics.add(src); bg.style.backgroundImage = `url(${src})`; }; probe.src = src; }
+  const bg = planetBg(t.id);
   planetDlg.classList.toggle('wide', state.role === 'admin');
   planetDlg.replaceChildren(bg, h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, t.name), h('button', { onclick: () => planetDlg.close() }, 'Fermer')), ...planetNodes(t, sel));
 }

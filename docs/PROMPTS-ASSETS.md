@@ -51,28 +51,82 @@ and `public/img/deco/logo-renegade.png` (I will plug them in place of the drawn 
 
 ## 2. Planet portraits
 
-Common format: square 1024x1024, WebP, close-up of a round planet centred on a flat black background (the edge must stay
-sharp, the page fades it), light from the left, no ship, no text, dark illustration in the Warhammer 30,000 style.
-File names: `public/img/planets/<id>.webp`.
+Where they appear: as half a disc on the right of the pop-in of a planet (players and admin). File names: `public/img/planets/<id>.webp`.
+Format: square 1024x1024, WebP, one round planet in close-up, centred, filling about 85% of the width, on a flat pure black
+background (the page fades the edge). Light from the left, a thin bright atmosphere rim on the lit side.
 
-| File | Prompt to add to the common format |
+Important: a player sees this picture before the nature of the world is revealed. So each prompt shows an atmosphere, never the
+secret: no readable structure, no hint of the true nature.
+
+Shared block to put at the end of every planet prompt:
+
+```
+Round planet in close-up, centred, on a flat pure black background, lit from the left with a thin bright atmospheric rim, painterly dark sci-fi illustration, Warhammer 30,000 Horus Heresy mood, high detail on the surface, no ships, no stations, no text, no border, 1024x1024.
+Negative: text, letters, frame, space scenery, stars in the background, other planets, moons, spaceships, cartoon style.
+```
+
+| File | Prompt (then add the shared block) |
 |---|---|
-| `grus.webp` | imperial world, administrative capital seen from orbit, continents covered with golden city lights, grey steel oceans, austere vast cities |
-| `phoenix.webp` | too-perfect biosphere, lush green continents, white mist, a few discreet crystalline laboratory structures, an unsettling calm eden |
-| `leo.webp` | fortress world, rocky hostile planet lit by a green sun, chains of bastions and orbital cannons visible on the surface |
-| `cancer.webp` | shipyard world, grey industrial planet, rings of docks and ship hulls in orbit, sky streaked with foundry flames, a violet warp rift on one edge |
-| `unicornis.webp` | feudal arsenal world, plains and fortified castles, smoking workshop towns, ochre and copper tones |
-| `scorpius.webp` | dead world, cracked grey sphere, craters, no atmosphere, red glows of distant artillery |
-| `draco.webp` | small blue-black planet, a large research complex in orbit, pale green reflections |
+| `grus.webp` | A temperate imperial world seen from high orbit: wide continents with a few faint clusters of warm golden lights on the night side, large calm steel-grey oceans, thin high clouds. No visible roads or buildings, only the glow of distant cities. |
+| `phoenix.webp` | A strikingly pristine world: deep green forests and coastal plains, white swirling cloud banks, turquoise shallow seas, a ring of faint asteroid dust reflected on the atmosphere. Serene, almost too perfect. |
+| `leo.webp` | A scorched rocky world swept by solar storms: orange-brown crust, long dark fault lines, thin green aurora crackling around the atmosphere, hot glare on the lit side. Hostile and harsh. |
+| `cancer.webp` | A heavy grey-brown world with a dusty polluted atmosphere, faint orange glows scattered across the night side, a violet ragged tear of light bleeding in from one edge of the sphere. Uneasy and unstable. |
+| `unicornis.webp` | A windswept world of ochre and rust-coloured steppes and dark mountain ranges, thin brownish smoke columns rising in lines from the plains, copper tint under a warm sun. |
+| `scorpius.webp` | A dead grey sphere, cratered and cracked like old ceramic, no atmosphere, a few small dull red flashes scattered on the surface far apart, cold hard shadows. |
+| `draco.webp` | A small dark blue-black world with a faint pale green reflection on its surface, calm and mysterious, thin wisps of silver cloud, almost like a polished stone. |
 
-## 3. Map ships (optional)
+## 3. Map ships
 
-Top view, 128x128, transparent background, one flat colour so the page can recolour them, 3 variants each:
+Where they appear: tiny sprites that orbit the planets and cross the map (7 to 14 px on screen; they are tiny, so the silhouette must
+read instantly). The page can recolour a flat single-colour shape, so ask for single-colour silhouettes. Delivery: transparent PNG
+128x128 or SVG, pointing to the right, i.e. the nose faces east. Names: `public/img/deco/ship-loyalist-1..3.png` and `ship-renegade-1..3.png`.
+
+### Loyalist ships (gold)
 
 ```
-Tiny imperial cruiser seen from above, angular gothic hull, single flat gold silhouette, transparent background.
+Top-down silhouette of a small imperial warship, pointing right, long angular gothic hull with a pointed prow, a wider armoured midsection with two short side sponsons, a stepped stern with a single large engine block, symmetrical. Grimdark gothic Imperium of Man style, Warhammer 30,000 naval vessel. Solid flat single-colour silhouette (gold #e6c36a), bold shapes, no internal detail lines thinner than 3 pixels, no gradient, no shading, transparent background, 128x128.
+Negative: text, markings, shadow, 3D render, multiple colours, background, star field.
 ```
 
+Make 3 variants by changing the first words: "a small imperial frigate", "a small imperial cruiser with a long dorsal spine", "a small imperial escort with a swept-back wing profile".
+
+### Renegade ships (red)
+
 ```
-Tiny renegade cruiser seen from above, jagged spiked hull, single flat red silhouette, transparent background.
+Top-down silhouette of a small renegade warship, pointing right, jagged asymmetrical hull with a bladed prow, spiked ridges along the flanks, a notched stern with twin engine nozzles, corrupted and aggressive profile. Grimdark Horus Heresy traitor legion style, Warhammer 30,000 naval vessel. Solid flat single-colour silhouette (red #e0452f), bold shapes, no internal detail lines thinner than 3 pixels, no gradient, no shading, transparent background, 128x128.
+Negative: text, markings, shadow, 3D render, multiple colours, background, star field.
 ```
+
+Variants: "a small renegade frigate with a hooked prow", "a small renegade cruiser covered in spikes", "a small renegade raider with forward-swept blades".
+
+### Ships in transit (neutral, for the players who still hold points to invest)
+
+```
+Top-down silhouette of a tiny scout shuttle pointing right, slender pointed hull with small swept fins and a single engine, solid flat single colour (pale blue-white #cfe8ff), transparent background, 128x128.
+```
+
+## 4. Banners (flags planted on the planets)
+
+Where they appear: tiny flags above a planet, one per tier won (13 px on screen). They must read as "a flag on a pole" and keep the
+camp colour. Delivery: transparent PNG 128x128 or SVG, pole on the left, banner waving to the right.
+Names: `public/img/deco/banner-loyalist.png` and `banner-renegade.png`.
+
+### Loyalist banner
+
+```
+A small imperial war banner on a slim pole, planted upright, the cloth is a long vertical pennant with a swallow-tail bottom edge, slightly waving to the right, a tiny stylised eagle emblem on the cloth, a small finial at the top of the pole. Grimdark gothic Imperium of Man style, Warhammer 30,000. Solid flat single-colour silhouette (gold #e6c36a) with the eagle emblem cut out of the cloth, bold shapes, no gradient, no shading, transparent background, 128x128.
+Negative: text, letters, shadow, 3D, multiple colours, background, ground.
+```
+
+### Renegade banner
+
+```
+A small renegade war banner on a slim spiked pole, planted upright, the cloth is a ragged torn vertical pennant with a jagged bottom edge, waving to the right, a tiny stylised eye emblem on the cloth, a bladed finial at the top of the pole. Grimdark Horus Heresy traitor legion style, Warhammer 30,000. Solid flat single-colour silhouette (red #e0452f) with the eye emblem cut out of the cloth, bold shapes, no gradient, no shading, transparent background, 128x128.
+Negative: text, letters, shadow, 3D, multiple colours, background, ground.
+```
+
+## 5. Optional extras
+
+- **Smoke clouds** (over the fighting): `Soft grey smoke cloud, billowing, top-down view, semi-transparent, black background removed, 256x256` (3 variants).
+- **Bomb flash**: `Bright orange and white explosion flash seen from above, circular blast, transparent background, 256x256`.
+- **Scorch mark**: `Black scorched crater with a faint orange glow at the edge, seen from above, soft edges, transparent background, 256x256`.

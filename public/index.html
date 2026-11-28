@@ -200,7 +200,8 @@ details:not([open])>.hero .hn0{border-bottom:0;margin-bottom:0;padding-bottom:0;
 .hero .hn2{font-style:italic;color:#b9b19c;letter-spacing:.02em}
 .hero .hn3{font-style:italic;color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:.7em!important}
 .stepper{display:inline-flex;align-items:stretch;gap:4px}.stepper input{width:64px;text-align:center;-moz-appearance:textfield}.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.stepper .step{min-width:34px;font-size:18px;line-height:1;padding:0 8px}
-.mlogo svg{width:20px;height:20px;display:block;filter:drop-shadow(0 0 2px #000)}
+.mlogo svg,.mlogo img{width:20px;height:20px;display:block;filter:drop-shadow(0 0 2px #000)}
+img.ico{object-fit:contain}
 .gl.idle .mlogo{opacity:.5}
 .ico{width:1.15em;height:1.15em;vertical-align:-.22em;flex:none}
 button .ico{margin-right:2px}.iconbtn{padding:6px 9px;line-height:0}.iconbtn .ico{width:18px;height:18px;margin:0;vertical-align:middle}
@@ -320,7 +321,9 @@ const h = (tag, attrs = {}, ...kids) => {
   return e;
 };
 // pictogram from the sprite
-const ico = (name) => {
+const ico = (name, small) => {
+  // the renegade emblem is a picture (bronze shield); the other pictograms come from the sprite
+  if (name === 'renegade') return h('img', { class: 'ico', src: `/img/deco/logo-renegade${small ? '-sm' : ''}.webp`, alt: '', draggable: 'false' });
   const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
   svg.setAttribute('class', 'ico'); svg.setAttribute('aria-hidden', 'true');
   use.setAttribute('href', '#ico-' + name); svg.append(use);
@@ -454,7 +457,7 @@ function splitBar(l, r) {
 // small gauge under a planet: the two camps' logos around a bar with a cursor at the loyalist share
 function miniGauge(l, r) {
   const tot = l + r, pct = tot ? (l / tot) * 100 : 50;
-  const logo = (cls, name) => h('span', { class: 'mlogo ' + cls }, ico(name));
+  const logo = (cls, name) => h('span', { class: 'mlogo ' + cls }, ico(name, true));
   return h('span', { class: 'gl' + (tot ? '' : ' idle'), title: tot ? `${Math.round(pct)} % loyalistes · ${100 - Math.round(pct)} % renégats` : 'Aucun point investi' },
     logo('ly', 'loyalist'), h('span', { class: 'mg' }, splitBar(l, r), tot ? h('s', { style: `left:clamp(2px,${pct}%,calc(100% - 2px))` }) : null), logo('rn', 'renegade'));
 }

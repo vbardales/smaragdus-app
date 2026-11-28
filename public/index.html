@@ -205,7 +205,7 @@ img.ico{object-fit:contain}
 img.ico.wide{width:auto;height:1.15em}
 .mlogo img.wide{width:auto;height:11px}
 #front .camp .ico.wide{width:auto;height:30px}
-.chron .ico.wide{width:auto;height:22px;margin-top:6px}
+.chron .ico.wide{width:auto;height:30px;margin-top:4px}
 .hero .emblem .ico.wide{width:auto;height:22px}
 details:not([open])>.hero .emblem .ico.wide{height:16px}
 .gl.idle .mlogo{opacity:.5}
@@ -330,8 +330,8 @@ const h = (tag, attrs = {}, ...kids) => {
 const ico = (name, small) => {
   // the renegade emblem is a picture (bronze shield); the other pictograms come from the sprite
   if (name === 'renegade') return h('img', { class: 'ico', src: `/img/deco/logo-renegade${small ? '-sm' : ''}.webp`, alt: '', draggable: 'false' });
-  // the imperial aquila is wide (about 2.6 times as wide as high): it keeps its ratio in a slot made for squares
-  if (name === 'loyalist') return h('img', { class: 'ico wide', src: `/img/deco/logo-loyalist${small ? '-sm' : ''}.webp`, alt: '', draggable: 'false' });
+  // the imperial aquila: a worn-metal picture for the big slots, a flat gold silhouette for the small ones. It is wide (about 2.6 times as wide as high): it keeps its ratio in a slot made for squares
+  if (name === 'loyalist') return h('img', { class: 'ico wide', src: small ? '/img/deco/logo-loyalist-sm.webp' : '/img/deco/logo-loyalist-detail.webp', alt: '', draggable: 'false' });
   const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
   svg.setAttribute('class', 'ico'); svg.setAttribute('aria-hidden', 'true');
   use.setAttribute('href', '#ico-' + name); svg.append(use);
@@ -796,7 +796,7 @@ function renderMe() {
   // the hero name loses size at each comma: the more titles, the less each one weighs
   const parts = (m.fluffName || m.name).split(',').map((x) => x.trim()).filter(Boolean);
   const title = parts.map((x, i) => h('span', { class: 'hn hn' + Math.min(i, 3), style: `font-size:${Math.max(0.74, 1.25 * 0.84 ** i).toFixed(2)}em` }, x.replace(/-/g, '‑'))); // non-breaking hyphens: "L'Archimagos-Domina" stays on one line
-  const d = h('details', { class: 'ed' }, h('summary', { class: 'hero' }, h('span', { class: 'emblem' }, ...(m.gauges || []).map((g) => h('span', { class: g === 'loyalist' ? 'ly' : 'rn' }, ico(g === 'loyalist' ? 'loyalist' : 'renegade')))), h('div', { class: 'names' }, ...title), h('span', { class: 'pts' + (m.points > 0 ? ' some' : ''), title: 'Points à allouer' }, h('b', {}, m.points), ' pt' + (m.points > 1 ? 's' : ''))), ...[
+  const d = h('details', { class: 'ed' }, h('summary', { class: 'hero' }, h('span', { class: 'emblem' }, ...(m.gauges || []).map((g) => h('span', { class: g === 'loyalist' ? 'ly' : 'rn' }, ico(g === 'loyalist' ? 'loyalist' : 'renegade', true)))), h('div', { class: 'names' }, ...title), h('span', { class: 'pts' + (m.points > 0 ? ' some' : ''), title: 'Points à allouer' }, h('b', {}, m.points), ' pt' + (m.points > 1 ? 's' : ''))), ...[
     [m.army, f].filter(Boolean).length ? h('p', {}, [m.army, f].filter(Boolean).join(' - ')) : null,
     h('p', { style: m.points > 0 ? 'font-size:1.5em' : '' }, h('b', {}, `${m.points} point${m.points > 1 ? 's' : ''}`), ' à allouer'),
     m.wipe ? h('p', { class: 'dim' }, `Directive de légion disponible : purger les points des ${SIDE[m.wipe]} sur un monde (usage unique).`) : null].filter(Boolean));
